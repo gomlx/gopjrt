@@ -4,6 +4,11 @@ Go Wrappers for [OpenXLA PjRT](https://github.com/openxla/xla/tree/main/xla/pjrt
 
 This is originally designed to power [GoMLX](github.com/gomlx/gomlx), but it may be used as a standalone, for lower level access to XLA, and other accelerator use cases.
 
+## FAQ
+
+* **Why is everything in one big package ?**
+  Because of https://github.com/golang/go/issues/13467 : C api's cannot be exported accross packages, even within the same repo. Even a function as simple as `func Add(a, b C.int) C.int` in one package cannot be called from another. So we need to wrap everything, and more than that, one cannot create separate sub-packages to handle separate concerns -- otherwise I would create one package for PJRT_Buffer, one for PJRT_Client, and so on. But alas ... they need to talk to each other, and more than that, pass C pointers around. One work around would be to pass `unsafe.Pointer` everywhere, and duplicate C helper functions ... but that would introduce yet other complications.
+
 ## Examples
 
 **TODO**

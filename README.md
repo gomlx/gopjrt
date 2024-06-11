@@ -23,13 +23,14 @@ This is originally designed to power [GoMLX](github.com/gomlx/gomlx), but it may
 ## Acknowledgements
 This project utilizes the following components from the [OpenXLA project](https://openxla.org/):
 
+* This project includes a copy of the OpenXLA's [`pjrt_c_api.h`](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h) file. 
 * OpenXLA PjRT CPU Plugin: This plugin enables execution of XLA computations on the CPU.
 * OpenXLA PjRT CUDA Plugin: This plugin enables execution of XLA computations on NVIDIA GPUs.
 We gratefully acknowledge the OpenXLA team for their valuable work in developing and maintaining these plugins.
 
 ## Licensing:
 
-The [OpenXLA project](https://openxla.org/), including the CPU and CUDA plugins, is [licensed under the Apache 2.0 license](https://github.com/openxla/xla/blob/main/LICENSE).
+The [OpenXLA project](https://openxla.org/), including `pjrt_c_api.h` file, the CPU and CUDA plugins, is [licensed under the Apache 2.0 license](https://github.com/openxla/xla/blob/main/LICENSE).
 
 The CUDA plugin also utilizes the NVIDIA CUDA Toolkit, which is subject to NVIDIA's licensing terms and must be installed by the user.
 

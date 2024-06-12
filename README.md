@@ -1,5 +1,7 @@
 # gopjrt
 
+<img align="right" src="https://github.com/gomlx/gopjrt/assets/7460115/0f2869be-f64e-48b8-b2fa-1f6cbe703204" alt="Under Construction" width="480"/>
+
 Go Wrappers for [OpenXLA PJRT](https://github.com/openxla/xla/tree/main/xla/pjrt).
 
 This is originally designed to power [GoMLX](github.com/gomlx/gomlx), but it may be used as a standalone, for lower level access to XLA, and other accelerator use cases.

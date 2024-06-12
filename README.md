@@ -23,7 +23,7 @@ This is originally designed to power [GoMLX](github.com/gomlx/gomlx), but it may
 ## Acknowledgements
 This project utilizes the following components from the [OpenXLA project](https://openxla.org/):
 
-* This project includes a copy of the OpenXLA's [`pjrt_c_api.h`](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h) file. 
+* This project includes a (slightly modified) copy of the OpenXLA's [`pjrt_c_api.h`](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h) file. 
 * OpenXLA PjRT CPU Plugin: This plugin enables execution of XLA computations on the CPU.
 * OpenXLA PjRT CUDA Plugin: This plugin enables execution of XLA computations on NVIDIA GPUs.
 We gratefully acknowledge the OpenXLA team for their valuable work in developing and maintaining these plugins.

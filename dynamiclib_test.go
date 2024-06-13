@@ -17,8 +17,10 @@
 package gopjrt
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
+	"slices"
 	"testing"
 )
 
@@ -28,6 +30,16 @@ func init() {
 
 // TestLoadPlatformCPU requires that PJRT CPU plugin be available.
 func TestLoadPlatformCPU(t *testing.T) {
-	require.NoError(t, LoadPlatform("CPU"))
-	require.NoError(t, LoadPlatform("host")) // Should be found using the alias.
+	_, err := LoadPlatformPlugin("CPU")
+	require.NoError(t, err)
+
+	_, err = LoadPlatformPlugin("host")
+	require.NoError(t, err) // Should be found using the alias.
+}
+
+// TestGetPlatforms requires that PJRT CPU plugin be available.
+func TestGetPlatforms(t *testing.T) {
+	platforms := GetPlatforms()
+	fmt.Printf("Platforms with available plugins: %v\n", platforms)
+	require.True(t, slices.Index(platforms, "CPU") != -1, "Can not find CPU plugin")
 }

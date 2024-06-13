@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 typedef const PJRT_Api* (*GetPJRTApiFn)();
-
+extern const PJRT_Api* call_GetPJRTApiFn(GetPJRTApiFn fn);
 
 #ifdef __cplusplus
 }  // extern "C"

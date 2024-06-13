@@ -16,9 +16,18 @@
 
 package gopjrt
 
+/*
+#include <stdlib.h>
+#include <dlfcn.h>
+#include "pjrt_c_api.h"
+#include "common.h"
+#include "gen_new_struct.h"
+*/
+import "C"
 import (
 	"github.com/pkg/errors"
 	"strings"
+	"sync"
 )
 
 // This file holds common definitions for the different implementations of dynamiclib (linux, windows, mac?).
@@ -47,19 +56,66 @@ var (
 		"HOST": "CPU",
 		"CUDA": "GPU",
 	}
+
+	// loadedPlugins caches the plugins already loaded. Protected by muPlugins.
+	loadedPlugins = make(map[string]*C.PJRT_Api)
+	muPlugins     sync.Mutex
 )
 
-// LoadPlatform by loading the corresponding plugin.
+// LoadPlatformPlugin by loading the corresponding plugin.
 // It returns an error if it doesn't find it.
-func LoadPlatform(platform string) error {
+//
+// It uses a mutex to serialize (make it safe) calls from different goroutines.
+func LoadPlatformPlugin(platform string) (*C.PJRT_Api, error) {
+	muPlugins.Lock()
+	defer muPlugins.Unlock()
+
 	canonicalPlatform := strings.ToUpper(platform)
 	if _, ok := PluginsAliases[canonicalPlatform]; ok {
 		canonicalPlatform = PluginsAliases[canonicalPlatform]
 	}
+	if ptr, found := loadedPlugins[canonicalPlatform]; found {
+		// Platform plugin already loaded.
+		return ptr, nil
+	}
+
 	if _, ok := KnownPlugins[canonicalPlatform]; !ok {
-		return errors.Errorf("Unknown platform %q (canonical form %q)", platform, canonicalPlatform)
+		return nil, errors.Errorf("Unknown platform %q (canonical form %q)", platform, canonicalPlatform)
 	}
 	pluginPaths := KnownPlugins[canonicalPlatform]
-	_, err := LoadLibrary(false, pluginPaths...)
-	return err
+
+	var err error
+	var pjrtAPIFn C.GetPJRTApiFn
+	pjrtAPIFn, err = LoadLibrary(false, pluginPaths...)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "Failed to load PJRT plugin for platform %q", platform)
+	}
+	ptr := C.call_GetPJRTApiFn(pjrtAPIFn)
+	if ptr == nil {
+		return nil, errors.WithMessagef(err, "Loaded PJRT plugin for platform %q, but it returned a nil plugin!?", platform)
+	}
+	loadedPlugins[canonicalPlatform] = ptr
+	return ptr, nil
+}
+
+// GetPlatforms searches for available plugins for the various known platforms. It doesn't load them, just checks
+// for their existence.
+func GetPlatforms() (platforms []string) {
+	muPlugins.Lock()
+	defer muPlugins.Unlock()
+
+	for platform, pluginPaths := range KnownPlugins {
+		// First check among the already loaded platforms.
+		if _, found := loadedPlugins[platform]; found {
+			platforms = append(platforms, platform)
+			continue
+		}
+
+		_, err := LoadLibrary(false, pluginPaths...)
+		if err != nil {
+			continue
+		}
+		platforms = append(platforms, platform)
+	}
+	return
 }

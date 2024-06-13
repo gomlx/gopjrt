@@ -170,7 +170,7 @@ func LoadLibrary(test bool, names ...string) (C.GetPJRTApiFn, error) {
 			return cPtr, nil
 		}
 	}
-	return nil, errors.Errorf("failed to load library with any of the names [%q]", strings.Join(names, ", "))
+	return nil, errors.Errorf("Failed to find or load plugin .so library in the following paths [%q]", strings.Join(names, ", "))
 }
 
 // libHandle represents an open handle to a library (.so)

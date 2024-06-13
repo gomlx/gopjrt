@@ -25,6 +25,9 @@ import (
 
 // This file holds common definitions for the different implementations of dynamiclib (linux, windows, mac?).
 
+// Generate automatic C-to-Go boilerplate code.
+//go:generate go run ./cmd/codegen < pjrt_c_api.h
+
 const (
 	// GetPJRTApiFunctionName is the name of the function exported by PJRT plugins that returns the API.
 	GetPJRTApiFunctionName = "GetPjrtApi"

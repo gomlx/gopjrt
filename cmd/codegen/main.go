@@ -19,4 +19,5 @@ func main() {
 	// Create various Go generate files.
 	generateNewStruct(contents)
 	generateAPICalls(contents)
+	generateEnums(contents)
 }

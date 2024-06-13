@@ -18,8 +18,6 @@ package gopjrt
 
 import (
 	"github.com/pkg/errors"
-	"os"
-	"path"
 	"strings"
 )
 
@@ -62,21 +60,6 @@ func LoadPlatform(platform string) error {
 		return errors.Errorf("Unknown platform %q (canonical form %q)", platform, canonicalPlatform)
 	}
 	pluginPaths := KnownPlugins[canonicalPlatform]
-
-	// Prefix LD_LIBRARY_PATH to non-absolute entries.
-	for _, ldPath := range strings.Split(os.Getenv("LD_LIBRARY_PATH"), ":") {
-		if ldPath == "" || !path.IsAbs(ldPath) {
-			// No empty or relative paths.
-			continue
-		}
-		for ii := range len(pluginPaths) {
-			p := pluginPaths[ii]
-			if path.IsAbs(p) {
-				continue
-			}
-			pluginPaths = append(pluginPaths, path.Join(ldPath, p))
-		}
-	}
 	_, err := LoadLibrary(false, pluginPaths...)
 	return err
 }

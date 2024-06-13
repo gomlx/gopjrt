@@ -32,16 +32,80 @@ package gopjrt
 */
 import "C"
 import (
+	"bufio"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"unsafe"
 )
 
-// libHandle represents an open handle to a library (.so)
-type libHandle struct {
-	Handle unsafe.Pointer
-	Name   string
+var (
+	// dynamicLibrariesPaths is initialized with the values of LD_LIBRARY_PATH and /etc/ld.so.conf file.
+	dynamicLibrariesPaths map[string]bool
+
+	reLdConfInclude = regexp.MustCompile(`^\s*include\s*(.*)$`)
+	reLdConfComment = regexp.MustCompile(`^\s*#`)
+	reLdConfPath    = regexp.MustCompile(`^\s*(.+?)\s*$`)
+)
+
+func initDynamicLibrariesPaths() {
+	dynamicLibrariesPaths = make(map[string]bool)
+
+	// Prefix LD_LIBRARY_PATH to non-absolute entries.
+	for _, ldPath := range strings.Split(os.Getenv("LD_LIBRARY_PATH"), ":") {
+		if ldPath == "" || !path.IsAbs(ldPath) {
+			// No empty or relative paths.
+			continue
+		}
+		dynamicLibrariesPaths[ldPath] = true
+	}
+	loadLibraryPaths("/etc/ld.so.conf")
+	if klog.V(1).Enabled() {
+		klog.Infof("Library paths: %v", keys(dynamicLibrariesPaths))
+	}
+}
+
+func loadLibraryPaths(filePath string) {
+	klog.V(2).Infof("Loading paths for libraries from %q", filePath)
+	file, err := os.Open(filePath)
+	if err != nil {
+		klog.Errorf("Failed to load paths for libraries from %q: %v", filePath, err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if parts := reLdConfInclude.FindStringSubmatch(line); len(parts) > 0 {
+			// Include pattern.
+			klog.V(2).Infof("loadLibraryPaths: include %q", parts[1])
+			files, err := filepath.Glob(parts[1])
+			if err != nil {
+				klog.Errorf("Failed to load paths for libraries while expanding include entry %q: %v", parts[1], err)
+				continue
+			}
+			for _, includeFile := range files {
+				loadLibraryPaths(includeFile)
+			}
+
+		} else if reLdConfComment.MatchString(line) {
+			klog.V(2).Infof("loadLibraryPaths: comment %q", line)
+
+		} else if parts := reLdConfPath.FindStringSubmatch(line); len(parts) > 0 {
+			klog.V(2).Infof("loadLibraryPaths: path %q", parts[1])
+			dynamicLibrariesPaths[parts[1]] = true
+
+		} else if strings.TrimSpace(line) != "" {
+			klog.V(2).Infof("loadLibraryPaths: cannot parse line %q", line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		klog.Errorf("Error while loading paths for libraries from %q: %v", filePath, err)
+	}
 }
 
 // LoadLibrary will return a pointer to a C function that returns the PJRT_API.
@@ -56,41 +120,63 @@ type libHandle struct {
 // If test is set to true, the library is immediately discarded (and the handle closed), and this can be used
 // to check the availability of plugins. It's costly, so one should do this once and cache the results.
 func LoadLibrary(test bool, names ...string) (C.GetPJRTApiFn, error) {
-	for _, name := range names {
-		nameC := C.CString(name)
-		handle := C.dlopen(nameC, C.RTLD_LAZY)
-		C.free(unsafe.Pointer(nameC))
-		if handle == nil {
-			continue
-		}
+	if dynamicLibrariesPaths == nil {
+		initDynamicLibrariesPaths()
+	}
 
-		klog.V(1).Infof("loaded library %s\n", name)
-		h := &libHandle{
-			Handle: handle,
-			Name:   name,
+	noPaths := []string{""}
+	allPaths := keys(dynamicLibrariesPaths)
+
+	for _, name := range names {
+		prefixes := allPaths
+		if path.IsAbs(name) {
+			prefixes = noPaths
 		}
-		getPJRT, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
-		_ = getPJRT
-		if err != nil {
-			klog.Warningf("Tried to load %q, but failed to find symbol %q, skipping: %v", name, GetPJRTApiFunctionName, err)
-			err = h.Close()
-			if err != nil {
-				klog.Warningf("Failed to close dynamic library %q: %v", name, err)
+		for _, prefix := range prefixes {
+			candidateName := path.Join(prefix, name)
+			nameC := C.CString(candidateName)
+			klog.V(2).Infof("trying to load library %s\n", candidateName)
+			handle := C.dlopen(nameC, C.RTLD_LAZY)
+			C.free(unsafe.Pointer(nameC))
+			if handle == nil {
+				if info, err := os.Stat(candidateName); err == nil && !info.IsDir() {
+					klog.Warningf("Failed to dynamically load PJRT plugin from %q: check with `ldd %s`, maybe there are missing required libraries.", candidateName, candidateName)
+				}
+				continue
 			}
-			continue // Try next path.
-		}
-		if test {
-			err = h.Close()
-			if err != nil {
-				klog.Warningf("Failed to close dynamic library %q: %v", name, err)
+			klog.V(1).Infof("loaded library %s\n", candidateName)
+			h := &libHandle{
+				Handle: handle,
+				Name:   name,
 			}
-			return nil, nil
+			getPJRT, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
+			if err != nil {
+				klog.Warningf("Tried to load %q, but failed to find symbol %q, skipping: %v", candidateName, GetPJRTApiFunctionName, err)
+				err = h.Close()
+				if err != nil {
+					klog.Warningf("Failed to close dynamic library %q: %v", candidateName, err)
+				}
+				continue // Try next path.
+			}
+			if test {
+				err = h.Close()
+				if err != nil {
+					klog.Warningf("Failed to close dynamic library %q: %v", candidateName, err)
+				}
+				return nil, nil
+			}
+			var cPtr C.GetPJRTApiFn
+			cPtr = (C.GetPJRTApiFn)(getPJRT)
+			return cPtr, nil
 		}
-		var cPtr C.GetPJRTApiFn
-		cPtr = (C.GetPJRTApiFn)(getPJRT)
-		return cPtr, nil
 	}
 	return nil, errors.Errorf("failed to load library with any of the names [%q]", strings.Join(names, ", "))
+}
+
+// libHandle represents an open handle to a library (.so)
+type libHandle struct {
+	Handle unsafe.Pointer
+	Name   string
 }
 
 // GetSymbolPointer takes a symbol name and returns a pointer to the symbol.

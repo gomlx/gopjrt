@@ -33,7 +33,6 @@ var (
 
 #include <stdlib.h>
 #include "pjrt_c_api.h"
-#include "common.h"
 #include "gen_new_struct.h"
 
 {{range .}}
@@ -68,7 +67,7 @@ extern "C" {
 `))
 )
 
-func generateNewStructC(contents string) error {
+func generateNewStruct(contents string) {
 	var allInfo []cStructInfo
 	for _, cStructMatches := range reStructs.FindAllStringSubmatch(contents, -1) {
 		info := cStructInfo{
@@ -84,6 +83,4 @@ func generateNewStructC(contents string) error {
 
 	f = must.M1(os.Create(NewStructHFileName))
 	must.M(newStructHTemplate.Execute(f, allInfo))
-
-	return nil
 }

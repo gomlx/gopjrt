@@ -17,5 +17,6 @@ func main() {
 	contents := b.String()
 
 	// Create various Go generate files.
-	must.M(generateNewStructC(contents))
+	generateNewStruct(contents)
+	generateAPICalls(contents)
 }

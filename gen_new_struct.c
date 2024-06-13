@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include "pjrt_c_api.h"
-#include "common.h"
 #include "gen_new_struct.h"
 
 

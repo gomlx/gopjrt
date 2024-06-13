@@ -21,7 +21,6 @@ package gopjrt
 #include <dlfcn.h>
 #include "pjrt_c_api.h"
 #include "common.h"
-#include "gen_new_struct.h"
 */
 import "C"
 import (
@@ -58,15 +57,15 @@ var (
 	}
 
 	// loadedPlugins caches the plugins already loaded. Protected by muPlugins.
-	loadedPlugins = make(map[string]*C.PJRT_Api)
+	loadedPlugins = make(map[string]*Plugin)
 	muPlugins     sync.Mutex
 )
 
-// LoadPlatformPlugin by loading the corresponding plugin.
+// loadPlatformPlugin by loading the corresponding plugin.
 // It returns an error if it doesn't find it.
 //
 // It uses a mutex to serialize (make it safe) calls from different goroutines.
-func LoadPlatformPlugin(platform string) (*C.PJRT_Api, error) {
+func loadPlatformPlugin(platform string) (*Plugin, error) {
 	muPlugins.Lock()
 	defer muPlugins.Unlock()
 
@@ -74,9 +73,9 @@ func LoadPlatformPlugin(platform string) (*C.PJRT_Api, error) {
 	if _, ok := PluginsAliases[canonicalPlatform]; ok {
 		canonicalPlatform = PluginsAliases[canonicalPlatform]
 	}
-	if ptr, found := loadedPlugins[canonicalPlatform]; found {
+	if plugin, found := loadedPlugins[canonicalPlatform]; found {
 		// Platform plugin already loaded.
-		return ptr, nil
+		return plugin, nil
 	}
 
 	if _, ok := KnownPlugins[canonicalPlatform]; !ok {
@@ -90,12 +89,16 @@ func LoadPlatformPlugin(platform string) (*C.PJRT_Api, error) {
 	if err != nil {
 		return nil, errors.WithMessagef(err, "Failed to load PJRT plugin for platform %q", platform)
 	}
-	ptr := C.call_GetPJRTApiFn(pjrtAPIFn)
-	if ptr == nil {
+	api := C.call_GetPJRTApiFn(pjrtAPIFn)
+	if api == nil {
 		return nil, errors.WithMessagef(err, "Loaded PJRT plugin for platform %q, but it returned a nil plugin!?", platform)
 	}
-	loadedPlugins[canonicalPlatform] = ptr
-	return ptr, nil
+	plugin, err := newPlugin(platform, api)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "Failed to initialize PJRT plugin for platform %q after loading it, this leaves the plugin in an unstable state", platform)
+	}
+	loadedPlugins[canonicalPlatform] = plugin
+	return plugin, nil
 }
 
 // GetPlatforms searches for available plugins for the various known platforms. It doesn't load them, just checks

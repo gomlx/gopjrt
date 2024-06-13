@@ -31,12 +31,15 @@ func init() {
 // TestLoadPlatformCPU requires that PJRT CPU plugin be available.
 func TestLoadPlatformCPU(t *testing.T) {
 	platform := "CPU"
-	ptr, err := LoadPlatformPlugin(platform)
+	plugin, err := loadPlatformPlugin(platform)
 	require.NoError(t, err)
-	fmt.Printf("%s plugin v%d.%d\n", platform, ptr.pjrt_api_version.major_version, ptr.pjrt_api_version.minor_version)
+	fmt.Printf("Loaded %s\n", plugin)
 
-	_, err = LoadPlatformPlugin("host")
-	require.NoError(t, err) // Should be found using the alias.
+	// Check that alias is the same.
+	plugin2, err := loadPlatformPlugin("host")
+	require.NoError(t, err)
+
+	require.Equal(t, plugin, plugin2)
 }
 
 // TestGetPlatforms requires that PJRT CPU plugin be available.

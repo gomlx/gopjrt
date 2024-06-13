@@ -18,8 +18,6 @@ var ()
 //
 // Loaded plugins are singletons per platform and cached (GetPlugin will return a pointer to the same plugin if
 // called with the same platform or its aliases).
-// They are usually never unloaded (they exist until the program exits), but one can force unloading it (with Plugin.Destroy)
-// if desired.
 type Plugin struct {
 	platform string
 	api      *C.PJRT_Api

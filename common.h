@@ -25,6 +25,18 @@ extern "C" {
 typedef const PJRT_Api* (*GetPJRTApiFn)();
 extern const PJRT_Api* call_GetPJRTApiFn(GetPJRTApiFn fn);
 
+// De-union-ed values of PJRT_NamedValue, because Go cannot handle unnamed unions.
+typedef struct {
+    const char* string_value;
+    int64_t int64_value;
+    const int64_t* int64_array_value;
+    float float_value;
+    bool bool_value;
+} PJRT_NamedValueUnion;
+
+// De-union the value of a PRJT_NamedValue, to allow Go access to it.
+extern PJRT_NamedValueUnion Extract_PJRT_NamedValue_Union(PJRT_NamedValue *named_value);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

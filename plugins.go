@@ -10,6 +10,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"unsafe"
 )
 
 // Plugin represents a loaded PJRT plugin that can be used to compile and execute StableHLO code.
@@ -23,14 +24,25 @@ import (
 type Plugin struct {
 	name, path string
 	api        *C.PJRT_Api
+	attributes NamedValuesMap
 }
 
-// pjrtPluginInitialize calls C.PJRT_Plugin_Initialize
+// pjrtPluginInitialize calls C.PJRT_Plugin_Initialize.
 func pjrtPluginInitialize(plugin *Plugin) error {
 	args := C.new_PJRT_Plugin_Initialize_Args()
 	defer cFree(args)
 	args.extension_start = nil
 	return toError(plugin, C.call_PJRT_Plugin_Initialize(plugin.api, args))
+}
+
+// pjrtPluginAttributes calls C.PJRT_Plugin_Attributes and returns the plugin's attributes.
+func pjrtPluginAttributes(plugin *Plugin) NamedValuesMap {
+	args := C.new_PJRT_Plugin_Attributes_Args()
+	defer cFree(args)
+	args.extension_start = nil
+	C.call_PJRT_Plugin_Attributes(plugin.api, args)
+	namedValues := cDataToSlice[C.PJRT_NamedValue](unsafe.Pointer(args.attributes), int(args.num_attributes))
+	return pjrtNamedValuesToMap(namedValues)
 }
 
 // newPlugin creates a new plugin from the api pointer.
@@ -41,6 +53,8 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
 	if err != nil {
 		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %s", name)
 	}
+	plugin.attributes = pjrtPluginAttributes(plugin)
+	fmt.Printf("%s attributes: %v\n", plugin, plugin.attributes)
 	return plugin, nil
 }
 

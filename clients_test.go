@@ -11,6 +11,8 @@ func TestPlugin_NewClient(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
-	_, err = plugin.NewClient(nil)
+	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	err = client.Destroy()
+	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
 }

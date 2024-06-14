@@ -37,6 +37,9 @@ func TestLoadPlatformCPU(t *testing.T) {
 	plugin2, err := loadNamedPlugin("cpu")
 	require.NoError(t, err)
 	require.Equal(t, plugin, plugin2)
+	plugin3, err := loadNamedPlugin(plugin2.Path()) // Try by using the absolute path, should return the same plugin.
+	require.NoError(t, err)
+	require.Equal(t, plugin2, plugin3)
 
 	// Checks non-existent (yet) plugin.
 	plugin, err = loadNamedPlugin("milliways")

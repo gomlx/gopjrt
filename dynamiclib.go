@@ -80,9 +80,16 @@ func loadNamedPlugin(name string) (*Plugin, error) {
 	muPlugins.Lock()
 	defer muPlugins.Unlock()
 
-	// Search previously loaded plugin.
+	// Search previously loaded plugin: match by name or by path (if the name given is an absolute path).
 	if plugin, found := loadedPlugins[name]; found {
 		return plugin, nil
+	}
+	if path.IsAbs(name) {
+		for _, plugin := range loadedPlugins {
+			if plugin.Path() == name {
+				return plugin, nil
+			}
+		}
 	}
 
 	// Search path to plugin -- except if name is an absolute path.

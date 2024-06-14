@@ -33,11 +33,15 @@ func TestLoadPlatformCPU(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
-	// Checks cache..
+	// Checks cache works.
 	plugin2, err := loadNamedPlugin("cpu")
 	require.NoError(t, err)
-
 	require.Equal(t, plugin, plugin2)
+
+	// Checks non-existent (yet) plugin.
+	plugin, err = loadNamedPlugin("milliways")
+	fmt.Printf("Loading milliways plugin, expected error: %v", err)
+	require.Error(t, err)
 }
 
 // TestGetPlatforms requires that PJRT CPU plugin be available.

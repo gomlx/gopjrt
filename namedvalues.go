@@ -3,6 +3,7 @@ package gopjrt
 /*
 #include "pjrt_c_api.h"
 #include "common.h"
+#include "gen_new_struct.h"
 */
 import "C"
 import (
@@ -39,4 +40,23 @@ func pjrtNamedValuesToMap(namedValues []C.PJRT_NamedValue) NamedValuesMap {
 		}
 	}
 	return m
+}
+
+// mallocArrayPJRT_NamedValue return a pointer to a C allocated array of C.PJRT_NamedValue and the number
+// of elements in that array (same as len(NamedValuesMap)).
+//
+// If the NamedValuesMap is empty (or nil) it returns (nil, 0).
+func (m NamedValuesMap) mallocArrayPJRT_NamedValue() (*C.PJRT_NamedValue, C.size_t) {
+	if len(m) == 0 {
+		return nil, 0
+	}
+
+	// Fill struct_size for each element.
+	rawData := cMallocArray[C.PJRT_NamedValue](len(m))
+	placeHolder := C.new_PJRT_NamedValue()
+	sliceData := cDataToSlice[C.PJRT_NamedValue](unsafe.Pointer(rawData), len(m))
+	for ii := range len(m) {
+		sliceData[ii].struct_size = placeHolder.struct_size
+	}
+	return rawData, C.size_t(len(m))
 }

@@ -59,6 +59,7 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
 }
 
 // GetPlugin returns the plugin with the given name -- typically it reflect the platform, e.g: "cpu" or "gpu".
+// But one can also give the full path to the `.so` file with the plugin.
 //
 // Loaded plugins are singletons and cached (GetPlugin will return a pointer to the same plugin if
 // called with the same name or its aliases).
@@ -92,4 +93,10 @@ func (p *Plugin) String() string {
 		return fmt.Sprintf("PJRT plugin (%s) v%d.%d", p.Path(), major, minor)
 	}
 	return fmt.Sprintf("PJRT %q plugin (%s) v%d.%d", p.Name(), p.Path(), major, minor)
+}
+
+// NewClient creates a new Client object to manage available devices.
+// The options (it can be left nil) are plugin specific, and should (but often aren't) documented by the plugins.
+func (p *Plugin) NewClient(options NamedValuesMap) (*Client, error) {
+	return pjrtClientCreate(p, options)
 }

@@ -17,6 +17,7 @@ This is originally designed to power [GoMLX](github.com/gomlx/gomlx), but it may
 
 ## Links to documentation
 
+* [Google Drive Directory with Design Docs](https://drive.google.com/drive/folders/18M944-QQPk1E34qRyIjkqDRDnpMa3miN): Some links are outdated or redirected, but very valuable information.
 * [How to use the PJRT C API? #openxla/xla/issues/7038](https://github.com/openxla/xla/issues/7038): discussion of folks trying to use PJRT in their projects. Some examples leveraging some of the XLA C++ library.
 * [How to use PJRT C API v.2 #openxla/xla/issues/7038](https://github.com/openxla/xla/issues/13733).
 * [PJRT C API README.md](https://github.com/openxla/xla/blob/main/xla/pjrt/c/README.md): a collection of links to other documents.
@@ -29,7 +30,8 @@ This project utilizes the following components from the [OpenXLA project](https:
 * This project includes a (slightly modified) copy of the OpenXLA's [`pjrt_c_api.h`](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h) file. 
 * OpenXLA PJRT CPU Plugin: This plugin enables execution of XLA computations on the CPU.
 * OpenXLA PJRT CUDA Plugin: This plugin enables execution of XLA computations on NVIDIA GPUs.
-We gratefully acknowledge the OpenXLA team for their valuable work in developing and maintaining these plugins.
+
+* We gratefully acknowledge the OpenXLA team for their valuable work in developing and maintaining these plugins.
 
 ## Licensing:
 

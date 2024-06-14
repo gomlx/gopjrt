@@ -18,7 +18,13 @@
 
 package gopjrt
 
-// This file handles management of loading dynamic libraries.
+// This file handles management of loading dynamic libraries for linux
+//
+// It should implement 3 methods:
+//
+//	osDefaultLibraryPaths() []string
+//	loadPlugin(path string) (C.GetPJRTApiFn, error)
+//	checkPlugin(path string) error
 //
 // Modified version of https://github.com/coreos/pkg/blob/main/dlopen/dlopen.go, licenced with Apache 2.0 license
 // https://github.com/coreos/pkg/blob/main/LICENSE
@@ -52,8 +58,10 @@ var (
 	reLdConfPath    = regexp.MustCompile(`^\s*(.+?)\s*$`)
 )
 
-func initDynamicLibrariesPaths() {
-	dynamicLibrariesPaths = make(map[string]bool)
+// osDefaultLibraryPaths is called during initialization to set the default search paths.
+// It always includes the default "/usr/local/lib/gomlx" for linux.
+func osDefaultLibraryPaths() []string {
+	paths := []string{"/usr/local/lib/gomlx"}
 
 	// Prefix LD_LIBRARY_PATH to non-absolute entries.
 	for _, ldPath := range strings.Split(os.Getenv("LD_LIBRARY_PATH"), ":") {
@@ -61,20 +69,17 @@ func initDynamicLibrariesPaths() {
 			// No empty or relative paths.
 			continue
 		}
-		dynamicLibrariesPaths[ldPath] = true
+		paths = append(paths, ldPath)
 	}
-	loadLibraryPaths("/etc/ld.so.conf")
-	if klog.V(1).Enabled() {
-		klog.Infof("Library paths: %v", keys(dynamicLibrariesPaths))
-	}
+	return loadLibraryPaths(paths, "/etc/ld.so.conf")
 }
 
-func loadLibraryPaths(filePath string) {
-	klog.V(2).Infof("Loading paths for libraries from %q", filePath)
-	file, err := os.Open(filePath)
+func loadLibraryPaths(paths []string, fileWithIncludes string) []string {
+	klog.V(2).Infof("Loading paths for libraries from %q", fileWithIncludes)
+	file, err := os.Open(fileWithIncludes)
 	if err != nil {
-		klog.Errorf("Failed to load paths for libraries from %q: %v", filePath, err)
-		return
+		klog.Errorf("Failed to load paths for libraries from %q: %v", fileWithIncludes, err)
+		return paths
 	}
 	defer func() { _ = file.Close() }()
 	scanner := bufio.NewScanner(file)
@@ -89,7 +94,7 @@ func loadLibraryPaths(filePath string) {
 				continue
 			}
 			for _, includeFile := range files {
-				loadLibraryPaths(includeFile)
+				paths = loadLibraryPaths(paths, includeFile)
 			}
 
 		} else if reLdConfComment.MatchString(line) {
@@ -97,80 +102,81 @@ func loadLibraryPaths(filePath string) {
 
 		} else if parts := reLdConfPath.FindStringSubmatch(line); len(parts) > 0 {
 			klog.V(2).Infof("loadLibraryPaths: path %q", parts[1])
-			dynamicLibrariesPaths[parts[1]] = true
+			paths = append(paths, parts[1])
 
 		} else if strings.TrimSpace(line) != "" {
 			klog.V(2).Infof("loadLibraryPaths: cannot parse line %q", line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		klog.Errorf("Error while loading paths for libraries from %q: %v", filePath, err)
+		klog.Errorf("Error while loading paths for libraries from %q: %v", fileWithIncludes, err)
 	}
+	return paths
 }
 
-// LoadLibrary will return a pointer to a C function that returns the PJRT_API.
-// It tries the names in the order given, and will use the first name that finds a matching dynamic library
-// that defines GetPJRTApiFunctionName.
+// loadPlugin tries to dlopen the plugin and will return a pointer to a C function that returns the PJRT_API.
 //
 // Notice that if the library is loaded, the `dlopen`(3) handle is never closed and is lost -- only when the process closes.
 // It is assumed that a library is not going to be loaded more than once.
+func loadPlugin(pluginPath string) (C.GetPJRTApiFn, error) {
+	return linuxLoadPlugin(pluginPath, false)
+}
+
+// checkPlugin tries to dlopen the plugin and verify that the GetPjrtApi function is exported.
 //
-// Any handles created and not actually used, are properly closed.
-//
-// If test is set to true, the library is immediately discarded (and the handle closed), and this can be used
-// to check the availability of plugins. It's costly, so one should do this once and cache the results.
-func LoadLibrary(test bool, names ...string) (C.GetPJRTApiFn, error) {
-	if dynamicLibrariesPaths == nil {
-		initDynamicLibrariesPaths()
+// The handle returned by dlopen is properly destroyed.
+func checkPlugin(pluginPath string) error {
+	_, err := linuxLoadPlugin(pluginPath, true)
+	return err
+}
+
+func linuxLoadPlugin(pluginPath string, onlyCheck bool) (C.GetPJRTApiFn, error) {
+	info, err := os.Stat(pluginPath)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return nil, errors.New("plugin path is a directory!?")
 	}
 
-	noPaths := []string{""}
-	allPaths := keys(dynamicLibrariesPaths)
-
-	for _, name := range names {
-		prefixes := allPaths
-		if path.IsAbs(name) {
-			prefixes = noPaths
-		}
-		for _, prefix := range prefixes {
-			candidateName := path.Join(prefix, name)
-			nameC := C.CString(candidateName)
-			klog.V(2).Infof("trying to load library %s\n", candidateName)
-			handle := C.dlopen(nameC, C.RTLD_LAZY)
-			C.free(unsafe.Pointer(nameC))
-			if handle == nil {
-				if info, err := os.Stat(candidateName); err == nil && !info.IsDir() {
-					klog.Warningf("Failed to dynamically load PJRT plugin from %q: check with `ldd %s`, maybe there are missing required libraries.", candidateName, candidateName)
-				}
-				continue
-			}
-			klog.V(1).Infof("loaded library %s\n", candidateName)
-			h := &libHandle{
-				Handle: handle,
-				Name:   name,
-			}
-			getPJRT, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
-			if err != nil {
-				klog.Warningf("Tried to load %q, but failed to find symbol %q, skipping: %v", candidateName, GetPJRTApiFunctionName, err)
-				err = h.Close()
-				if err != nil {
-					klog.Warningf("Failed to close dynamic library %q: %v", candidateName, err)
-				}
-				continue // Try next path.
-			}
-			if test {
-				err = h.Close()
-				if err != nil {
-					klog.Warningf("Failed to close dynamic library %q: %v", candidateName, err)
-				}
-				return nil, nil
-			}
-			var cPtr C.GetPJRTApiFn
-			cPtr = (C.GetPJRTApiFn)(getPJRT)
-			return cPtr, nil
-		}
+	nameC := C.CString(pluginPath)
+	klog.V(2).Infof("trying to load library (onlyCheck=%v) %s\n", onlyCheck, pluginPath)
+	handle := C.dlopen(nameC, C.RTLD_LAZY)
+	cFree(nameC)
+	if handle == nil {
+		err = errors.Errorf("failed to dynamically load PJRT plugin from %q: check with `ldd %s`, maybe there are missing required libraries.", pluginPath, pluginPath)
+		klog.Warningf("%v", err)
+		return nil, err
 	}
-	return nil, errors.Errorf("Failed to find or load plugin .so library in the following paths [%q]", strings.Join(names, ", "))
+
+	klog.V(1).Infof("loaded library %s\n", pluginPath)
+	h := &libHandle{
+		Handle: handle,
+		Name:   pluginPath,
+	}
+	getPJRT, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
+	if err != nil {
+		err = errors.Errorf("tried to load %q, but failed to find symbol %q, skipping: %v", pluginPath, GetPJRTApiFunctionName, err)
+		klog.Warningf("%v", err)
+		err2 := h.Close()
+		if err2 != nil {
+			klog.Warningf("Failed to close dynamic library %q: %v", pluginPath, err2)
+		}
+		return nil, err
+	}
+
+	if onlyCheck {
+		err = h.Close()
+		if err != nil {
+			klog.Warningf("Failed to close dynamic library %q: %v", pluginPath, err)
+		}
+		return nil, nil
+	}
+
+	// Keep handle alive till the end of the program.
+	var cPtr C.GetPJRTApiFn
+	cPtr = (C.GetPJRTApiFn)(getPJRT)
+	return cPtr, nil
 }
 
 // libHandle represents an open handle to a library (.so)

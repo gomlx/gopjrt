@@ -12,43 +12,58 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ()
-
 // Plugin represents a loaded PJRT plugin that can be used to compile and execute StableHLO code.
 //
 // Loaded plugins are singletons per platform and cached (GetPlugin will return a pointer to the same plugin if
 // called with the same platform or its aliases).
+//
+// Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
+//
+// Design document: https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit
 type Plugin struct {
-	platform string
-	api      *C.PJRT_Api
+	name, path string
+	api        *C.PJRT_Api
+}
+
+// pjrtPluginInitialize calls C.PJRT_Plugin_Initialize
+func pjrtPluginInitialize(plugin *Plugin) error {
+	args := C.new_PJRT_Plugin_Initialize_Args()
+	defer cFree(args)
+	args.extension_start = nil
+	return toError(plugin, C.call_PJRT_Plugin_Initialize(plugin.api, args))
 }
 
 // newPlugin creates a new plugin from the api pointer.
 // Internal: use GetPlugin instead.
-func newPlugin(platform string, api *C.PJRT_Api) (*Plugin, error) {
-	plugin := &Plugin{platform: platform, api: api}
-
-	// Make sure the initialization call succeed.
-	initArgs := C.new_PJRT_Plugin_Initialize_Args()
-	initArgs.extension_start = nil
-	pjrtErr := C.call_PJRT_Plugin_Initialize(plugin.api, initArgs)
-	if pjrtErr != nil {
-		return nil, errors.Errorf("Failed to initialize plugin") // include error message.
+func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
+	plugin := &Plugin{name: name, path: pluginPath, api: api}
+	err := pjrtPluginInitialize(plugin)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %s", name)
 	}
 	return plugin, nil
 }
 
-// GetPlugin returns the plugin for the given platform, or if one is not loaded yet, attempts to load it.
+// GetPlugin returns the plugin with the given name -- typically it reflect the platform, e.g: "cpu" or "gpu".
 //
-// Loaded plugins are singletons per platform and cached (GetPlugin will return a pointer to the same plugin if
-// called with the same platform or its aliases).
-func GetPlugin(platform string) (*Plugin, error) {
-	return loadPlatformPlugin(platform)
+// Loaded plugins are singletons and cached (GetPlugin will return a pointer to the same plugin if
+// called with the same name or its aliases).
+//
+// Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
+// If it is not set it will search in `/usr/local/lib/gomlx` and the standard libraries directories of the
+// system (in linux in LD_LIBRARY_CONFIG and /etc/ld.so.conf file).
+func GetPlugin(name string) (*Plugin, error) {
+	return loadNamedPlugin(name)
 }
 
-// Platform returns the platform of the plugin.
-func (p *Plugin) Platform() string {
-	return p.platform
+// Name returns the name of the plugin, usually it reflects its platform (cpu, gpu, tpu, etc.).
+func (p *Plugin) Name() string {
+	return p.name
+}
+
+// Path returns the path from where the plugin was loaded.
+func (p *Plugin) Path() string {
+	return p.path
 }
 
 // Version returns the version reported by the loaded plugin.
@@ -59,5 +74,8 @@ func (p *Plugin) Version() (major, minor int) {
 // String implements fmt.Stringer. It returns the platform and version of the plugin.
 func (p *Plugin) String() string {
 	major, minor := p.Version()
-	return fmt.Sprintf("PJRT %s Plugin v%d.%d", p.Platform(), major, minor)
+	if p.path == p.name {
+		return fmt.Sprintf("PJRT plugin (%s) v%d.%d", p.Path(), major, minor)
+	}
+	return fmt.Sprintf("PJRT %q plugin (%s) v%d.%d", p.Name(), p.Path(), major, minor)
 }

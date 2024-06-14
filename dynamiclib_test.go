@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
-	"slices"
 	"testing"
 )
 
@@ -30,13 +29,12 @@ func init() {
 
 // TestLoadPlatformCPU requires that PJRT CPU plugin be available.
 func TestLoadPlatformCPU(t *testing.T) {
-	platform := "CPU"
-	plugin, err := loadPlatformPlugin(platform)
+	plugin, err := loadNamedPlugin("cpu")
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
-	// Check that alias is the same.
-	plugin2, err := loadPlatformPlugin("host")
+	// Checks cache..
+	plugin2, err := loadNamedPlugin("cpu")
 	require.NoError(t, err)
 
 	require.Equal(t, plugin, plugin2)
@@ -44,7 +42,7 @@ func TestLoadPlatformCPU(t *testing.T) {
 
 // TestGetPlatforms requires that PJRT CPU plugin be available.
 func TestGetPlatforms(t *testing.T) {
-	platforms := GetPlatforms()
-	fmt.Printf("Platforms with available plugins: %v\n", platforms)
-	require.True(t, slices.Index(platforms, "CPU") != -1, "Can not find CPU plugin")
+	plugins := AvailablePlugins()
+	fmt.Printf("Available plugins: %v\n", plugins)
+	require.NotEqual(t, "", plugins["cpu"], "Can not find \"cpu\" plugin")
 }

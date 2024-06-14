@@ -25,6 +25,12 @@ package gopjrt
 import "C"
 import (
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -35,90 +41,144 @@ import (
 //go:generate go run ./cmd/codegen < pjrt_c_api.h
 
 const (
+	// PJRTPluginPathsEnv is the name of the environment variable that define the search paths for plugins.
+	PJRTPluginPathsEnv = "PJRT_PLUGIN_LIBRARY_PATH"
+
 	// GetPJRTApiFunctionName is the name of the function exported by PJRT plugins that returns the API.
 	GetPJRTApiFunctionName = "GetPjrtApi"
 )
 
 var (
-	// KnownPlugins maps known plugins names (uppercase) to a list of library names that should be loaded.
+	// pluginSearchPaths is set during initialization by the per-architecture implementations (dynamiclib_<arch>.go files).
 	//
-	// You can add names during initialization, but not after it.
-	//
-	// TODO: this should be moved to platform specific, since in Windows they will be .dll files, and likely with different names.
-	KnownPlugins = map[string][]string{
-		"CPU": []string{"gomlx/pjrt_c_api_cpu_plugin.so", "pjrt_c_api_cpu_plugin.so"},
-		"GPU": []string{"gomlx/pjrt_c_api_gpu_plugin.so", "pjrt_c_api_gpu_plugin.so"},
-	}
-
-	// PluginsAliases map platform names (uppercase) to the corresponding canonical plugin name (also uppercase).
-	PluginsAliases = map[string]string{
-		"HOST": "CPU",
-		"CUDA": "GPU",
-	}
+	// Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
+	// If it is not set it will search in `/usr/local/lib/gomlx` and the standard libraries directories of the
+	// system (in linux in LD_LIBRARY_CONFIG and /etc/ld.so.conf file).
+	pluginSearchPaths []string
 
 	// loadedPlugins caches the plugins already loaded. Protected by muPlugins.
 	loadedPlugins = make(map[string]*Plugin)
 	muPlugins     sync.Mutex
 )
 
-// loadPlatformPlugin by loading the corresponding plugin.
+func init() {
+	pjrtPaths, found := os.LookupEnv(PJRTPluginPathsEnv)
+	if !found {
+		pluginSearchPaths = osDefaultLibraryPaths()
+	} else {
+		pluginSearchPaths = slices.DeleteFunc(strings.Split(pjrtPaths, ":"), func(p string) bool {
+			return p == "" // Remove empty paths.
+		})
+	}
+}
+
+// loadNamedPlugin by loading the corresponding plugin.
 // It returns an error if it doesn't find it.
 //
 // It uses a mutex to serialize (make it safe) calls from different goroutines.
-func loadPlatformPlugin(platform string) (*Plugin, error) {
+func loadNamedPlugin(name string) (*Plugin, error) {
 	muPlugins.Lock()
 	defer muPlugins.Unlock()
 
-	canonicalPlatform := strings.ToUpper(platform)
-	if _, ok := PluginsAliases[canonicalPlatform]; ok {
-		canonicalPlatform = PluginsAliases[canonicalPlatform]
-	}
-	if plugin, found := loadedPlugins[canonicalPlatform]; found {
-		// Platform plugin already loaded.
+	// Search previously loaded plugin.
+	if plugin, found := loadedPlugins[name]; found {
 		return plugin, nil
 	}
 
-	if _, ok := KnownPlugins[canonicalPlatform]; !ok {
-		return nil, errors.Errorf("Unknown platform %q (canonical form %q)", platform, canonicalPlatform)
+	// Search path to plugin -- except if name is an absolute path.
+	pluginPath := name
+	if !path.IsAbs(pluginPath) {
+		var found bool
+		pluginPath, found = searchPlugin(name)
+		if !found {
+			return nil, errors.Errorf("plugin name %q not found in paths %v: set PJRT_PLUGIN_LIBRARY_PATH to an specific path(s) to search; "+
+				"plugins should be named pjrt_c_api_<name>_plugin.so",
+				name, pluginSearchPaths)
+		}
 	}
-	pluginPaths := KnownPlugins[canonicalPlatform]
+	klog.V(1).Infof("attempting to laod plugin from %s", pluginPath)
 
 	var err error
 	var pjrtAPIFn C.GetPJRTApiFn
-	pjrtAPIFn, err = LoadLibrary(false, pluginPaths...)
+	pjrtAPIFn, err = loadPlugin(pluginPath)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to load PJRT plugin for platform %q", platform)
+		return nil, errors.WithMessagef(err, "failed to load PJRT plugin for name %q", name)
 	}
 	api := C.call_GetPJRTApiFn(pjrtAPIFn)
 	if api == nil {
-		return nil, errors.WithMessagef(err, "Loaded PJRT plugin for platform %q, but it returned a nil plugin!?", platform)
+		return nil, errors.WithMessagef(err, "loaded PJRT plugin for name %q, but it returned a nil plugin!?", name)
 	}
-	plugin, err := newPlugin(platform, api)
+	plugin, err := newPlugin(name, pluginPath, api)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to initialize PJRT plugin for platform %q after loading it, this leaves the plugin in an unstable state", platform)
+		return nil, errors.WithMessagef(err, "failed to initialize PJRT plugin for name %q after loading it, this leaves the plugin in an unstable state", name)
 	}
-	loadedPlugins[canonicalPlatform] = plugin
+	loadedPlugins[name] = plugin
 	return plugin, nil
 }
 
-// GetPlatforms searches for available plugins for the various known platforms. It doesn't load them, just checks
-// for their existence.
-func GetPlatforms() (platforms []string) {
-	muPlugins.Lock()
-	defer muPlugins.Unlock()
+var (
+	// Patterns to extract the name from the plugins.
+	rePluginName = []*regexp.Regexp{
+		regexp.MustCompile(`^.*/pjrt_c_api_(\w+)_plugin.so$`),
+		regexp.MustCompile(`^.*/pjrt[-_]plugin[-_](\w+).so$`),
+	}
+)
 
-	for platform, pluginPaths := range KnownPlugins {
-		// First check among the already loaded platforms.
-		if _, found := loadedPlugins[platform]; found {
-			platforms = append(platforms, platform)
-			continue
+// pathToPluginName returns the name of the plugin if it's a matching plugin path, otherwise returns "".
+func pathToPluginName(pPath string) string {
+	for _, re := range rePluginName {
+		if re.MatchString(pPath) {
+			subMatches := re.FindStringSubmatch(pPath)
+			return subMatches[1]
 		}
+	}
+	return ""
+}
 
-		_, err := LoadLibrary(false, pluginPaths...)
-		if err != nil {
-			continue
+// AvailablePlugins searches for available plugins in the standard directories and returns a map from their name to their paths.
+//
+// Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
+// If it is not set it will search in `/usr/local/lib/gomlx` and the standard libraries directories of the
+// system (in linux in LD_LIBRARY_PATH and /etc/ld.so.conf file) in that order.
+//
+// If there are plugins with the same name but different versions in different directories, it respects the order of the directories given by
+// PJRT_PLUGIN_LIBRARY_PATH or by the system.
+func AvailablePlugins() (pluginsPaths map[string]string) {
+	return searchPlugins("")
+}
+
+func searchPlugin(searchName string) (path string, found bool) {
+	path, found = searchPlugins(searchName)[searchName]
+	return
+}
+
+func searchPlugins(searchName string) (pluginsPaths map[string]string) {
+	pluginsPaths = make(map[string]string)
+	for _, pluginPath := range pluginSearchPaths {
+		for _, pattern := range []string{"pjrt-plugin-*.so", "pjrt_plugin_*.so", "pjrt_c_api_*_plugin.so"} {
+			candidates, err := filepath.Glob(path.Join(pluginPath, pattern))
+			if err != nil {
+				continue
+			}
+			for _, candidate := range candidates {
+				name := pathToPluginName(candidate)
+				if name == "" {
+					continue
+				}
+				if searchName != "" && searchName != name {
+					continue
+				}
+				if _, found := pluginsPaths[name]; found {
+					// We already have a plugin with that name.
+					continue
+				}
+				err := checkPlugin(candidate)
+				if err != nil {
+					continue
+				}
+				pluginsPaths[name] = candidate
+			}
 		}
-		platforms = append(platforms, platform)
 	}
 	return
 }

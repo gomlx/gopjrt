@@ -52,6 +52,7 @@ func (c *Client) Destroy() error {
 	defer runtime.KeepAlive(c)
 	args := C.new_PJRT_Client_Destroy_Args()
 	defer cFree(args)
+	args.client = c.client
 	err := toError(c.plugin, C.call_PJRT_Client_Destroy(c.plugin.api, args))
 	c.plugin = nil
 	return err

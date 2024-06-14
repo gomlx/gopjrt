@@ -54,7 +54,6 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
 		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %s", name)
 	}
 	plugin.attributes = pjrtPluginAttributes(plugin)
-	fmt.Printf("%s attributes: %v\n", plugin, plugin.attributes)
 	return plugin, nil
 }
 
@@ -84,6 +83,11 @@ func (p *Plugin) Path() string {
 // Version returns the version reported by the loaded plugin.
 func (p *Plugin) Version() (major, minor int) {
 	return int(p.api.pjrt_api_version.major_version), int(p.api.pjrt_api_version.minor_version)
+}
+
+// Attributes returns a NamedValueMap with the attributes returned by the plugin at the time of its initialization.
+func (p *Plugin) Attributes() NamedValuesMap {
+	return p.attributes
 }
 
 // String implements fmt.Stringer. It returns the platform and version of the plugin.

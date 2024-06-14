@@ -27,6 +27,7 @@ func TestLoadPlatformCPU(t *testing.T) {
 	plugin, err := loadNamedPlugin("cpu")
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
+	fmt.Printf("\tattributes: %v\n", plugin.attributes)
 
 	// Checks cache works.
 	plugin2, err := loadNamedPlugin("cpu")

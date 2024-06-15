@@ -1,4 +1,6 @@
-package gopjrt
+/* DO NOT EDIT: this is a copy from chelper.go file */
+
+package pjrt
 
 /*
 #include <stdlib.h>

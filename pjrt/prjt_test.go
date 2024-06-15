@@ -1,4 +1,4 @@
-package gopjrt
+package pjrt
 
 // Common initialization for all test files.
 

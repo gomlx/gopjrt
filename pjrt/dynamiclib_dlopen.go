@@ -16,7 +16,7 @@
  *	limitations under the License.
  */
 
-package gopjrt
+package pjrt
 
 // This file handles management of loading dynamic libraries for linux
 //

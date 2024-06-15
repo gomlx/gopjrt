@@ -1,4 +1,4 @@
-package gopjrt
+package pjrt
 
 // This file holds the definition of functions commonly used in different parts.
 

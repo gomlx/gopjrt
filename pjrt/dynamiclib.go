@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-package gopjrt
+package pjrt
 
 /*
 #include <stdlib.h>
@@ -36,9 +36,6 @@ import (
 )
 
 // This file holds common definitions for the different implementations of dynamiclib (linux, windows, mac?).
-
-// Generate automatic C-to-Go boilerplate code.
-//go:generate go run ./cmd/codegen < pjrt_c_api.h
 
 const (
 	// PJRTPluginPathsEnv is the name of the environment variable that define the search paths for plugins.

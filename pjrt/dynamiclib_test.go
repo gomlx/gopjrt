@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-package gopjrt
+package pjrt
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package gopjrt
+package pjrt
 
 /*
 #include "pjrt_c_api.h"

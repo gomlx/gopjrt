@@ -22,15 +22,15 @@ import (
 	"testing"
 )
 
-// TestLoadPlatformCPU requires that PJRT CPU plugin be available.
-func TestLoadPlatformCPU(t *testing.T) {
-	plugin, err := loadNamedPlugin("cpu")
+// TestLoadNamedPlugin loads teh *flagPluginName plugin, which defaults to "cpu", that should be made available.
+func TestLoadNamedPlugin(t *testing.T) {
+	plugin, err := loadNamedPlugin(*flagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 	fmt.Printf("\tattributes: %v\n", plugin.attributes)
 
 	// Checks cache works.
-	plugin2, err := loadNamedPlugin("cpu")
+	plugin2, err := loadNamedPlugin(*flagPluginName)
 	require.NoError(t, err)
 	require.Equal(t, plugin, plugin2)
 	plugin3, err := loadNamedPlugin(plugin2.Path()) // Try by using the absolute path, should return the same plugin.
@@ -39,13 +39,13 @@ func TestLoadPlatformCPU(t *testing.T) {
 
 	// Checks non-existent (yet) plugin.
 	plugin, err = loadNamedPlugin("milliways")
-	fmt.Printf("Loading milliways plugin, expected error: %v", err)
+	fmt.Printf("Loading milliways plugin, expected error: %v\n", err)
 	require.Error(t, err)
 }
 
-// TestGetPlatforms requires that PJRT CPU plugin be available.
-func TestGetPlatforms(t *testing.T) {
+// TestAvailablePlugins requires that PJRT CPU plugin be available.
+func TestAvailablePlugins(t *testing.T) {
 	plugins := AvailablePlugins()
 	fmt.Printf("Available plugins: %v\n", plugins)
-	require.NotEqual(t, "", plugins["cpu"], "Can not find \"cpu\" plugin")
+	require.NotEqualf(t, "", plugins[*flagPluginName], "Can not find %q plugin", *flagPluginName)
 }

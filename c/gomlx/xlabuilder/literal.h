@@ -14,25 +14,28 @@
  *	limitations under the License.
  */
 
-// literal.h holds C API structure to literal values: this header and
-// implementation are included in the thiner gomlx_aot library.
-#ifndef _GOMLX_XLA_LITERAL_H
-#define _GOMLX_XLA_LITERAL_H
+// literal.h holds a C API structure to hold literal values:
+//
+// - Literal, XlaLiteralToLiteral()
+//
+// Notice the basic XlaLiteral type is defined in node.h.
 
-#include "gomlx/client.h"
-#include "gomlx/status.h"
+#ifndef _GOMLX_XLABUILDER_LITERAL_H
+#define _GOMLX_XLABUILDER_LITERAL_H
+
+#include "gomlx/xlabuilder/client.h"
+#include "gomlx/xlabuilder/node.h"
+#include "gomlx/xlabuilder/utils.h"
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
 #include "xla/client/xla_builder.h"
 #include "xla/shape.h"
 
-typedef xla::Literal XlaLiteral;
 extern Literal *XlaLiteralToLiteral(xla::Literal *xla_literal);
 
 #else
 typedef _Bool bool;
-typedef void XlaLiteral;
 #endif
 
 #ifdef __cplusplus
@@ -40,8 +43,7 @@ extern "C" {
 #endif
 
 // Literal points to the data in C++ space.
-// TODO: add support for layouts. For now assuming major->minor layout, that is
-// row-major for 2D tensors.
+// TODO: add support for layouts. For now assuming major->minor layout, that is row-major for 2D tensors.
 //
 // Memory managed by C++ new/delete.
 typedef struct Literal {
@@ -81,26 +83,10 @@ extern void XlaLiteralRefreshData(Literal *literal);
 // array itself is freed.
 extern Literal *MakeLiteralTuple(Literal **elements, int num_elements);
 
-// TransferToServer takes data from a local Literal to the accelerator server
-// used by client. Returns a pointer to a xla::GlobalData on success or the
-// status on error.
-extern StatusOr TransferToServer(Literal *literal, Client *client);
-
 // LiteralDecomposeTuple splits literal into its parts and returns a vector of
 // *Literal. The original *Literal is invalidated, but not deleted (still owned
 // by caller). The returned array is owned and should be free by the caller.
 extern Literal **LiteralDecomposeTuple(Literal *literal);
-
-// LiteralToOnDeviceBuffer conversion. Either returns a OnDeviceBuffer* or an
-// error.
-extern StatusOr LiteralToOnDeviceBuffer(Literal *literal, Client *client,
-                                        int device_ordinal);
-
-struct OnDeviceBuffer;
-typedef struct OnDeviceBuffer OnDeviceBuffer;
-
-// ShapedBufferToLiteral conversion. Either returns a Literal* or an error.
-StatusOr OnDeviceBufferToLiteral(OnDeviceBuffer *buffer, Client *client);
 
 #ifdef __cplusplus
 }

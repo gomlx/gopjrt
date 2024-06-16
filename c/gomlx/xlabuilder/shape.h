@@ -14,16 +14,16 @@
  *	limitations under the License.
  */
 
-// node.h holds C API structure to serialized nodes, and its NodeType enum.
-// It also includes the `Shape` struct, a wrapper for `xla::Shape`,
-#ifndef _GOMLX_XLA_SHAPE_H
-#define _GOMLX_XLA_SHAPE_H
+// Defines a C Shape struct that can be converted to and from C++'s `xla::Shape`.
+
+#ifndef _GOMLX_XLABUILDER_SHAPE_H
+#define _GOMLX_XLABUILDER_SHAPE_H
 
 #include <stdlib.h>
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
-#include "status.h"
+#include "gomlx/xlabuilder/utils.h"
 #include "xla/shape.h"
 
 #else
@@ -79,4 +79,4 @@ Shape *ShapeFromXlaShape(const xla::Shape &xla_shape);
 
 #endif
 
-#endif // _GOMLX_XLA_SHAPE_H
+#endif // _GOMLX_XLABUILDER_SHAPE_H

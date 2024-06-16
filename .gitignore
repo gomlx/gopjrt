@@ -25,5 +25,6 @@ gomlx_xla.tar.gz
 .Trash*
 gomlx.code-workspace
 
-# XLA source
+# C/C++/Bazel and XLA source
 c/xla
+MODULE.bazel*

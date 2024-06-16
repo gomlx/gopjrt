@@ -14,12 +14,17 @@
  *	limitations under the License.
  */
 
-// node.h holds C API structure to serialized nodes, and its NodeType enum.
-// It also includes the `Shape` struct, a wrapper for `xla::Shape`,
-#ifndef _GOMLX_XLA_NODE_H
-#define _GOMLX_XLA_NODE_H
+// node.h holds C API structure to serialized nodes, and related C/C++ types:
+//
+// - NodeType enum
+// - XlaLiteral
+// - XlaOp
+// - SerializedNode
 
-#include "gomlx/shape.h"
+#ifndef _GOMLX_XLABUILDER_NODE_H
+#define _GOMLX_XLABUILDER_NODE_H
+
+#include "gomlx/xlabuilder/shape.h"
 #include <stdlib.h>
 
 #ifdef __cplusplus
@@ -45,7 +50,7 @@ typedef XlaOp *XlaOpPtr;
 struct Literal;
 
 // NodeType has to be aligned with Go corresponding ir.NodeType.
-// If changed here, pls bump the XlaWrapperVersion in status.h.
+// If changed here, pls bump the XlaWrapperVersion in utils.h.
 // TODO: keep those in sync using some generator script.
 enum NodeType {
   InvalidNode,
@@ -170,4 +175,4 @@ typedef struct {
 }
 #endif
 
-#endif // _GOMLX_XLA_NODE_H
+#endif // _GOMLX_XLABUILDER_NODE_H

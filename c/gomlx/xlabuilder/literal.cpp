@@ -14,28 +14,16 @@
  *	limitations under the License.
  */
 
-#include <iostream>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string>
 #include <vector>
 
-#include "gomlx/client.h"
-#include "gomlx/on_device_buffer.h"
-#include "gomlx/shape.h"
-#include "gomlx/status.h"
+#include "gomlx/xlabuilder/literal.h"
 
-#include "absl/strings/str_format.h"
-#include "absl/types/span.h"
-#include "xla/array.h"
-#include "xla/client/client.h"
-#include "xla/client/client_library.h"
+#include "gomlx/xlabuilder/shape.h"
+#include "gomlx/xlabuilder/utils.h"
 #include "xla/literal.h"
 #include "xla/shape.h"
-#include "xla/status.h"
-#include "xla/types.h"
-
-#include "gomlx/literal.h"
 
 using namespace std;
 
@@ -117,22 +105,4 @@ void XlaLiteralRefreshData(Literal *literal) {
   literal->data = literal->literal->untyped_data();
   literal->size_bytes = literal->literal->size_bytes();
   literal->size = literal->literal->element_count();
-}
-
-StatusOr LiteralToOnDeviceBuffer(Literal *literal, Client *client,
-                                 int device_ordinal) {
-  StatusOr r{0, 0};
-  auto status_or =
-      client->client->LiteralToShapedBuffer(*literal->literal, device_ordinal);
-  if (!status_or.ok()) {
-    r.status = FromStatus(status_or.status());
-    return r;
-  }
-
-  xla::ScopedShapedBuffer *ssb =
-      new xla::ScopedShapedBuffer(std::move(*status_or));
-  OnDeviceBuffer *wrapper = new OnDeviceBuffer();
-  wrapper->ssb_buffer = ssb;
-  r.value = static_cast<void *>(wrapper);
-  return r;
 }

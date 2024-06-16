@@ -14,34 +14,23 @@
  *	limitations under the License.
  */
 
-#include <iostream>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <vector>
 
-#include "gomlx/client.h"
-#include "gomlx/literal.h"
-#include "gomlx/on_device_buffer.h"
-#include "gomlx/status.h"
+#include "computation.h"
 
-#include "absl/strings/str_format.h"
-#include "absl/types/span.h"
-#include "xla/array.h"
-#include "xla/client/client.h"
-#include "xla/client/client_library.h"
-#include "xla/client/lib/arithmetic.h"
+#include "gomlx/xlabuilder/literal.h"
+#include "gomlx/xlabuilder/utils.h"
+
 #include "xla/client/xla_builder.h"
-#include "xla/execution_options_util.h"
+#include "xla/client/xla_computation.h"
 #include "xla/literal.h"
-#include "xla/service/platform_util.h"
-#include "xla/service/shaped_buffer.h"
-#include "xla/status.h"
 #include "xla/statusor.h"
 #include "xla/types.h"
 #include "xla/xla_data.pb.h"
 
-#include "computation.h"
 
 using namespace std;
 
@@ -666,117 +655,19 @@ XlaStatus *ComputationAddOp(Computation *comp, SerializedNode *node) {
   return nullptr;
 }
 
-XlaStatus *ClientCompileComputation(Client *client, Computation *comp,
-                                    int num_params, Shape **param_shapes,
-                                    XlaOp *output) {
+
+StatusOr SerializedHLO(Computation *comp, XlaOp *output) {
+  StatusOr r{0, 0};
+
   // Build XlaComputation.
   auto comp_or = comp->builder->Build(*output);
   if (!comp_or.ok()) {
-    return FromStatus(comp_or.status());
+    r.status = FromStatus(comp_or.status());
+    return r
   }
-  comp->xla_comp = new xla::XlaComputation(std::move(comp_or.value()));
-
-  // Compile it.
-  std::vector<xla::Shape> shapes(num_params);
-  for (int ii = 0; ii < num_params; ii++) {
-    shapes[ii] = MakeXlaShape(param_shapes[ii]);
-  }
-
-  // Compile with LocalClient
-  xla::ExecutableBuildOptions options;
-  std::vector<xla::Shape *> shape_pointers(num_params);
-  for (int ii = 0; ii < num_params; ii++) {
-    shape_pointers[ii] = &shapes[ii];
-  }
-  auto status_or =
-      client->client->Compile(*comp->xla_comp, shape_pointers, options);
-  if (!status_or.ok()) {
-    return FromStatus(status_or.status());
-  }
-  auto local_execs = std::move(status_or.value());
-  if (local_execs.size() > 1) {
-    return new xla::Status(
-        absl::StatusCode::kInvalidArgument,
-        absl::StrFormat("compilation for multiple partitions not allowed, got "
-                        "%d partitions, wanted only one",
-                        int(local_execs.size())));
-  }
-  comp->local_exec = std::move(local_execs[0]);
-  return nullptr;
-}
-
-StatusOr ClientExecuteComputation(Client *client, Computation *comp,
-                                  int num_params, XlaShapedBuffer **params) {
-  StatusOr r{0, 0};
-  absl::Span<xla::ShapedBuffer *const> arguments(params, num_params);
-  auto data_or = comp->local_exec->Run(arguments, client->exec_options);
-  if (!data_or.ok()) {
-    r.status = FromStatus(data_or.status());
-    return r;
-  }
-  xla::ScopedShapedBuffer *ssb =
-      new xla::ScopedShapedBuffer(std::move(*data_or));
-  OnDeviceBuffer *wrapper = new OnDeviceBuffer();
-  wrapper->ssb_buffer = ssb;
-  r.value = static_cast<void *>(wrapper);
+  auto xla_comp = new xla::XlaComputation(std::move(comp_or.value()));
+  std::string module_str = xla_comp.proto().SerializeAsString();
+  r.value = static_cast<char*>(str_to_bytes(module_str));
   return r;
 }
 
-void DeleteGlobalData(XlaGlobalData *gd) {
-  delete static_cast<xla::GlobalData *>(gd);
-}
-
-StatusOr GlobalDataShape(XlaGlobalData *gd, Client *client) {
-  StatusOr r{0, 0};
-  auto shape_or = client->client->GetShape(*gd);
-  if (!shape_or.ok()) {
-    r.status = FromStatus(shape_or.status());
-    return r;
-  }
-  auto shape = shape_or.value();
-  r.value = static_cast<void *>(ShapeFromXlaShape(shape));
-  return r;
-}
-
-StatusOr GlobalDataDeconstructTuple(XlaGlobalData *gd, Client *client) {
-  StatusOr r{0, 0};
-  auto gds_or = client->client->DeconstructTuple(*gd);
-  if (!gds_or.ok()) {
-    r.status = FromStatus(gds_or.status());
-    return r;
-  }
-  std::vector<std::unique_ptr<xla::GlobalData>> gds = std::move(gds_or.value());
-  // Since this data is freed by C.free in Go, we use malloc to allocate it.
-  XlaGlobalData **gdsArray =
-      (XlaGlobalData **)malloc(sizeof(XlaGlobalData *) * gds.size());
-  for (int ii = 0; ii < gds.size(); ii++) {
-    gdsArray[ii] = gds[ii].release();
-  }
-  r.value = static_cast<void *>(gdsArray);
-  return r;
-}
-
-StatusOr TransferFromServer(XlaGlobalData *gd, Client *client) {
-  StatusOr r{0, 0};
-  auto literal_or = client->client->Transfer(*gd, nullptr);
-  if (!literal_or.ok()) {
-    r.status = FromStatus(literal_or.status());
-    return r;
-  }
-  Literal *res =
-      XlaLiteralToLiteral(new xla::Literal(std::move(literal_or.value())));
-  r.value = static_cast<void *>(res);
-  return r;
-}
-
-StatusOr TransferToServer(Literal *literal, Client *client) {
-  StatusOr r{0, 0};
-  auto gd_or = client->client->TransferToServer(*literal->literal, nullptr);
-  if (!gd_or.ok()) {
-    r.status = FromStatus(gd_or.status());
-    return r;
-  }
-  xla::GlobalData *res = gd_or.value().release();
-  r.value = static_cast<void *>(res);
-  return r;
-}

@@ -14,11 +14,15 @@
  *	limitations under the License.
  */
 
-// status.h holds C/Go conversion utilities, in particular handling of
-// xla::Status and xla::StatusOr.
-#ifndef _GOMLX_XLA_STATUS_H
-#define _GOMLX_XLA_STATUS_H
-// status.h holds the simplified C interface to xla::Status and xla::StatusOr
+// utils.h holds several small C/Go connector tools:
+//
+// - handling of xla::Status and xla::StatusOr.
+// - C definitions of VectorPointers and VectorData
+// - Memory stats, usage and heap checker for leaks.
+
+#ifndef _GOMLX_XLABUILDER_STATUS_H
+#define _GOMLX_XLABUILDER_STATUS_H
+// utils.h holds the simplified C interface to xla::Status and xla::StatusOr
 // objects.
 #include <stdlib.h>
 
@@ -71,7 +75,7 @@ typedef struct {
 #include <string>
 #include <vector>
 
-#include "xla/status.h"
+#include "xla/utils.h"
 #include "xla/statusor.h"
 // #include "xla/xla/shape_util.h"
 
@@ -95,8 +99,8 @@ template <typename T> T *Malloc(int n = 1) {
 constexpr int XlaWrapperVersion = 14;
 
 // Converts std::string to an allocated `char *` allocated with malloc that in
-// Go can be passed to StrFree. This doesn't work for binary blobs, like
-// serialized protos.
+// Go can be passed to StrFree.
+// This doesn't work for binary blobs, like serialized protos.
 extern char *c_str(const std::string &s);
 
 // Converts std::string containing binary data to an allocated VectorData
@@ -111,14 +115,13 @@ extern VectorPointers *c_vector_str(const std::vector<std::string> &v);
 // from the given one -- contents are transferred.
 XlaStatus *FromStatus(const xla::Status &status);
 
-template <typename T>
-StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &statusor) {
+template <typename T> StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &status_or) {
   StatusOr r;
   r.status =
-      static_cast<XlaStatus *>(new xla::Status(std::move(statusor.status())));
-  if (statusor.ok()) {
-    r.value = static_cast<void *>(statusor->get());
-    statusor->release(); // Ownership should go to StatusOr.
+      static_cast<XlaStatus *>(new xla::Status(std::move(status_or.status())));
+  if (status_or.ok()) {
+    r.value = static_cast<void *>(status_or->get());
+    status_or->release(); // Ownership should go to StatusOr.
   }
   return r;
 }
@@ -161,4 +164,4 @@ extern void DeleteXlaStatus(XlaStatus *xla_status);
 }
 #endif
 
-#endif // of #ifndef _GOMLX_XLA_STATUS_H
+#endif // of #ifndef _GOMLX_XLABUILDER_STATUS_H

@@ -15,14 +15,14 @@
  */
 
 #include "absl/log/initialize.h"
-#include "xla/status.h"
+#include "xla/utils.h"
 #include "gperftools/heap-checker.h"
 #include "gperftools/malloc_extension.h"
 #include "xla/statusor.h"
 #include <string.h>
 
-#include "gomlx/shape.h"
-#include "gomlx/status.h"
+#include "gomlx/xlabuilder/shape.h"
+#include "gomlx/xlabuilder/utils.h"
 
 const char *TF_LOG_LEVEL_ENV = "TF_CPP_MIN_LOG_LEVEL";
 

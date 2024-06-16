@@ -14,25 +14,25 @@
  *	limitations under the License.
  */
 
-// computation.h holds C API wrapper for xla::Builder, xla::Computation,
-// xla::Literal, xla::GlobalData and related functionality.
-#ifndef _GOMLX_XLA_COMPUTATION_H
-#define _GOMLX_XLA_COMPUTATION_H
+// xlabuilder.h holds C API wrapper for xla::Builder and xla::Computation:
+//
+// - Computation (holds an XlaBuilder)
+// - XlaOp
+// - XlaBuilder
 
-// #include "gomlx/aot/aot.h"
-#include "gomlx/client.h"
-#include "gomlx/literal.h"
-#include "gomlx/node.h"
-#include "gomlx/on_device_buffer.h"
-#include "gomlx/status.h"
+#ifndef _GOMLX_XLABUILDER_XLABUILDER_H
+#define _GOMLX_XLABUILDER_XLABUILDER_H
+
+#include "gomlx/xlabuilder/literal.h"
+#include "gomlx/xlabuilder/node.h"
+#include "gomlx/xlabuilder/utils.h"
 
 #ifdef __cplusplus
 // C++ dependencies.
 #include "xla/client/xla_builder.h"
-#include "xla/execution_options_util.h"
+#include "xla/client/xla_computation.h"
 
 // Alias to xla::Literal.
-typedef xla::GlobalData XlaGlobalData;
 typedef xla::XlaOp XlaOp;
 
 #else
@@ -58,17 +58,6 @@ struct Computation {
 
   // Builder, set while the Computation is being built.
   xla::XlaBuilder *builder;
-
-  // XlaComputation, available only after the Computation has been built.
-  // Computation owns the memory, so if Computation is deleted, this has to be
-  // freed as well.
-  xla::XlaComputation *xla_comp;
-
-  // Compiled computation.
-  xla::ExecutionHandle exec;
-
-  // Compiled computation.
-  std::unique_ptr<xla::LocalExecutable> local_exec;
 };
 
 #endif
@@ -89,21 +78,9 @@ extern void DeleteComputation(void *comp);
 // DeleteXlaOp delete XlaOp reference.
 extern void DeleteXlaOp(XlaOp *op);
 
-// DeleteGlobalData when no longer needed.
-extern void DeleteGlobalData(XlaGlobalData *gd);
-
-// TransferGlobalData brings data from accelerator server. Returns a Literal* or
-// an error (Status).
-extern StatusOr TransferFromServer(XlaGlobalData *gd, Client *client);
-
-// GlobalDataShape retrieves only the shape for the GlobalData. Returns a Shape*
-// or an error (Status).
-extern StatusOr GlobalDataShape(XlaGlobalData *gd, Client *client);
-
-// GlobalDataDecomposeTuple splits tuple into its components. Return array of
-// XlaGlobalData or an error. Size of the array is given by the gd's
-// shape->tuple_size.
-extern StatusOr GlobalDataDeconstructTuple(XlaGlobalData *gd, Client *client);
+// SerializedHLO converts the computation in comp to a serialized HLO proto, that can be used by PJRT.
+// It returns an error or a VectorData of bytes, with the serialized HLO proto (format is "hlo" when using in PJRT).
+extern StatusOr SerializedHLO(Computation *comp, XlaOp *output);
 
 // ClientCompileComputation should be called after all the ops are added to the
 // computation, it will finalize the building and compile the computation graph.
@@ -113,12 +90,6 @@ extern XlaStatus *ClientCompileComputation(Client *client, Computation *comp,
                                            int num_params, Shape **param_shapes,
                                            XlaOp *output);
 
-// ComputationExecuteComputation executes a previously compiled computation. It
-// returns a ShapedBuffer pointer or an error. `num_params` and `params` hold
-// the pointers to parameters, its ownership is *not* transferred.
-extern StatusOr ClientExecuteComputation(Client *client, Computation *comp,
-                                         int num_params,
-                                         XlaShapedBuffer **params);
 
 #ifdef __cplusplus
 }

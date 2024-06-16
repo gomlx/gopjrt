@@ -14,27 +14,18 @@
  *	limitations under the License.
  */
 
-#include <iostream>
-#include <stdint.h>
+#include "gomlx/xlabuilder/shape.h"
+
 #include <stdlib.h>
-#include <string>
 #include <vector>
 
-#include "gomlx/xlabuilder/client.h"
 #include "gomlx/xlabuilder/literal.h"
-#include "gomlx/xlabuilder/on_device_buffer.h"
 #include "gomlx/xlabuilder/utils.h"
 
-#include "absl/strings/str_format.h"
-#include "absl/types/span.h"
-#include "xla/array.h"
 #include "xla/literal.h"
 #include "xla/statusor.h"
 #include "xla/types.h"
 // #include "xla/xla_data.pb.h"
-#include "xla/utils.h"
-
-#include "gomlx/xlabuilder/shape.h"
 
 using namespace std;
 

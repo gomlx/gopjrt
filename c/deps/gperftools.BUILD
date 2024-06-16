@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 # Runs ./configure and ./make -- gperftools doesn't support Bazel.
 # See more in https://github.com/gperftools/gperftools/issues/800
 genrule(

@@ -19,13 +19,14 @@
 #include <string.h>
 #include <vector>
 
-#include "computation.h"
+#include "xlabuilder.h"
 
 #include "gomlx/xlabuilder/literal.h"
 #include "gomlx/xlabuilder/utils.h"
 
 #include "xla/client/xla_builder.h"
 #include "xla/client/xla_computation.h"
+#include "xla/client/lib/arithmetic.h"
 #include "xla/literal.h"
 #include "xla/statusor.h"
 #include "xla/types.h"
@@ -40,9 +41,9 @@ extern Shape *ShapeFromXlaShape(const xla::Shape &shape);
 
 void DeleteComputation(void *comp) {
   Computation *computation = static_cast<Computation *>(comp);
-  if (computation->xla_comp != nullptr) {
-    delete (computation->xla_comp);
-    computation->xla_comp = nullptr;
+  if (computation->builder != nullptr) {
+    delete (computation->builder);
+    computation->builder = nullptr;
   }
   delete (computation);
 }
@@ -663,11 +664,12 @@ StatusOr SerializedHLO(Computation *comp, XlaOp *output) {
   auto comp_or = comp->builder->Build(*output);
   if (!comp_or.ok()) {
     r.status = FromStatus(comp_or.status());
-    return r
+    return r;
   }
   auto xla_comp = new xla::XlaComputation(std::move(comp_or.value()));
-  std::string module_str = xla_comp.proto().SerializeAsString();
-  r.value = static_cast<char*>(str_to_bytes(module_str));
+  std::string module_str = xla_comp->proto().SerializeAsString();
+  r.value = static_cast<void*>(str_to_bytes(module_str));
+  delete xla_comp;
   return r;
 }
 

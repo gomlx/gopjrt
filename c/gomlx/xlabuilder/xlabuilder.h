@@ -82,15 +82,6 @@ extern void DeleteXlaOp(XlaOp *op);
 // It returns an error or a VectorData of bytes, with the serialized HLO proto (format is "hlo" when using in PJRT).
 extern StatusOr SerializedHLO(Computation *comp, XlaOp *output);
 
-// ClientCompileComputation should be called after all the ops are added to the
-// computation, it will finalize the building and compile the computation graph.
-// No more ops can be added after this. The ownership of the array param_shapes
-// is not transferred. Returns nullptr if there were no errors.
-extern XlaStatus *ClientCompileComputation(Client *client, Computation *comp,
-                                           int num_params, Shape **param_shapes,
-                                           XlaOp *output);
-
-
 #ifdef __cplusplus
 }
 #endif

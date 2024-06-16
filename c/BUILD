@@ -7,14 +7,13 @@ package(default_visibility = ["//visibility:private"])
 genrule(
     name = "gomlx_xlabuilder_headers_include",
     srcs = ["//gomlx/xlabuilder:headers"],
-    outs = ["include"],
+    outs = ["include/gomlx/xlabuilder/xlabuilder.h"],  # We list only one, because it's hard to keep all the list in sync.
     cmd = """
-    mkdir -p "$@"
-    mkdir -p "$@/gomlx"
-    echo "out=$@"
+    mkdir -p "$(@D)"
+    echo "out=$(@D)"
     for f in $(locations //gomlx/xlabuilder:headers); do
-      echo "$${f}"
-      cp "$${f}" "$@/$${f}"
+      echo "$${f} -> $(@D)"
+      cp "$${f}" "$(@D)/"
     done
     """,
 )
@@ -26,17 +25,17 @@ genrule(
         "//gomlx/xlabuilder:libgomlx_xlabuilder.so",
         "@gperftools//:libtcmalloc.a",
     ],
-    outs = ["lib"],
+    outs = ["lib/libgomlx_xlabuilder.so"],
     cmd = """
-    mkdir "$@"
+    mkdir -p "$(@D)"
     ln $(location //gomlx/xlabuilder:libgomlx_xlabuilder.so) "$@"
 
-    mkdir "$@/gomlx"
+    mkdir -p "$(@D)/gomlx/xlabuilder"
     GPERFTOOLS_LIB="$$(pwd)/$$(dirname $(location @gperftools//:libtcmalloc.a))"
     if [ -d "$$GPERFTOOLS_LIB"/lib ]; then
       GPERFTOOLS_LIB="$$GPERFTOOLS_LIB"/lib
     fi
-    ln "$$GPERFTOOLS_LIB"/lib* "$@/gomlx"
+    ln "$$GPERFTOOLS_LIB"/lib* "$(@D)/gomlx/xlabuilder"
     """,
 )
 

@@ -23,6 +23,7 @@ gomlx_xlabuilder_deps = [
     "@xla//xla:xla_proto_cc",
     "@xla//xla/client:xla_builder",
     "@xla//xla/client:xla_computation",
+    "@xla//xla/client/lib:math",
     # StableHLO conversion,
     "@stablehlo//:stablehlo_serialization",
     "@stablehlo//:stablehlo_portable_api",

@@ -114,5 +114,10 @@ BUILD_FLAGS="${BUILD_FLAGS} --define framework_shared_object=false"
 # Required from some `third_party/tsl` package:
 BUILD_FLAGS="${BUILD_FLAGS} --experimental_repo_remote_exec"
 
+# Required from more recent XLA bazel configuration.
+# Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where
+# X=3, YY=11 match the python version.
+export HERMETIC_PYTHON_VERSION=3.11
+
 # Invoke bazel build
 time "${BAZEL}" ${STARTUP_FLAGS} build ${BUILD_TARGET} ${BUILD_FLAGS} --build_tag_filters=-tfdistributed

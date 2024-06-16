@@ -1,0 +1,102 @@
+// List of node type names: used to generate Go and C code with the corresponding enum types and other
+// boilerplate code.
+//
+// The program gopjrt/cmd/xlabuilder_codegen is used to generate the code. It is configured as a `go:generate`
+// rule in xlabuilder package.
+//
+// Format:
+// - Any empty lines or lines starting with // or # are comments.
+// - Any line with a node type should not have anything else (no comments after the node type name)
+// - Order matter
+
+// InvalidNode should always be the first one.
+InvalidNode
+
+// Special ops:
+ConstantNode
+IotaNode
+ParameterNode
+ConvertTypeNode
+WhereNode
+TupleNode
+GetTupleElementNode
+ReshapeNode
+BroadcastNode
+BroadcastInDimNode
+ReduceSumNode
+ReduceMaxNode
+ReduceMultiplyNode
+SliceNode
+PadNode
+GatherNode
+ScatterNode
+ConcatenateNode
+ConvGeneralDilatedNode
+ReverseNode
+TransposeNode
+ReduceWindowNode
+SelectAndScatterNode
+BatchNormTrainingNode
+BatchNormInferenceNode
+BatchNormGradNode
+DotGeneralNode
+ArgMinMaxNode
+FftNode
+
+// One-argument ops:
+AbsNode
+NegNode
+ExpNode
+Expm1Node
+FloorNode
+CeilNode
+RoundNode
+LogNode
+Log1pNode
+LogicalNotNode
+LogisticNode
+SignNode
+ClzNode
+CosNode
+SinNode
+TanhNode
+SqrtNode
+RsqrtNode
+ImagNode
+RealNode
+ConjNode
+
+// Two-arguments ops:
+AddNode
+MulNode
+SubNode
+DivNode
+// Notice XLA implements Mod not IEEE754 Remainder operation.
+RemNode
+AndNode
+OrNode
+XorNode
+DotNode
+MinNode
+MaxNode
+PowNode
+ComplexNode
+
+// Two-arguments comparison ops:
+EqualNode
+NotEqualNode
+GreaterOrEqualNode
+GreaterThanNode
+LessOrEqualNode
+LessThanNode
+EqualTotalOrderNode
+NotEqualTotalOrderNode
+GreaterOrEqualTotalOrderNode
+GreaterThanTotalOrderNode
+LessOrEqualTotalOrderNode
+LessThanTotalOrderNode
+
+// Nodes with variable sets of arguments.
+RngBitGeneratorNode
+RngNormalNode
+RngUniformNode

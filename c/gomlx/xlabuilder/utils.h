@@ -75,7 +75,7 @@ typedef struct {
 #include <string>
 #include <vector>
 
-#include "xla/utils.h"
+#include "xla/status.h"
 #include "xla/statusor.h"
 // #include "xla/xla/shape_util.h"
 

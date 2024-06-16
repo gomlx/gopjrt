@@ -16,16 +16,18 @@
 
 // node.h holds C API structure to serialized nodes, and related C/C++ types:
 //
-// - NodeType enum
+// - SerializedNode
+// - NodeType enum (from gen_node_types.h)
 // - XlaLiteral
 // - XlaOp
-// - SerializedNode
 
 #ifndef _GOMLX_XLABUILDER_NODE_H
 #define _GOMLX_XLABUILDER_NODE_H
 
-#include "gomlx/xlabuilder/shape.h"
 #include <stdlib.h>
+
+#include "gomlx/xlabuilder/gen_node_types.h"
+#include "gomlx/xlabuilder/shape.h"
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
@@ -48,102 +50,6 @@ extern "C" {
 
 typedef XlaOp *XlaOpPtr;
 struct Literal;
-
-// NodeType has to be aligned with Go corresponding ir.NodeType.
-// If changed here, pls bump the XlaWrapperVersion in utils.h.
-// TODO: keep those in sync using some generator script.
-enum NodeType {
-  InvalidNode,
-
-  // Special ops:
-  ConstantNode,
-  IotaNode,
-  ParameterNode,
-  ConvertTypeNode,
-  WhereNode,
-  TupleNode,
-  GetTupleElementNode,
-  ReshapeNode,
-  BroadcastNode,
-  BroadcastInDimNode,
-  ReduceSumNode,
-  ReduceMaxNode,
-  ReduceMultiplyNode,
-  SliceNode,
-  PadNode,
-  GatherNode,
-  ScatterNode,
-  ConcatenateNode,
-  ConvGeneralDilatedNode,
-  ReverseNode,
-  TransposeNode,
-  ReduceWindowNode,
-  SelectAndScatterNode,
-  BatchNormTrainingNode,
-  BatchNormInferenceNode,
-  BatchNormGradNode,
-  DotGeneralNode,
-  ArgMinMaxNode,
-  FftNode,
-
-  // One-argument ops:
-  AbsNode,
-  NegNode,
-  ExpNode,
-  Expm1Node,
-  FloorNode,
-  CeilNode,
-  RoundNode,
-  LogNode,
-  Log1pNode,
-  LogicalNotNode,
-  LogisticNode,
-  SignNode,
-  ClzNode,
-  CosNode,
-  SinNode,
-  TanhNode,
-  SqrtNode,
-  RsqrtNode,
-  ImagNode,
-  RealNode,
-  ConjNode,
-
-  // Two-arguments ops:
-  AddNode,
-  MulNode,
-  SubNode,
-  DivNode,
-  // Notice XLA implements Mod, not IEEE754 Remainder operation.
-  RemNode,
-  AndNode,
-  OrNode,
-  XorNode,
-  DotNode,
-  MinNode,
-  MaxNode,
-  PowNode,
-  ComplexNode,
-
-  // Two-arguments comparison ops:
-  EqualNode,
-  NotEqualNode,
-  GreaterOrEqualNode,
-  GreaterThanNode,
-  LessOrEqualNode,
-  LessThanNode,
-  EqualTotalOrderNode,
-  NotEqualTotalOrderNode,
-  GreaterOrEqualTotalOrderNode,
-  GreaterThanTotalOrderNode,
-  LessOrEqualTotalOrderNode,
-  LessThanTotalOrderNode,
-
-  // Nodes with variable sets of arguments.
-  RngBitGeneratorNode,
-  RngNormalNode,
-  RngUniformNode,
-};
 
 // SerializedNode represents the Node arguments needed to create an XlaOp. The
 // underlying data (pointers) are owned by Go, and shouldn't be freed by C

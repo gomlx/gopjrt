@@ -39,23 +39,19 @@ using namespace std;
 // shape defined by xla::Shape. C++ only.
 extern Shape *ShapeFromXlaShape(const xla::Shape &shape);
 
-void DeleteComputation(void *comp) {
-  Computation *computation = static_cast<Computation *>(comp);
-  if (computation->builder != nullptr) {
-    delete (computation->builder);
-    computation->builder = nullptr;
+void DestroyXlaBuilder(XlaBuilder *builder) {
+  if (builder != nullptr) {
+    delete builder;
   }
-  delete (computation);
 }
 
-Computation *NewComputation(char *name) {
-  Computation *comp = new Computation();
-  comp->builder = new xla::XlaBuilder(name);
-  free(name);
-  return comp;
+XlaBuilder *NewXlaBuilder(char *name) {
+  return new xla::XlaBuilder(name);
 }
 
-void DeleteXlaOp(XlaOp *op) { delete (static_cast<xla::XlaOp *>(op)); }
+void DestroyXlaOp(XlaOp *op) {
+    delete (static_cast<xla::XlaOp *>(op));
+}
 
 xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
                                                        xla::XlaOp &init_op,
@@ -81,9 +77,7 @@ xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
                       node_type));
 }
 
-XlaStatus *ComputationAddOp(Computation *comp, SerializedNode *node) {
-  xla::XlaBuilder *builder = comp->builder;
-
+XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
   // Create new XlaOp.
   // TODO: A registration mechanism, where one can implement different
   // node_types in different files or libraries even.
@@ -636,7 +630,7 @@ XlaStatus *ComputationAddOp(Computation *comp, SerializedNode *node) {
                         node->node_type));
   }
   if (!op.valid()) {
-    auto status = comp->builder->first_error();
+    auto status = builder->first_error();
     if (!status.ok()) {
       return new xla::Status(status);
     }
@@ -657,11 +651,11 @@ XlaStatus *ComputationAddOp(Computation *comp, SerializedNode *node) {
 }
 
 
-StatusOr SerializedHLO(Computation *comp, XlaOp *output) {
+StatusOr SerializedHLO(XlaBuilder *builder, XlaOp *output) {
   StatusOr r{0, 0};
 
   // Build XlaComputation.
-  auto comp_or = comp->builder->Build(*output);
+  auto comp_or = builder->Build(*output);
   if (!comp_or.ok()) {
     r.status = FromStatus(comp_or.status());
     return r;

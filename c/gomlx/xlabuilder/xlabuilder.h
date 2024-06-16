@@ -28,59 +28,47 @@
 #include "gomlx/xlabuilder/utils.h"
 
 #ifdef __cplusplus
-// C++ dependencies.
+// C++ only: Dependencies.
 #include "xla/client/xla_builder.h"
 #include "xla/client/xla_computation.h"
 
 // Alias to xla::Literal.
 typedef xla::XlaOp XlaOp;
+typedef xla::XlaBuilder XlaBuilder;
 
 #else
+// C only: Forward reference of C++ types.
 typedef _Bool bool;
-typedef void XlaGlobalData;
-
-// Forward reference of C++ types.
-struct Computation;
-typedef struct Computation Computation;
+typedef void XlaBuilder;
 #endif
 
 #ifdef __cplusplus
 extern "C" {
-
-// Computation, internal representation to the C++ binding code. In
-// contains the builder and later the compiled computation.
-struct Computation {
-  ~Computation() {
-    if (builder != nullptr) {
-      delete builder;
-    }
-  }
-
-  // Builder, set while the Computation is being built.
-  xla::XlaBuilder *builder;
-};
-
 #endif
 
-// NewComputation creates a C++ handle to a computation building structure. It
-// owns the xla::XlaBuilder, and eventually the xla::XlaComputation and
-// xla::ExecutionHandle.
-extern Computation *NewComputation(char *name);
+// NewXlaBuilder returns a new xla::XlaBuilder.
+// The caller owns the returned pointer and the name string.
+extern XlaBuilder *NewXlaBuilder(char *name);
 
-// ComputationAddOp creates an xla::XlaOp for the given node description.
-// Returns the new op and its shape in the fields `node.new_op` and
-// `node.new_shape`. Ownership of the memory is transferred back.
-extern XlaStatus *ComputationAddOp(Computation *comp, SerializedNode *node);
+// XlaBuilderAddOp creates an xla::XlaOp for the given node.
+//
+// The parameter `node` is used both for input and output.
+// It returns the new op and its shape in the fields `node.new_op` and
+// `node.new_shape`.
+//
+// The caller owns `node` before and after the call.
+extern XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node);
 
-// DeleteComputation will destroy associated resources.
-extern void DeleteComputation(void *comp);
+// DestroyXlaBuilder destroys and frees the builder.
+extern void DestroyXlaBuilder(XlaBuilder *builder);
 
-// DeleteXlaOp delete XlaOp reference.
-extern void DeleteXlaOp(XlaOp *op);
+// DestroyXlaOp destroys the XlaOp reference.
+extern void DestroyXlaOp(XlaOp *op);
 
-// SerializedHLO converts the computation in comp to a serialized HLO proto, that can be used by PJRT.
+// SerializedHLO converts the computation built using XlaBuilder to a serialized HLO proto, that can be used by PJRT.
+//
 // It returns an error or a VectorData of bytes, with the serialized HLO proto (format is "hlo" when using in PJRT).
-extern StatusOr SerializedHLO(Computation *comp, XlaOp *output);
+extern StatusOr SerializedHLO(XlaBuilder *builder, XlaOp *output_node);
 
 #ifdef __cplusplus
 }

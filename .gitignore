@@ -24,3 +24,6 @@ gomlx_xla.tar.gz
 # VSCode files
 .Trash*
 gomlx.code-workspace
+
+# XLA source
+c/xla

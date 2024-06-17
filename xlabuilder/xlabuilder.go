@@ -73,7 +73,9 @@ var _ CBuffer = (*cBuffer)(nil)
 // It takes as input outputOp that is returned by the program.
 func (b *XlaBuilder) StableHLO(outputOp *Op) (CBuffer, error) {
 	statusOr := C.XlaBuilderSerializedHLO(unsafe.Pointer(b.builder), unsafe.Pointer(outputOp.op))
-	vectorData, err := pointerOrError[C.VectorData](statusOr)
+	var err error
+	var vectorData *C.VectorData
+	vectorData, err = pointerOrError[C.VectorData](statusOr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "while converting the XlaBuilder ops to a StableHLO representation")
 	}

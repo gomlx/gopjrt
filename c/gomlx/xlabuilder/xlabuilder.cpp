@@ -86,7 +86,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   xla::XlaOp op;
 
   // Extract optional parameters.
-  xla::XlaOp **inputs = serialized_op->inputs;
+  xla::XlaOp **inputs = serialized_op->op_inputs;
   absl::Span<const int64_t> list_of_ints(serialized_op->integer_array,
                                          serialized_op->integer_array_size);
   absl::Span<const int64_t> shape_dimensions;
@@ -131,8 +131,8 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     break;
   case TupleOp: {
     std::vector<xla::XlaOp> ops;
-    ops.reserve(serialized_op->num_inputs);
-    for (int ii = 0; ii < serialized_op->num_inputs; ii++) {
+    ops.reserve(serialized_op->num_op_inputs);
+    for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       ops.push_back(xla::XlaOp(*inputs[ii]));
     }
     op = xla::Tuple(builder, ops);
@@ -266,7 +266,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   }
   case ConcatenateOp: {
     vector<xla::XlaOp> operands;
-    for (int ii = 0; ii < serialized_op->num_inputs; ii++) {
+    for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
     op = xla::ConcatInDim(inputs[0]->builder(), operands, serialized_op->integer);

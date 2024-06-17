@@ -55,9 +55,9 @@ struct Literal;
 // underlying data (pointers) are owned by Go, and shouldn't be freed by C
 // functions.
 typedef struct {
-  int32_t op_type;  // [num_nodes]
-  int32_t num_inputs; // [num_nodes]
-  XlaOpPtr *inputs;
+  int32_t op_type;
+  int32_t num_op_inputs;
+  XlaOpPtr *op_inputs;
 
   // When there is a literal involved.
   struct Literal *literal;

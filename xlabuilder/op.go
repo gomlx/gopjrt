@@ -27,12 +27,12 @@ type Op struct {
 
 	// TODO: Re-write these into more readable arguments to the various operations.
 
-	Literal *Literal     // If a Literal (constant) is involved in the operation.
-	Int     int          // Used for any static integer inputs.
-	Shape   shapes.Shape // If a shape is used as a static input.
-	Str     string       // Used for any static string argument.
-	Ints    []int        // List of integer numbers.
-	Float   float32      // For a float parameter.
+	Literal *Literal // If a Literal (constant) is involved in the operation.
+	Int     int      // Used for any static integer inputs.
+	Shape   Shape    // If a shape is used as a static input.
+	Str     string   // Used for any static string argument.
+	Ints    []int    // List of integer numbers.
+	Float   float32  // For a float parameter.
 
 }
 
@@ -52,9 +52,7 @@ func serializedToC(op *Op) *C.SerializedOp {
 			return (C.XlaOpPtr)(unsafe.Pointer(op.OpInputs[ii]))
 		})
 	}
-	if op.Shape.Ok() {
-		sOp.shape = cShapeFromShape(op.Shape)
-	}
+	sOp.shape = cShapeFromShape(op.Shape)
 	if op.Str != "" {
 		sOp.string = C.CString(op.Str)
 	}

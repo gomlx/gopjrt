@@ -33,6 +33,27 @@ type XlaBuilder struct {
 	builder *C.XlaBuilder
 }
 
+// New create a new XlaBuilder with the given name, that can be used to create a new StableHLO program.
+// See details on how to use it on XlaBuilder.
+func New(name string) *XlaBuilder {
+	var builder *C.XlaBuilder
+	cName := C.CString(name)
+	builder = C.NewXlaBuilder(cName)
+	cFree(cName)
+	return &XlaBuilder{builder: builder}
+}
+
+// Free must be called once the builder is done to free the underlying object.
+// The garbage collector won't free it by itself.
+// It can be called more than once -- once finalized the first time, it becomes a no-op.
+func (b *XlaBuilder) Free() {
+	if b.builder == nil {
+		return
+	}
+	C.XlaBuilderDestroy(unsafe.Pointer(b.builder))
+	b.builder = nil
+}
+
 // CBuffer defines an interface of something that returns a pointer to an area managed by C memory manager.
 // The semantic of ownership is not defined by this interface.
 type CBuffer interface {
@@ -84,15 +105,4 @@ func (b *XlaBuilder) StableHLO(outputOp *Op) (CBuffer, error) {
 		size: int(vectorData.count),
 	}
 	return buf, nil
-}
-
-// Free must be called once the builder is done to free the underlying object.
-// The garbage collector won't free it by itself.
-// It can be called more than once -- once finalized the first time, it becomes a no-op.
-func (b *XlaBuilder) Free() {
-	if b.builder == nil {
-		return
-	}
-	C.XlaBuilderDestroy(unsafe.Pointer(b.builder))
-	b.builder = nil
 }

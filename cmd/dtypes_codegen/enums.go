@@ -21,7 +21,7 @@ var (
 		`(?m)(typedef enum \{\n([^}]+)}` + // Enum definition
 			`\s+(PJRT_Buffer_Type)\s*;)`) // Enum type name
 	reEnumComment    = regexp.MustCompile(`^\s*(//.*)$`)
-	reEnumDefinition = regexp.MustCompile(`^\s*(\w+)(\s*=\s*(\w+))?\s*,?$`)
+	reEnumDefinition = regexp.MustCompile(`^\s*PJRT_Buffer_Type_(\w+)(\s*=\s*(\w+))?\s*,?$`)
 
 	enumsFromCTemplate = template.Must(template.New(DTypeEnumGoFileName).Parse(`
 package dtypes

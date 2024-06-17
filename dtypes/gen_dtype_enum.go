@@ -10,96 +10,96 @@ package dtypes
 type DType int32
 
 const (
-	// PJRT_Buffer_Type_INVALID is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_INVALID).
+	// INVALID is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_INVALID).
 	// Invalid primitive type to serve as default.
-	PJRT_Buffer_Type_INVALID DType = 0
+	INVALID DType = 0
 
-	// PJRT_Buffer_Type_PRED is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_PRED).
+	// PRED is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PRED).
 	// Predicates are two-state booleans.
-	PJRT_Buffer_Type_PRED DType = 1
+	PRED DType = 1
 
-	// PJRT_Buffer_Type_S8 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S8).
+	// S8 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S8).
 	// Signed integral values of fixed width.
-	PJRT_Buffer_Type_S8 DType = 2
+	S8 DType = 2
 
-	// PJRT_Buffer_Type_S16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S16).
-	PJRT_Buffer_Type_S16 DType = 3
+	// S16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S16).
+	S16 DType = 3
 
-	// PJRT_Buffer_Type_S32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S32).
-	PJRT_Buffer_Type_S32 DType = 4
+	// S32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S32).
+	S32 DType = 4
 
-	// PJRT_Buffer_Type_S64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S64).
-	PJRT_Buffer_Type_S64 DType = 5
+	// S64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S64).
+	S64 DType = 5
 
-	// PJRT_Buffer_Type_U8 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U8).
+	// U8 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U8).
 	// Unsigned integral values of fixed width.
-	PJRT_Buffer_Type_U8 DType = 6
+	U8 DType = 6
 
-	// PJRT_Buffer_Type_U16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U16).
-	PJRT_Buffer_Type_U16 DType = 7
+	// U16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U16).
+	U16 DType = 7
 
-	// PJRT_Buffer_Type_U32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U32).
-	PJRT_Buffer_Type_U32 DType = 8
+	// U32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U32).
+	U32 DType = 8
 
-	// PJRT_Buffer_Type_U64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U64).
-	PJRT_Buffer_Type_U64 DType = 9
+	// U64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U64).
+	U64 DType = 9
 
-	// PJRT_Buffer_Type_F16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F16).
+	// F16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F16).
 	// Floating-point values of fixed width.
-	PJRT_Buffer_Type_F16 DType = 10
+	F16 DType = 10
 
-	// PJRT_Buffer_Type_F32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F32).
-	PJRT_Buffer_Type_F32 DType = 11
+	// F32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F32).
+	F32 DType = 11
 
-	// PJRT_Buffer_Type_F64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F64).
-	PJRT_Buffer_Type_F64 DType = 12
+	// F64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F64).
+	F64 DType = 12
 
-	// PJRT_Buffer_Type_BF16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_BF16).
+	// BF16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_BF16).
 	// Truncated 16 bit floating-point format. This is similar to IEEE's 16 bit
 	// floating-point format, but uses 1 bit for the sign, 8 bits for the exponent
 	// and 7 bits for the mantissa.
-	PJRT_Buffer_Type_BF16 DType = 13
+	BF16 DType = 13
 
-	// PJRT_Buffer_Type_C64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_C64).
+	// C64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_C64).
 	// Complex values of fixed width.
 	//
 	// Paired F32 (real, imag), as in std::complex<float>.
-	PJRT_Buffer_Type_C64 DType = 14
+	C64 DType = 14
 
-	// PJRT_Buffer_Type_C128 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_C128).
+	// C128 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_C128).
 	// Paired F64 (real, imag), as in std::complex<double>.
-	PJRT_Buffer_Type_C128 DType = 15
+	C128 DType = 15
 
-	// PJRT_Buffer_Type_F8E5M2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F8E5M2).
+	// F8E5M2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E5M2).
 	// Truncated 8 bit floating-point formats.
-	PJRT_Buffer_Type_F8E5M2 DType = 16
+	F8E5M2 DType = 16
 
-	// PJRT_Buffer_Type_F8E4M3FN is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F8E4M3FN).
-	PJRT_Buffer_Type_F8E4M3FN DType = 17
+	// F8E4M3FN is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E4M3FN).
+	F8E4M3FN DType = 17
 
-	// PJRT_Buffer_Type_F8E4M3B11FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F8E4M3B11FNUZ).
-	PJRT_Buffer_Type_F8E4M3B11FNUZ DType = 18
+	// F8E4M3B11FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E4M3B11FNUZ).
+	F8E4M3B11FNUZ DType = 18
 
-	// PJRT_Buffer_Type_F8E5M2FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F8E5M2FNUZ).
-	PJRT_Buffer_Type_F8E5M2FNUZ DType = 19
+	// F8E5M2FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E5M2FNUZ).
+	F8E5M2FNUZ DType = 19
 
-	// PJRT_Buffer_Type_F8E4M3FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_F8E4M3FNUZ).
-	PJRT_Buffer_Type_F8E4M3FNUZ DType = 20
+	// F8E4M3FNUZ is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E4M3FNUZ).
+	F8E4M3FNUZ DType = 20
 
-	// PJRT_Buffer_Type_S4 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S4).
+	// S4 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S4).
 	// 4-bit integer types
-	PJRT_Buffer_Type_S4 DType = 21
+	S4 DType = 21
 
-	// PJRT_Buffer_Type_U4 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U4).
-	PJRT_Buffer_Type_U4 DType = 22
+	// U4 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U4).
+	U4 DType = 22
 
-	// PJRT_Buffer_Type_TOKEN is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_TOKEN).
-	PJRT_Buffer_Type_TOKEN DType = 23
+	// TOKEN is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_TOKEN).
+	TOKEN DType = 23
 
-	// PJRT_Buffer_Type_S2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_S2).
+	// S2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_S2).
 	// 2-bit integer types
-	PJRT_Buffer_Type_S2 DType = 24
+	S2 DType = 24
 
-	// PJRT_Buffer_Type_U2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_PJRT_Buffer_Type_U2).
-	PJRT_Buffer_Type_U2 DType = 25
+	// U2 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U2).
+	U2 DType = 25
 )

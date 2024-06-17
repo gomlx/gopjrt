@@ -35,7 +35,7 @@ genrule(
     if [ -d "$$GPERFTOOLS_LIB"/lib ]; then
       GPERFTOOLS_LIB="$$GPERFTOOLS_LIB"/lib
     fi
-    ln "$$GPERFTOOLS_LIB"/lib* "$(@D)/gomlx/xlabuilder"
+    ln -f "$$GPERFTOOLS_LIB"/lib* "$(@D)/gomlx/xlabuilder"
     """,
 )
 

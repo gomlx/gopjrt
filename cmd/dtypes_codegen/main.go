@@ -19,7 +19,5 @@ func main() {
 	contents := b.String()
 
 	// Create various Go generate files.
-	generateNewStruct(contents)
-	generateAPICalls(contents)
 	generateEnums(contents)
 }

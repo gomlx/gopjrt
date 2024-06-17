@@ -58,6 +58,10 @@ func generateEnums(contents string) {
 		eType := enumTypeInfo{
 			Name: matches[3],
 		}
+		if eType.Name == "PJRT_Buffer_Type" {
+			// PJRT_Buffer_Type is handled by the dtypes package -- since it's also used by XlaBuilder.
+			continue
+		}
 		var eEntry *enumEntry
 		for _, line := range strings.Split(matches[2], "\n") {
 			if line == "" {

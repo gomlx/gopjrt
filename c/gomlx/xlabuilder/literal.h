@@ -23,7 +23,7 @@
 #ifndef _GOMLX_XLABUILDER_LITERAL_H
 #define _GOMLX_XLABUILDER_LITERAL_H
 
-#include "gomlx/xlabuilder/node.h"
+#include "gomlx/xlabuilder/op.h"
 #include "gomlx/xlabuilder/utils.h"
 
 #ifdef __cplusplus

@@ -3,16 +3,17 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/janpfeifer/must"
 	"os"
 	"strings"
 )
 
+const OpTypesFileName = "op_types.txt"
+
 func main() {
 	// Read node_types.xt
-	nodeTypeNames := make([]string, 0, 200)
-	f := must.M1(os.OpenFile("node_types.txt", os.O_RDONLY, os.ModePerm))
+	opTypeNames := make([]string, 0, 200)
+	f := must.M1(os.OpenFile(OpTypesFileName, os.O_RDONLY, os.ModePerm))
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -24,11 +25,10 @@ func main() {
 			// Skip comments.
 			continue
 		}
-		nodeTypeNames = append(nodeTypeNames, line)
+		opTypeNames = append(opTypeNames, line)
 	}
 	must.M(scanner.Err())
-	fmt.Printf("Node types: %v\n", nodeTypeNames)
 
 	// Create various Go generate files.
-	generateNodeEnums(nodeTypeNames)
+	generateOpsEnums(opTypeNames)
 }

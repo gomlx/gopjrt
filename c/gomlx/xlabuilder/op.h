@@ -16,17 +16,17 @@
 
 // node.h holds C API structure to serialized nodes, and related C/C++ types:
 //
-// - SerializedNode
+// - SerializedOp
 // - NodeType enum (from gen_node_types.h)
 // - XlaLiteral
 // - XlaOp
 
-#ifndef _GOMLX_XLABUILDER_NODE_H
-#define _GOMLX_XLABUILDER_NODE_H
+#ifndef _GOMLX_XLABUILDER_SERIALIZED_OP_H
+#define _GOMLX_XLABUILDER_SERIALIZED_OP_H
 
 #include <stdlib.h>
 
-#include "gomlx/xlabuilder/gen_node_types.h"
+#include "gomlx/xlabuilder/gen_op_types.h"
 #include "gomlx/xlabuilder/shape.h"
 
 #ifdef __cplusplus
@@ -51,11 +51,11 @@ extern "C" {
 typedef XlaOp *XlaOpPtr;
 struct Literal;
 
-// SerializedNode represents the Node arguments needed to create an XlaOp. The
+// SerializedOp represents the Node arguments needed to create an XlaOp. The
 // underlying data (pointers) are owned by Go, and shouldn't be freed by C
 // functions.
 typedef struct {
-  int32_t node_type;  // [num_nodes]
+  int32_t op_type;  // [num_nodes]
   int32_t num_inputs; // [num_nodes]
   XlaOpPtr *inputs;
 
@@ -70,15 +70,14 @@ typedef struct {
   char *string;
   float float_v;
 
-  // Information about the new op created, filled in by ComputationAddOp. Space
-  // allocated in C, but ownership is transferred back to Go.
+  // Output: information about the new op created, filled in by XlaBuilderAddOp.
+  // Space allocated in C, but ownership is transferred back to the caller (in Go).
   XlaOp *new_op;
   Shape *new_shape;
-
-} SerializedNode;
+} SerializedOp;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _GOMLX_XLABUILDER_NODE_H
+#endif // _GOMLX_XLABUILDER_SERIALIZED_OP_H

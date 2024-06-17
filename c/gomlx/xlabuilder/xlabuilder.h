@@ -24,7 +24,7 @@
 #define _GOMLX_XLABUILDER_XLABUILDER_H
 
 #include "gomlx/xlabuilder/literal.h"
-#include "gomlx/xlabuilder/node.h"
+#include "gomlx/xlabuilder/op.h"
 #include "gomlx/xlabuilder/utils.h"
 
 #ifdef __cplusplus
@@ -57,7 +57,7 @@ extern XlaBuilder *NewXlaBuilder(char *name);
 // `node.new_shape`.
 //
 // The caller owns `node` before and after the call.
-extern XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node);
+extern XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op);
 
 // DestroyXlaBuilder destroys and frees the builder.
 extern void DestroyXlaBuilder(XlaBuilder *builder);

@@ -1,0 +1,102 @@
+// List of node type names: used to generate Go and C code with the corresponding enum types and other
+// boilerplate code.
+//
+// The program gopjrt/cmd/xlabuilder_codegen is used to generate the code. It is configured as a `go:generate`
+// rule in xlabuilder package.
+//
+// Format:
+// - Any empty lines or lines starting with // or # are comments.
+// - Any line with a node type should not have anything else (no comments after the node type name)
+// - Order matter
+
+// InvalidOp should always be the first one.
+InvalidOp
+
+// Special ops:
+ConstantOp
+IotaOp
+ParameterOp
+ConvertTypeOp
+WhereOp
+TupleOp
+GetTupleElementOp
+ReshapeOp
+BroadcastOp
+BroadcastInDimOp
+ReduceSumOp
+ReduceMaxOp
+ReduceMultiplyOp
+SliceOp
+PadOp
+GatherOp
+ScatterOp
+ConcatenateOp
+ConvGeneralDilatedOp
+ReverseOp
+TransposeOp
+ReduceWindowOp
+SelectAndScatterOp
+BatchNormTrainingOp
+BatchNormInferenceOp
+BatchNormGradOp
+DotGeneralOp
+ArgMinMaxOp
+FftOp
+
+// One-argument ops:
+AbsOp
+NegOp
+ExpOp
+Expm1Op
+FloorOp
+CeilOp
+RoundOp
+LogOp
+Log1pOp
+LogicalNotOp
+LogisticOp
+SignOp
+ClzOp
+CosOp
+SinOp
+TanhOp
+SqrtOp
+RsqrtOp
+ImagOp
+RealOp
+ConjOp
+
+// Two-arguments ops:
+AddOp
+MulOp
+SubOp
+DivOp
+// Notice XLA implements Mod not IEEE754 Remainder operation.
+RemOp
+AndOp
+OrOp
+XorOp
+DotOp
+MinOp
+MaxOp
+PowOp
+ComplexOp
+
+// Two-arguments comparison ops:
+EqualOp
+NotEqualOp
+GreaterOrEqualOp
+GreaterThanOp
+LessOrEqualOp
+LessThanOp
+EqualTotalOrderOp
+NotEqualTotalOrderOp
+GreaterOrEqualTotalOrderOp
+GreaterThanTotalOrderOp
+LessOrEqualTotalOrderOp
+LessThanTotalOrderOp
+
+// Ops with variable sets of arguments.
+RngBitGeneratorOp
+RngNormalOp
+RngUniformOp

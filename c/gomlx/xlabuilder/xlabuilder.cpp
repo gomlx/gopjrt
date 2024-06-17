@@ -23,6 +23,8 @@
 
 #include "gomlx/xlabuilder/literal.h"
 #include "gomlx/xlabuilder/utils.h"
+#include "gomlx/xlabuilder/op.h"
+#include "gomlx/xlabuilder/gen_op_types.h"
 
 #include "xla/client/xla_builder.h"
 #include "xla/client/xla_computation.h"
@@ -55,7 +57,7 @@ void DestroyXlaOp(XlaOp *op) {
 
 xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
                                                        xla::XlaOp &init_op,
-                                                       int32_t node_type) {
+                                                       int32_t op_type) {
   auto shape_or = builder->GetShape(init_op);
   if (!shape_or.ok()) {
     return shape_or.status();
@@ -63,135 +65,135 @@ xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
   xla::PrimitiveType primitive_type =
       shape_or.value().element_type(); // They are both ints.
 
-  switch (node_type) {
-  case ReduceSumNode:
+  switch (op_type) {
+  case ReduceSumOp:
     return CreateScalarAddComputation(primitive_type, builder);
-  case ReduceMaxNode:
+  case ReduceMaxOp:
     return CreateScalarMaxComputation(primitive_type, builder);
-  case ReduceMultiplyNode:
+  case ReduceMultiplyOp:
     return CreateScalarMultiplyComputation(primitive_type, builder);
   }
   return xla::Status(
       absl::StatusCode::kInvalidArgument,
-      absl::StrFormat("invalid node_type=%d for xlaCompForReduction",
-                      node_type));
+      absl::StrFormat("invalid op_type=%d for xlaCompForReduction",
+                      op_type));
 }
 
-XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
+XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   // Create new XlaOp.
   // TODO: A registration mechanism, where one can implement different
-  // node_types in different files or libraries even.
+  // op_types in different files or libraries even.
   xla::XlaOp op;
 
   // Extract optional parameters.
-  xla::XlaOp **inputs = node->inputs;
-  absl::Span<const int64_t> list_of_ints(node->integer_array,
-                                         node->integer_array_size);
+  xla::XlaOp **inputs = serialized_op->inputs;
+  absl::Span<const int64_t> list_of_ints(serialized_op->integer_array,
+                                         serialized_op->integer_array_size);
   absl::Span<const int64_t> shape_dimensions;
   xla::Shape shape;
-  if (node->shape != nullptr) {
+  if (serialized_op->shape != nullptr) {
     shape_dimensions =
-        absl::Span<const int64_t>(node->shape->dimensions, node->shape->rank);
-    shape = MakeXlaShape(node->shape);
+        absl::Span<const int64_t>(serialized_op->shape->dimensions, serialized_op->shape->rank);
+    shape = MakeXlaShape(serialized_op->shape);
   }
 
   // Tool to decode contents encoded in the integer array.
   int integer_array_pos = 0;
-  auto decode = [&integer_array_pos, node]() {
-    return node->integer_array[integer_array_pos++];
+  auto decode = [&integer_array_pos, serialized_op]() {
+    return serialized_op->integer_array[integer_array_pos++];
   };
-  auto decodeSpan = [&integer_array_pos, node](int len) {
+  auto decodeSpan = [&integer_array_pos, serialized_op](int len) {
     const absl::Span<const int64_t> result(
-        node->integer_array + integer_array_pos, len);
+        serialized_op->integer_array + integer_array_pos, len);
     integer_array_pos += len;
     return result;
   };
 
-  // Switch for each node type.
-  switch (node->node_type) {
+  // Switch for each op type.
+  switch (serialized_op->op_type) {
 
   // Special ops:
-  case ConstantNode:
-    op = xla::ConstantLiteral(builder, *node->literal->literal);
+  case ConstantOp:
+    op = xla::ConstantLiteral(builder, *serialized_op->literal->literal);
     break;
-  case IotaNode:
-    op = xla::Iota(builder, shape, node->integer);
+  case IotaOp:
+    op = xla::Iota(builder, shape, serialized_op->integer);
     break;
-  case ParameterNode:
-    op = xla::Parameter(builder, node->integer, shape, node->string);
+  case ParameterOp:
+    op = xla::Parameter(builder, serialized_op->integer, shape, serialized_op->string);
     break;
-  case ConvertTypeNode:
+  case ConvertTypeOp:
     op = xla::ConvertElementType(
-        *inputs[0], static_cast<xla::PrimitiveType>(node->integer));
+        *inputs[0], static_cast<xla::PrimitiveType>(serialized_op->integer));
     break;
-  case WhereNode:
+  case WhereOp:
     op = xla::Select(*inputs[0], *inputs[1], *inputs[2]);
     break;
-  case TupleNode: {
+  case TupleOp: {
     std::vector<xla::XlaOp> ops;
-    ops.reserve(node->num_inputs);
-    for (int ii = 0; ii < node->num_inputs; ii++) {
+    ops.reserve(serialized_op->num_inputs);
+    for (int ii = 0; ii < serialized_op->num_inputs; ii++) {
       ops.push_back(xla::XlaOp(*inputs[ii]));
     }
     op = xla::Tuple(builder, ops);
     break;
   }
-  case GetTupleElementNode:
-    op = xla::GetTupleElement(*inputs[0], node->integer);
+  case GetTupleElementOp:
+    op = xla::GetTupleElement(*inputs[0], serialized_op->integer);
     break;
-  case ReshapeNode:
+  case ReshapeOp:
     op = xla::Reshape(*inputs[0], shape_dimensions);
     break;
-  case BroadcastNode:
+  case BroadcastOp:
     op = xla::Broadcast(*inputs[0], list_of_ints);
     break;
-  case BroadcastInDimNode:
+  case BroadcastInDimOp:
     op = xla::BroadcastInDim(*inputs[0], shape_dimensions, list_of_ints);
     break;
-  case ReduceSumNode:
-  case ReduceMultiplyNode:
-  case ReduceMaxNode: {
+  case ReduceSumOp:
+  case ReduceMultiplyOp:
+  case ReduceMaxOp: {
     auto reduce_comp_or =
-        xlaCompForReduction(builder, *inputs[1], node->node_type);
+        xlaCompForReduction(builder, *inputs[1], serialized_op->op_type);
     if (!reduce_comp_or.ok()) {
       return new xla::Status(reduce_comp_or.status());
     }
     auto reduce_comp = std::move(reduce_comp_or.value());
-    if (node->integer_array_size > 0) {
+    if (serialized_op->integer_array_size > 0) {
       op = xla::Reduce(*inputs[0], *inputs[1], reduce_comp, list_of_ints);
     } else {
       op = xla::ReduceAll(*inputs[0], *inputs[1], reduce_comp);
     }
     break;
   }
-  case ArgMinMaxNode: {
+  case ArgMinMaxOp: {
     // Inputs:
     //   * inputs[0]: Tensor to `num_inputs_to_reduce` pairs of input/initial
     //   value.
-    //   * node->integer: Axis on which to calculate the argmax/argmin.
-    //   * node->integer_array[0]: `is_min`, whether to do argmin or argmax.
-    //   * node->integer_array[1]: DType of the output.
-    int axis(node->integer);
-    bool is_min(node->integer_array[0]);
+    //   * serialized_op->integer: Axis on which to calculate the argmax/argmin.
+    //   * serialized_op->integer_array[0]: `is_min`, whether to do argmin or argmax.
+    //   * serialized_op->integer_array[1]: DType of the output.
+    int axis(serialized_op->integer);
+    bool is_min(serialized_op->integer_array[0]);
     xla::PrimitiveType output_type =
-        static_cast<xla::PrimitiveType>(node->integer_array[1]);
+        static_cast<xla::PrimitiveType>(serialized_op->integer_array[1]);
     op = xla::ArgMinMax(*inputs[0], output_type, axis, is_min);
     break;
   }
-  case SliceNode: {
-    int rank = node->integer_array_size / 3;
-    absl::Span<const int64_t> starts(node->integer_array, rank);
-    absl::Span<const int64_t> limits(node->integer_array + rank, rank);
-    absl::Span<const int64_t> strides(node->integer_array + 2 * rank, rank);
+  case SliceOp: {
+    int rank = serialized_op->integer_array_size / 3;
+    absl::Span<const int64_t> starts(serialized_op->integer_array, rank);
+    absl::Span<const int64_t> limits(serialized_op->integer_array + rank, rank);
+    absl::Span<const int64_t> strides(serialized_op->integer_array + 2 * rank, rank);
     op = xla::Slice(*inputs[0], starts, limits, strides);
     break;
   }
-  case PadNode: {
+  case PadOp: {
     auto &operand = *inputs[0];
     auto &pad_value = *inputs[1];
 
     xla::PaddingConfig config;
-    int rank = node->integer_array_size / 3;
+    int rank = serialized_op->integer_array_size / 3;
     for (int ii = 0; ii < rank; ii++) {
       auto axisConfig = config.add_dimensions();
       axisConfig->set_edge_padding_low(decode());
@@ -202,53 +204,53 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
     op = xla::Pad(operand, pad_value, config);
     break;
   }
-  case GatherNode: {
+  case GatherOp: {
     xla::GatherDimensionNumbers gather_dims;
-    int64_t index_vector_dim = node->integer_array[0];
+    int64_t index_vector_dim = serialized_op->integer_array[0];
     gather_dims.set_index_vector_dim(index_vector_dim);
-    int64_t len_offset_dims = node->integer_array[1];
-    int64_t len_collapsed_slice_dims = node->integer_array[2];
-    int64_t len_start_index_map = node->integer_array[3];
-    int64_t len_slice_sizes = node->integer_array[4];
-    bool indices_are_sorted = bool(node->integer_array[5]);
+    int64_t len_offset_dims = serialized_op->integer_array[1];
+    int64_t len_collapsed_slice_dims = serialized_op->integer_array[2];
+    int64_t len_start_index_map = serialized_op->integer_array[3];
+    int64_t len_slice_sizes = serialized_op->integer_array[4];
+    bool indices_are_sorted = bool(serialized_op->integer_array[5]);
     int pos = 6;
     for (int ii = 0; ii < len_offset_dims; ii++) {
-      gather_dims.mutable_offset_dims()->Add(node->integer_array[pos++]);
+      gather_dims.mutable_offset_dims()->Add(serialized_op->integer_array[pos++]);
     }
     for (int ii = 0; ii < len_collapsed_slice_dims; ii++) {
       gather_dims.mutable_collapsed_slice_dims()->Add(
-          node->integer_array[pos++]);
+          serialized_op->integer_array[pos++]);
     }
     for (int ii = 0; ii < len_start_index_map; ii++) {
-      gather_dims.mutable_start_index_map()->Add(node->integer_array[pos++]);
+      gather_dims.mutable_start_index_map()->Add(serialized_op->integer_array[pos++]);
     }
     // Same for collapsed_slice_dims and start_index_map
-    absl::Span<const int64_t> slice_sizes(node->integer_array + pos,
+    absl::Span<const int64_t> slice_sizes(serialized_op->integer_array + pos,
                                           len_slice_sizes);
     op = xla::Gather(*inputs[0], *inputs[1], gather_dims, slice_sizes,
                      indices_are_sorted);
     break;
   }
-  case ScatterNode: {
+  case ScatterOp: {
     int pos = 0;
     xla::ScatterDimensionNumbers scatter_dims;
-    scatter_dims.set_index_vector_dim(node->integer_array[pos++]);
-    bool unique_indices = bool(node->integer_array[pos++]);
-    bool indices_are_sorted = bool(node->integer_array[pos++]);
-    int64_t len_update_window_dims = node->integer_array[pos++];
-    int64_t len_inserted_window_dims = node->integer_array[pos++];
-    int64_t len_scatter_dims_to_operand_dims = node->integer_array[pos++];
+    scatter_dims.set_index_vector_dim(serialized_op->integer_array[pos++]);
+    bool unique_indices = bool(serialized_op->integer_array[pos++]);
+    bool indices_are_sorted = bool(serialized_op->integer_array[pos++]);
+    int64_t len_update_window_dims = serialized_op->integer_array[pos++];
+    int64_t len_inserted_window_dims = serialized_op->integer_array[pos++];
+    int64_t len_scatter_dims_to_operand_dims = serialized_op->integer_array[pos++];
     for (int ii = 0; ii < len_update_window_dims; ii++) {
       scatter_dims.mutable_update_window_dims()->Add(
-          node->integer_array[pos++]);
+          serialized_op->integer_array[pos++]);
     }
     for (int ii = 0; ii < len_inserted_window_dims; ii++) {
       scatter_dims.mutable_inserted_window_dims()->Add(
-          node->integer_array[pos++]);
+          serialized_op->integer_array[pos++]);
     }
     for (int ii = 0; ii < len_scatter_dims_to_operand_dims; ii++) {
       scatter_dims.mutable_scatter_dims_to_operand_dims()->Add(
-          node->integer_array[pos++]);
+          serialized_op->integer_array[pos++]);
     }
     // Create the update computation: only Add supported for now.
     auto shape_or = builder->GetShape(*inputs[0]);
@@ -262,15 +264,15 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
                  scatter_dims, indices_are_sorted, unique_indices);
     break;
   }
-  case ConcatenateNode: {
+  case ConcatenateOp: {
     vector<xla::XlaOp> operands;
-    for (int ii = 0; ii < node->num_inputs; ii++) {
+    for (int ii = 0; ii < serialized_op->num_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
-    op = xla::ConcatInDim(inputs[0]->builder(), operands, node->integer);
+    op = xla::ConcatInDim(inputs[0]->builder(), operands, serialized_op->integer);
     break;
   }
-  case ConvGeneralDilatedNode: {
+  case ConvGeneralDilatedOp: {
     int64_t num_spatial_dims = decode();
     int64_t filter_group_count = decode();
     int64_t batch_group_count = decode();
@@ -324,20 +326,20 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
         window_reversal);
     break;
   }
-  case ReverseNode: {
-    op = Rev(*inputs[0], absl::Span<const int64_t>(node->integer_array,
-                                                   node->integer_array_size));
+  case ReverseOp: {
+    op = Rev(*inputs[0], absl::Span<const int64_t>(serialized_op->integer_array,
+                                                   serialized_op->integer_array_size));
     break;
   }
-  case TransposeNode: {
+  case TransposeOp: {
     op = Transpose(*inputs[0],
-                   absl::Span<const int64_t>(node->integer_array,
-                                             node->integer_array_size));
+                   absl::Span<const int64_t>(serialized_op->integer_array,
+                                             serialized_op->integer_array_size));
     break;
   }
-  case ReduceWindowNode: {
+  case ReduceWindowOp: {
     // Create reduction comp.
-    int64_t reduction_type = node->integer;
+    int64_t reduction_type = serialized_op->integer;
     auto reduce_comp_or =
         xlaCompForReduction(builder, *inputs[1], reduction_type);
     if (!reduce_comp_or.ok()) {
@@ -366,7 +368,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
         base_dilations, window_dilations, paddings);
     break;
   }
-  case SelectAndScatterNode: {
+  case SelectAndScatterOp: {
     // All operands.
     auto &operand = *inputs[0];
     auto &source = *inputs[1];
@@ -400,40 +402,40 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
         source, init_value, scatter_comp);
     break;
   }
-  case BatchNormInferenceNode: {
+  case BatchNormInferenceOp: {
     auto &operand = *inputs[0];
     auto &scale = *inputs[1];
     auto &offset = *inputs[2];
     auto &mean = *inputs[3];
     auto &variance = *inputs[4];
-    float epsilon = node->float_v;
-    int64_t feature_index = node->integer;
+    float epsilon = serialized_op->float_v;
+    int64_t feature_index = serialized_op->integer;
     op = xla::BatchNormInference(operand, scale, offset, mean, variance,
                                  epsilon, feature_index);
     break;
   }
-  case BatchNormTrainingNode: {
+  case BatchNormTrainingOp: {
     auto &operand = *inputs[0];
     auto &scale = *inputs[1];
     auto &offset = *inputs[2];
-    float epsilon = node->float_v;
-    int64_t feature_index = node->integer;
+    float epsilon = serialized_op->float_v;
+    int64_t feature_index = serialized_op->integer;
     op = xla::BatchNormTraining(operand, scale, offset, epsilon, feature_index);
     break;
   }
-  case BatchNormGradNode: {
+  case BatchNormGradOp: {
     auto &operand = *inputs[0];
     auto &scale = *inputs[1];
     auto &batch_mean = *inputs[2];
     auto &batch_var = *inputs[3];
     auto &grad_output = *inputs[4];
-    float epsilon = node->float_v;
-    int64_t feature_index = node->integer;
+    float epsilon = serialized_op->float_v;
+    int64_t feature_index = serialized_op->integer;
     op = xla::BatchNormGrad(operand, scale, batch_mean, batch_var, grad_output,
                             epsilon, feature_index);
     break;
   }
-  case DotGeneralNode: {
+  case DotGeneralOp: {
     auto &lhs = *inputs[0]; // left-hand-side.
     auto &rhs = *inputs[1];
     xla::DotDimensionNumbers dims;
@@ -462,172 +464,172 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
   }
 
   // One-argument ops:
-  case AbsNode:
+  case AbsOp:
     op = xla::Abs(*inputs[0]);
     break;
-  case NegNode:
+  case NegOp:
     op = xla::Neg(*inputs[0]);
     break;
-  case ExpNode:
+  case ExpOp:
     op = xla::Exp(*inputs[0]);
     break;
-  case Expm1Node:
+  case Expm1Op:
     op = xla::Expm1(*inputs[0]);
     break;
-  case FloorNode:
+  case FloorOp:
     op = xla::Floor(*inputs[0]);
     break;
-  case CeilNode:
+  case CeilOp:
     op = xla::Ceil(*inputs[0]);
     break;
-  case RoundNode:
+  case RoundOp:
     op = xla::Round(*inputs[0]);
     break;
-  case LogNode:
+  case LogOp:
     op = xla::Log(*inputs[0]);
     break;
-  case Log1pNode:
+  case Log1pOp:
     op = xla::Log1p(*inputs[0]);
     break;
-  case LogicalNotNode:
+  case LogicalNotOp:
     op = xla::Not(*inputs[0]);
     break;
-  case LogisticNode:
+  case LogisticOp:
     op = xla::Logistic(*inputs[0]);
     break;
-  case SignNode:
+  case SignOp:
     op = xla::Sign(*inputs[0]);
     break;
-  case ClzNode:
+  case ClzOp:
     op = xla::Clz(*inputs[0]);
     break;
-  case CosNode:
+  case CosOp:
     op = xla::Cos(*inputs[0]);
     break;
-  case SinNode:
+  case SinOp:
     op = xla::Sin(*inputs[0]);
     break;
-  case TanhNode:
+  case TanhOp:
     op = xla::Tanh(*inputs[0]);
     break;
-  case SqrtNode:
+  case SqrtOp:
     op = xla::Sqrt(*inputs[0]);
     break;
-  case RsqrtNode:
+  case RsqrtOp:
     op = xla::Rsqrt(*inputs[0]);
     break;
-  case ImagNode:
+  case ImagOp:
     op = xla::Imag(*inputs[0]);
     break;
-  case RealNode:
+  case RealOp:
     op = xla::Real(*inputs[0]);
     break;
-  case ConjNode:
+  case ConjOp:
     op = xla::Conj(*inputs[0]);
     break;
 
   // Two-arguments ops
-  case AddNode:
+  case AddOp:
     op = xla::Add(*inputs[0], *inputs[1]);
     break;
-  case MulNode:
+  case MulOp:
     op = xla::Mul(*inputs[0], *inputs[1]);
     break;
-  case SubNode:
+  case SubOp:
     op = xla::Sub(*inputs[0], *inputs[1]);
     break;
-  case DivNode:
+  case DivOp:
     op = xla::Div(*inputs[0], *inputs[1]);
     break;
-  case RemNode:
+  case RemOp:
     op = xla::Rem(*inputs[0], *inputs[1]);
     break;
-  case AndNode:
+  case AndOp:
     op = xla::And(*inputs[0], *inputs[1]);
     break;
-  case OrNode:
+  case OrOp:
     op = xla::Or(*inputs[0], *inputs[1]);
     break;
-  case XorNode:
+  case XorOp:
     op = xla::Xor(*inputs[0], *inputs[1]);
     break;
-  case DotNode:
+  case DotOp:
     op = xla::Dot(*inputs[0], *inputs[1]);
     break;
-  case MinNode:
+  case MinOp:
     op = xla::Min(*inputs[0], *inputs[1]);
     break;
-  case MaxNode:
+  case MaxOp:
     op = xla::Max(*inputs[0], *inputs[1]);
     break;
-  case PowNode:
+  case PowOp:
     op = xla::Pow(*inputs[0], *inputs[1]);
     break;
-  case ComplexNode:
+  case ComplexOp:
     op = xla::Complex(*inputs[0], *inputs[1]);
     break;
 
   // Nodes with variable sets of arguments.
-  case RngNormalNode:
+  case RngNormalOp:
     op = xla::RngNormal(*inputs[0], *inputs[1], shape);
     break;
-  case RngUniformNode:
+  case RngUniformOp:
     op = xla::RngUniform(*inputs[0], *inputs[1], shape);
     break;
-  case RngBitGeneratorNode: {
+  case RngBitGeneratorOp: {
     xla::RandomAlgorithm algo =
-        static_cast<xla::RandomAlgorithm>(node->integer);
+        static_cast<xla::RandomAlgorithm>(serialized_op->integer);
     op = xla::RngBitGenerator(algo, *inputs[0], shape);
     break;
   }
-  case FftNode: {
-    xla::FftType fft_type = static_cast<xla::FftType>(node->integer);
+  case FftOp: {
+    xla::FftType fft_type = static_cast<xla::FftType>(serialized_op->integer);
     op = xla::Fft(*inputs[0], fft_type, list_of_ints);
     break;
   }
 
-  case EqualNode:
+  case EqualOp:
     op = xla::Eq(*inputs[0], *inputs[1]);
     break;
-  case NotEqualNode:
+  case NotEqualOp:
     op = xla::Ne(*inputs[0], *inputs[1]);
     break;
-  case GreaterOrEqualNode:
+  case GreaterOrEqualOp:
     op = xla::Ge(*inputs[0], *inputs[1]);
     break;
-  case GreaterThanNode:
+  case GreaterThanOp:
     op = xla::Gt(*inputs[0], *inputs[1]);
     break;
-  case LessOrEqualNode:
+  case LessOrEqualOp:
     op = xla::Le(*inputs[0], *inputs[1]);
     break;
-  case LessThanNode:
+  case LessThanOp:
     op = xla::Lt(*inputs[0], *inputs[1]);
     break;
-  case EqualTotalOrderNode:
+  case EqualTotalOrderOp:
     op = xla::EqTotalOrder(*inputs[0], *inputs[1]);
     break;
-  case NotEqualTotalOrderNode:
+  case NotEqualTotalOrderOp:
     op = xla::NeTotalOrder(*inputs[0], *inputs[1]);
     break;
-  case GreaterOrEqualTotalOrderNode:
+  case GreaterOrEqualTotalOrderOp:
     op = xla::GeTotalOrder(*inputs[0], *inputs[1]);
     break;
-  case GreaterThanTotalOrderNode:
+  case GreaterThanTotalOrderOp:
     op = xla::GtTotalOrder(*inputs[0], *inputs[1]);
     break;
-  case LessOrEqualTotalOrderNode:
+  case LessOrEqualTotalOrderOp:
     op = xla::LeTotalOrder(*inputs[0], *inputs[1]);
     break;
-  case LessThanTotalOrderNode:
+  case LessThanTotalOrderOp:
     op = xla::LtTotalOrder(*inputs[0], *inputs[1]);
     break;
 
   default:
     return new xla::Status(
         absl::StatusCode::kInvalidArgument,
-        absl::StrFormat("invalid node_type=%d for ComputationAddOp",
-                        node->node_type));
+        absl::StrFormat("invalid op_type=%d for ComputationAddOp",
+                        serialized_op->op_type));
   }
   if (!op.valid()) {
     auto status = builder->first_error();
@@ -636,17 +638,17 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedNode *node) {
     }
     return new xla::Status(
         absl::StatusCode::kInvalidArgument,
-        absl::StrFormat("failed to convert node to XLA: node_type=%d",
-                        node->node_type));
+        absl::StrFormat("failed to convert serialized_op to XLA: op_type=%d",
+                        serialized_op->op_type));
   }
-  node->new_op = new xla::XlaOp(op);
+  serialized_op->new_op = new xla::XlaOp(op);
 
   // Also retrieve of the shape of the resulting op.
-  auto shape_or = builder->GetShapePtr(*node->new_op);
+  auto shape_or = builder->GetShapePtr(*serialized_op->new_op);
   if (!shape_or.ok()) {
     return FromStatus(shape_or.status());
   }
-  node->new_shape = ShapeFromXlaShape(*shape_or.value());
+  serialized_op->new_shape = ShapeFromXlaShape(*shape_or.value());
   return nullptr;
 }
 

@@ -107,6 +107,6 @@ XlaStatus *FromStatus(const xla::Status &status) {
   return static_cast<XlaStatus *>(new xla::Status(status));
 }
 
-void DeleteXlaStatus(XlaStatus *xla_status) {
+void XlaStatusFree(XlaStatus *xla_status) {
   delete XlaStatusCast(xla_status);
 }

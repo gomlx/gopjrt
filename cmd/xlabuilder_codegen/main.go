@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"github.com/gomlx/exceptions"
 	"github.com/janpfeifer/must"
 	"os"
 	"strings"
@@ -10,13 +11,19 @@ import (
 
 const OpTypesFileName = "op_types.txt"
 
+type OpInfo struct {
+	Name, Type string
+}
+
 func main() {
 	// Read node_types.xt
-	opTypeNames := make([]string, 0, 200)
+	opInfos := make([]OpInfo, 0, 200)
 	f := must.M1(os.OpenFile(OpTypesFileName, os.O_RDONLY, os.ModePerm))
 	scanner := bufio.NewScanner(f)
+	lineNum := 0
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+		lineNum++
 		if line == "" {
 			// Skip empty lines
 			continue
@@ -25,10 +32,14 @@ func main() {
 			// Skip comments.
 			continue
 		}
-		opTypeNames = append(opTypeNames, line)
+		parts := strings.Split(line, ":")
+		if len(parts) != 2 {
+			exceptions.Panicf("Invalid op definition in %q:%d : %q", OpTypesFileName, lineNum, line)
+		}
+		opInfos = append(opInfos, OpInfo{Name: parts[0], Type: parts[1]})
 	}
 	must.M(scanner.Err())
 
 	// Create various Go generate files.
-	generateOpsEnums(opTypeNames)
+	generateOpsEnums(opInfos)
 }

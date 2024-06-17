@@ -158,7 +158,7 @@ extern char *number_to_string(int n);
 extern bool XlaStatusOk(XlaStatus *status);
 extern char *XlaStatusErrorMessage(XlaStatus *status);
 extern int XlaStatusCode(XlaStatus *status);
-extern void DeleteXlaStatus(XlaStatus *xla_status);
+extern void XlaStatusFree(XlaStatus *xla_status);
 
 #ifdef __cplusplus
 }

@@ -69,3 +69,14 @@ func cCharArray(data *C.char, len C.size_t) string {
 	buf := cDataToSlice[byte](unsafe.Pointer(data), int(len))
 	return string(buf)
 }
+
+// cStrFree converts the allocated C string (char *) to a Go `string` and
+// frees the C string immediately.
+func cStrFree(cstr *C.char) (str string) {
+	if cstr == nil {
+		return ""
+	}
+	str = C.GoString(cstr)
+	C.free(unsafe.Pointer(cstr))
+	return
+}

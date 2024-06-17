@@ -1,6 +1,6 @@
 /* DO NOT EDIT: this is a copy from chelper.go file */
 
-package pjrt
+package xlabuilder
 
 /*
 #include <stdlib.h>

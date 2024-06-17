@@ -41,17 +41,17 @@ using namespace std;
 // shape defined by xla::Shape. C++ only.
 extern Shape *ShapeFromXlaShape(const xla::Shape &shape);
 
-void DestroyXlaBuilder(XlaBuilder *builder) {
+XlaBuilder *NewXlaBuilder(char *name) {
+  return new xla::XlaBuilder(name);
+}
+
+void XlaBuilderDestroy(XlaBuilder *builder) {
   if (builder != nullptr) {
     delete builder;
   }
 }
 
-XlaBuilder *NewXlaBuilder(char *name) {
-  return new xla::XlaBuilder(name);
-}
-
-void DestroyXlaOp(XlaOp *op) {
+void XlaOpDestroy(XlaOp *op) {
     delete (static_cast<xla::XlaOp *>(op));
 }
 
@@ -653,7 +653,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
 }
 
 
-StatusOr SerializedHLO(XlaBuilder *builder, XlaOp *output) {
+StatusOr XlaBuilderSerializedHLO(XlaBuilder *builder, XlaOp *output) {
   StatusOr r{0, 0};
 
   // Build XlaComputation.

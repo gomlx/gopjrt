@@ -59,16 +59,16 @@ extern XlaBuilder *NewXlaBuilder(char *name);
 // The caller owns `node` before and after the call.
 extern XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op);
 
-// DestroyXlaBuilder destroys and frees the builder.
-extern void DestroyXlaBuilder(XlaBuilder *builder);
+// XlaBuilderDestroy destroys and frees the builder.
+extern void XlaBuilderDestroy(XlaBuilder *builder);
 
-// DestroyXlaOp destroys the XlaOp reference.
-extern void DestroyXlaOp(XlaOp *op);
+// XlaOpDestroy destroys the XlaOp reference.
+extern void XlaOpDestroy(XlaOp *op);
 
-// SerializedHLO converts the computation built using XlaBuilder to a serialized HLO proto, that can be used by PJRT.
+// XlaBuilderSerializedHLO converts the computation built using XlaBuilder to a serialized HLO proto, that can be used by PJRT.
 //
 // It returns an error or a VectorData of bytes, with the serialized HLO proto (format is "hlo" when using in PJRT).
-extern StatusOr SerializedHLO(XlaBuilder *builder, XlaOp *output_node);
+extern StatusOr XlaBuilderSerializedHLO(XlaBuilder *builder, XlaOp *output_node);
 
 #ifdef __cplusplus
 }

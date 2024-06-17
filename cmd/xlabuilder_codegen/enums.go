@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 enum OpType {
-{{range .}}  {{.}},
+{{range .}}  {{.Name}}Op,
 {{end}}};
 
 #ifdef __cplusplus
@@ -49,13 +49,13 @@ enum OpType {
 `))
 )
 
-func generateOpsEnums(opTypeNames []string) {
-	declarations := make([]string, len(opTypeNames))
-	for ii, name := range opTypeNames {
+func generateOpsEnums(opsInfo []OpInfo) {
+	declarations := make([]string, len(opsInfo))
+	for ii, info := range opsInfo {
 		if ii == 0 {
-			declarations[ii] = fmt.Sprintf("%s OpType = iota", name)
+			declarations[ii] = fmt.Sprintf("%sOp OpType = iota", info.Name)
 		} else {
-			declarations[ii] = name
+			declarations[ii] = fmt.Sprintf("%sOp", info.Name)
 		}
 	}
 
@@ -69,7 +69,7 @@ func generateOpsEnums(opTypeNames []string) {
 
 	// C Enums
 	f = must.M1(os.Create(enumCFileName))
-	must.M(enumCTemplate.Execute(f, opTypeNames))
+	must.M(enumCTemplate.Execute(f, opsInfo))
 	fmt.Printf("Generated %q based on %q\n", enumCFileName, OpTypesFileName)
 
 }

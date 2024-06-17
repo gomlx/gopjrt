@@ -1,102 +1,104 @@
-// List of node type names: used to generate Go and C code with the corresponding enum types and other
+// List of ops and their informal types: used to generate Go and C code with the corresponding enum types and other
 // boilerplate code.
 //
 // The program gopjrt/cmd/xlabuilder_codegen is used to generate the code. It is configured as a `go:generate`
 // rule in xlabuilder package.
 //
 // Format:
+// - <op_name>:<op_type>, where <op_name> is used to generate enums and function names, and <op_type> is used
+//   to condition the generation of code.
 // - Any empty lines or lines starting with // or # are comments.
 // - Any line with a node type should not have anything else (no comments after the node type name)
 // - Order matter
 
-// InvalidOp should always be the first one.
-InvalidOp
+// Invalid should always be the first one.
+Invalid:invalid
 
 // Special ops:
-ConstantOp
-IotaOp
-ParameterOp
-ConvertTypeOp
-WhereOp
-TupleOp
-GetTupleElementOp
-ReshapeOp
-BroadcastOp
-BroadcastInDimOp
-ReduceSumOp
-ReduceMaxOp
-ReduceMultiplyOp
-SliceOp
-PadOp
-GatherOp
-ScatterOp
-ConcatenateOp
-ConvGeneralDilatedOp
-ReverseOp
-TransposeOp
-ReduceWindowOp
-SelectAndScatterOp
-BatchNormTrainingOp
-BatchNormInferenceOp
-BatchNormGradOp
-DotGeneralOp
-ArgMinMaxOp
-FftOp
+Constant:special
+Iota:special
+Parameter:special
+ConvertType:special
+Where:special
+Tuple:special
+GetTupleElement:special
+Reshape:special
+Broadcast:special
+BroadcastInDim:special
+ReduceSum:special
+ReduceMax:special
+ReduceMultiply:special
+Slice:special
+Pad:special
+Gather:special
+Scatter:special
+Concatenate:special
+ConvGeneralDilated:special
+Reverse:special
+Transpose:special
+ReduceWindow:special
+SelectAndScatter:special
+BatchNormTraining:special
+BatchNormInference:special
+BatchNormGrad:special
+DotGeneral:special
+ArgMinMax:special
+Fft:special
 
 // One-argument ops:
-AbsOp
-NegOp
-ExpOp
-Expm1Op
-FloorOp
-CeilOp
-RoundOp
-LogOp
-Log1pOp
-LogicalNotOp
-LogisticOp
-SignOp
-ClzOp
-CosOp
-SinOp
-TanhOp
-SqrtOp
-RsqrtOp
-ImagOp
-RealOp
-ConjOp
+Abs:one
+Neg:one
+Exp:one
+Expm1:one
+Floor:one
+Ceil:one
+Round:one
+Log:one
+Log1p:one
+LogicalNot:one
+Logistic:one
+Sign:one
+Clz:one
+Cos:one
+Sin:one
+Tanh:one
+Sqrt:one
+Rsqrt:one
+Imag:one
+Real:one
+Conj:one
 
 // Two-arguments ops:
-AddOp
-MulOp
-SubOp
-DivOp
+Add:two
+Mul:two
+Sub:two
+Div:two
 // Notice XLA implements Mod not IEEE754 Remainder operation.
-RemOp
-AndOp
-OrOp
-XorOp
-DotOp
-MinOp
-MaxOp
-PowOp
-ComplexOp
+Rem:two
+And:two
+Or:two
+Xor:two
+Dot:two
+Min:two
+Max:two
+Pow:two
+Complex:two
 
 // Two-arguments comparison ops:
-EqualOp
-NotEqualOp
-GreaterOrEqualOp
-GreaterThanOp
-LessOrEqualOp
-LessThanOp
-EqualTotalOrderOp
-NotEqualTotalOrderOp
-GreaterOrEqualTotalOrderOp
-GreaterThanTotalOrderOp
-LessOrEqualTotalOrderOp
-LessThanTotalOrderOp
+Equal:two_cmp
+NotEqual:two_cmp
+GreaterOrEqual:two_cmp
+GreaterThan:two_cmp
+LessOrEqual:two_cmp
+LessThan:two_cmp
+EqualTotalOrder:two_cmp
+NotEqualTotalOrder:two_cmp
+GreaterOrEqualTotalOrder:two_cmp
+GreaterThanTotalOrder:two_cmp
+LessOrEqualTotalOrder:two_cmp
+LessThanTotalOrder:two_cmp
 
 // Ops with variable sets of arguments.
-RngBitGeneratorOp
-RngNormalOp
-RngUniformOp
+RngBitGenerator:sets
+RngNormal:sets
+RngUniform:sets

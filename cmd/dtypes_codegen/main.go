@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-const pjrtCAPIHFilePath = "../pjrt_c_api.h"
+const pjrtCAPIHFilePath = "../pjrt/pjrt_c_api.h"
 
 func main() {
 	// Read pjrt_c_api.h

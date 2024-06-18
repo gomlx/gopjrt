@@ -51,12 +51,12 @@ func newOp(opType OpType, opInputs ...*Op) *Op {
 		Type:     opType,
 		OpInputs: opInputs,
 	}
-	runtime.SetFinalizer(op, op.finalize)
+	runtime.SetFinalizer(op, opFinalizer)
 	return op
 }
 
-// finalize by freeing the underlying C++ resources.
-func (op *Op) finalize() {
+// opFinalizer by freeing the underlying C++ resources.
+func opFinalizer(op *Op) {
 	if op.cOp == nil {
 		return
 	}

@@ -5,7 +5,9 @@ package xlabuilder
 */
 import "C"
 import (
+	"github.com/gomlx/exceptions"
 	"gopjrt/dtypes"
+	"slices"
 	"unsafe"
 )
 
@@ -24,6 +26,18 @@ type Shape struct {
 	Dimensions []int
 
 	TupleShapes []Shape // Shapes of the tuple, if this is a tuple.
+}
+
+// MakeShape filled with the values given.
+// It doesn't work for tuple shapes.
+func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
+	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
+	for _, dim := range dimensions {
+		if dim <= 0 {
+			exceptions.Panicf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+		}
+	}
+	return s
 }
 
 // Rank of a shape is the number of axes. A shortcut to len(Shape.Dimensions).

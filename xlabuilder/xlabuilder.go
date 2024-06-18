@@ -89,6 +89,11 @@ type CBuffer interface {
 	Free()
 }
 
+// CBufferToBytes create an unsafe buffer slice to the underlying data, if one wants to use it from Go.
+func CBufferToBytes(cBuf CBuffer) []byte {
+	return unsafe.Slice((*byte)(cBuf.Data()), cBuf.Size())
+}
+
 // cBuffer implements CBuffer.
 type cBuffer struct {
 	data unsafe.Pointer

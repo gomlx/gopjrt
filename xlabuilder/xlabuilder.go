@@ -57,6 +57,9 @@ func (b *XlaBuilder) Free() {
 // addOp will add the operation described by op.
 // If it succeeds it fills the fields Op.index and Op.op, with the C++ references.
 func (b *XlaBuilder) addOp(op *Op) error {
+	if b == nil {
+		return errors.Errorf("trying to add op %s to a nil XlaBuilder", op.Type)
+	}
 	if op.builder != nil {
 		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cBuilder", op.Type)
 	}

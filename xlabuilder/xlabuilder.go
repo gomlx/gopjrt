@@ -27,31 +27,49 @@ import (
 // Some observations:
 //
 //   - The XlaBuilder is used by all ops creating functions (like "Add", "Mul", etc.). But since the input of most ops,
-//     are other created ops, and they hold a link to the builder, there is no need to explicitly pass the XlaBuilder to
+//     are other created ops, and they hold a link to the cBuilder, there is no need to explicitly pass the XlaBuilder to
 //     every op function.
 type XlaBuilder struct {
-	builder *C.XlaBuilder
+	cBuilder *C.XlaBuilder
 }
 
 // New create a new XlaBuilder with the given name, that can be used to create a new StableHLO program.
 // See details on how to use it on XlaBuilder.
 func New(name string) *XlaBuilder {
-	var builder *C.XlaBuilder
+	var cBuilder *C.XlaBuilder
 	cName := C.CString(name)
-	builder = C.NewXlaBuilder(cName)
+	cBuilder = C.NewXlaBuilder(cName)
 	cFree(cName)
-	return &XlaBuilder{builder: builder}
+	return &XlaBuilder{cBuilder: cBuilder}
 }
 
-// Free must be called once the builder is done to free the underlying object.
+// Free must be called once the cBuilder is done to free the underlying object.
 // The garbage collector won't free it by itself.
 // It can be called more than once -- once finalized the first time, it becomes a no-op.
 func (b *XlaBuilder) Free() {
-	if b.builder == nil {
+	if b.cBuilder == nil {
 		return
 	}
-	C.XlaBuilderDestroy(unsafe.Pointer(b.builder))
-	b.builder = nil
+	C.XlaBuilderDestroy(unsafe.Pointer(b.cBuilder))
+	b.cBuilder = nil
+}
+
+// addOp will add the operation described by op.
+// If it succeeds it fills the fields Op.index and Op.op, with the C++ references.
+func (b *XlaBuilder) addOp(op *Op) error {
+	if op.builder != nil {
+		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cBuilder", op.Type)
+	}
+	op.builder = b
+	serializedOp := serializeToC(op)
+	err := errorFromStatus(C.XlaBuilderAddOp(b.cBuilder, serializedOp))
+	if err != nil {
+		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
+	}
+	op.cOp = serializedOp.new_op
+	op.Shape = shapeFromCShape(serializedOp.new_shape)
+	freeCSerializedOp(serializedOp)
+	return nil
 }
 
 // CBuffer defines an interface of something that returns a pointer to an area managed by C memory manager.
@@ -93,7 +111,7 @@ var _ CBuffer = (*cBuffer)(nil)
 //
 // It takes as input outputOp that is returned by the program.
 func (b *XlaBuilder) StableHLO(outputOp *Op) (CBuffer, error) {
-	statusOr := C.XlaBuilderSerializedHLO(unsafe.Pointer(b.builder), unsafe.Pointer(outputOp.op))
+	statusOr := C.XlaBuilderSerializedHLO(unsafe.Pointer(b.cBuilder), unsafe.Pointer(outputOp.cOp))
 	var err error
 	var vectorData *C.VectorData
 	vectorData, err = pointerOrError[C.VectorData](statusOr)

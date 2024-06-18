@@ -79,6 +79,7 @@ xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
                       op_type));
 }
 
+// TODO: Rewrite with more sane serialized representation, and for simple ops, auto-generated.
 XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   // Create new XlaOp.
   // TODO: A registration mechanism, where one can implement different
@@ -651,7 +652,6 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   serialized_op->new_shape = ShapeFromXlaShape(*shape_or.value());
   return nullptr;
 }
-
 
 StatusOr XlaBuilderSerializedHLO(XlaBuilder *builder, XlaOp *output) {
   StatusOr r{0, 0};

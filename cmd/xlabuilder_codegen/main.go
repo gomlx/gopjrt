@@ -17,7 +17,7 @@ type OpInfo struct {
 
 func main() {
 	// Read node_types.xt
-	opInfos := make([]OpInfo, 0, 200)
+	opsInfo := make([]OpInfo, 0, 200)
 	f := must.M1(os.OpenFile(OpTypesFileName, os.O_RDONLY, os.ModePerm))
 	scanner := bufio.NewScanner(f)
 	lineNum := 0
@@ -36,10 +36,11 @@ func main() {
 		if len(parts) != 2 {
 			exceptions.Panicf("Invalid op definition in %q:%d : %q", OpTypesFileName, lineNum, line)
 		}
-		opInfos = append(opInfos, OpInfo{Name: parts[0], Type: parts[1]})
+		opsInfo = append(opsInfo, OpInfo{Name: parts[0], Type: parts[1]})
 	}
 	must.M(scanner.Err())
 
 	// Create various Go generate files.
-	generateOpsEnums(opInfos)
+	generateOpsEnums(opsInfo)
+	GenerateSimpleGoOps(opsInfo)
 }

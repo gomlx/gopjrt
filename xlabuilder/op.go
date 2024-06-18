@@ -6,17 +6,20 @@ package xlabuilder
 #include <gomlx/xlabuilder/xlabuilder.h>
 */
 import "C"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 // Op holds information about an Op that is part of a computation being built with an XlaBuilder.
 //
-// Each operation (e.g: Add, Mul) will return an Op that represents both the operation itself as well as the output
+// Each operation (e.g: Add, Mul) will return an Op that represents both the operation itself and the output
 // of that operation, which can be used as input of another.
 //
 // While the public fields can be introspected, they shouldn't be changed.
 type Op struct {
-	op    *C.XlaOp
-	index int32 // Op index
+	builder *XlaBuilder
+	cOp     *C.XlaOp // Pointer to a reference to the underlying C++ object. This should be deleted once Op is garbage collected.
 
 	// Type is an OpType enum.
 	Type OpType
@@ -25,18 +28,43 @@ type Op struct {
 	// Other inputs are "static", meaning they are independent of the values during the calculation.
 	OpInputs []*Op // Index to other nodes that are used as inputs.
 
+	// Shape of the result of this Op.
+	Shape Shape
+
 	// TODO: Re-write these into more readable arguments to the various operations.
 
-	Literal *Literal // If a Literal (constant) is involved in the operation.
-	Int     int      // Used for any static integer inputs.
-	Shape   Shape    // If a shape is used as a static input.
-	Str     string   // Used for any static string argument.
-	Ints    []int    // List of integer numbers.
-	Float   float32  // For a float parameter.
-
+	Literal  *Literal // If a Literal (constant) is involved in the operation.
+	Int      int      // Used for any static integer inputs.
+	Str      string   // Used for any static string argument.
+	Ints     []int    // List of integer numbers.
+	Float    float32  // For a float parameter.
+	ShapeArg Shape    // For Ops that require a shape parameter.
 }
 
-func serializedToC(op *Op) *C.SerializedOp {
+// newOp creates the Op of the given type with the given Op inputs and sets the correct finalizer.
+//
+// After this Op is created, other static arguments (if any) need to be set, and finally
+// it needs to be added to the computation with XlaBuilder.addOp.
+func newOp(opType OpType, opInputs ...*Op) *Op {
+	op := &Op{
+		Type:     opType,
+		OpInputs: opInputs,
+	}
+	runtime.SetFinalizer(op, op.finalize)
+	return op
+}
+
+// finalize by freeing the underlying C++ resources.
+func (op *Op) finalize() {
+	if op.cOp == nil {
+		return
+	}
+	C.XlaOpFree(op.cOp)
+	op.cOp = nil
+}
+
+// serializeToC convert an Op not yet added to XlaBuilder to a C.SerializedOp that can be used by the C-wrapper library.
+func serializeToC(op *Op) *C.SerializedOp {
 	// Allocate and set C.SerializedOps struct using Go memory. It can be discarded when this function exit.
 	numInputs := len(op.OpInputs)
 	var sOp *C.SerializedOp
@@ -52,7 +80,7 @@ func serializedToC(op *Op) *C.SerializedOp {
 			return (C.XlaOpPtr)(unsafe.Pointer(op.OpInputs[ii]))
 		})
 	}
-	sOp.shape = cShapeFromShape(op.Shape)
+	sOp.shape = cShapeFromShape(op.ShapeArg)
 	if op.Str != "" {
 		sOp.string = C.CString(op.Str)
 	}
@@ -68,27 +96,27 @@ func serializedToC(op *Op) *C.SerializedOp {
 
 // freeCSerializedOp frees the C allocated memory within cNode. Note that cNode itself is assumed to be
 // allocated in Go space, hence it is (and should be) automatically garbage collected.
-func freeCSerializedOp(cNode *C.SerializedOp) {
-	if cNode.inputs != nil {
-		C.free(unsafe.Pointer(cNode.inputs))
-		cNode.inputs = nil
-		cNode.num_inputs = 0
+func freeCSerializedOp(cOp *C.SerializedOp) {
+	if cOp.inputs != nil {
+		C.free(unsafe.Pointer(cOp.inputs))
+		cOp.inputs = nil
+		cOp.num_inputs = 0
 	}
-	if cNode.shape != nil {
-		C.DeleteShape(cNode.shape)
-		cNode.shape = nil
+	if cOp.shape != nil {
+		C.DeleteShape(cOp.shape)
+		cOp.shape = nil
 	}
-	if cNode.new_shape != nil {
-		C.DeleteShape(cNode.new_shape)
-		cNode.new_shape = nil
+	if cOp.new_shape != nil {
+		C.DeleteShape(cOp.new_shape)
+		cOp.new_shape = nil
 	}
-	if cNode.string != nil {
-		C.free(unsafe.Pointer(cNode.string))
-		cNode.string = nil
+	if cOp.string != nil {
+		C.free(unsafe.Pointer(cOp.string))
+		cOp.string = nil
 	}
-	if cNode.integer_array != nil {
-		C.free(unsafe.Pointer(cNode.integer_array))
-		cNode.integer_array = nil
-		cNode.integer_array_size = 0
+	if cOp.integer_array != nil {
+		C.free(unsafe.Pointer(cOp.integer_array))
+		cOp.integer_array = nil
+		cOp.integer_array_size = 0
 	}
 }

@@ -23,18 +23,21 @@
 #ifndef _GOMLX_XLABUILDER_LITERAL_H
 #define _GOMLX_XLABUILDER_LITERAL_H
 
-#include "gomlx/xlabuilder/op.h"
 #include "gomlx/xlabuilder/utils.h"
+#include "gomlx/xlabuilder/shape.h"
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
 #include "xla/client/xla_builder.h"
 #include "xla/shape.h"
 
-extern Literal *XlaLiteralToLiteral(xla::Literal *xla_literal);
+struct Literal;
+typedef xla::Literal XlaLiteral;
 
 #else
+// C-only: forward declarations.
 typedef _Bool bool;
+typedef void XlaLiteral;
 #endif
 
 #ifdef __cplusplus
@@ -89,6 +92,10 @@ extern Literal **LiteralDecomposeTuple(Literal *literal);
 
 #ifdef __cplusplus
 }
+
+// C++ Only: exported C++ functions.
+extern Literal *XlaLiteralToLiteral(xla::Literal *xla_literal);
+
 #endif
 
 #endif

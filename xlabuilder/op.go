@@ -2,6 +2,7 @@ package xlabuilder
 
 // #cgo LDFLAGS: -lgomlx_xlabuilder
 /*
+#include <gomlx/xlabuilder/literal.h>
 #include <gomlx/xlabuilder/op.h>
 #include <gomlx/xlabuilder/xlabuilder.h>
 */
@@ -59,7 +60,7 @@ func (op *Op) finalize() {
 	if op.cOp == nil {
 		return
 	}
-	C.XlaOpFree(op.cOp)
+	C.XlaOpDestroy(unsafe.Pointer(op.cOp))
 	op.cOp = nil
 }
 
@@ -69,14 +70,14 @@ func serializeToC(op *Op) *C.SerializedOp {
 	numInputs := len(op.OpInputs)
 	var sOp *C.SerializedOp
 	sOp = &C.SerializedOp{
-		op_type:    C.int32_t(op.Type),
-		num_inputs: C.int32_t(numInputs),
-		integer:    C.int64_t(op.Int),
-		float_v:    C.float(op.Float),
+		op_type:       C.int32_t(op.Type),
+		num_op_inputs: C.int32_t(numInputs),
+		integer:       C.int64_t(op.Int),
+		float_v:       C.float(op.Float),
 	}
 	if numInputs > 0 {
 		// Create the `inputs` array.
-		sOp.inputs = cMallocArrayAndSet[C.XlaOpPtr](numInputs, func(ii int) C.XlaOpPtr {
+		sOp.op_inputs = cMallocArrayAndSet[C.XlaOpPtr](numInputs, func(ii int) C.XlaOpPtr {
 			return (C.XlaOpPtr)(unsafe.Pointer(op.OpInputs[ii]))
 		})
 	}
@@ -97,10 +98,10 @@ func serializeToC(op *Op) *C.SerializedOp {
 // freeCSerializedOp frees the C allocated memory within cNode. Note that cNode itself is assumed to be
 // allocated in Go space, hence it is (and should be) automatically garbage collected.
 func freeCSerializedOp(cOp *C.SerializedOp) {
-	if cOp.inputs != nil {
-		C.free(unsafe.Pointer(cOp.inputs))
-		cOp.inputs = nil
-		cOp.num_inputs = 0
+	if cOp.op_inputs != nil {
+		cFree(cOp.op_inputs)
+		cOp.op_inputs = nil
+		cOp.num_op_inputs = 0
 	}
 	if cOp.shape != nil {
 		C.DeleteShape(cOp.shape)
@@ -111,7 +112,7 @@ func freeCSerializedOp(cOp *C.SerializedOp) {
 		cOp.new_shape = nil
 	}
 	if cOp.string != nil {
-		C.free(unsafe.Pointer(cOp.string))
+		cFree(cOp.string)
 		cOp.string = nil
 	}
 	if cOp.integer_array != nil {

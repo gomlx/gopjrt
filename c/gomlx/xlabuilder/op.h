@@ -28,19 +28,18 @@
 
 #include "gomlx/xlabuilder/gen_op_types.h"
 #include "gomlx/xlabuilder/shape.h"
+#include "gomlx/xlabuilder/literal.h"
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
 #include "xla/client/xla_builder.h"
 #include "xla/shape.h"
 
-typedef xla::Literal XlaLiteral;
 typedef xla::XlaOp XlaOp;
 
 #else
 // C and CGO only code.
 typedef _Bool bool;
-typedef void XlaLiteral;
 typedef void XlaOp;
 #endif
 
@@ -49,7 +48,6 @@ extern "C" {
 #endif
 
 typedef XlaOp *XlaOpPtr;
-struct Literal;
 
 // SerializedOp represents the Node arguments needed to create an XlaOp. The
 // underlying data (pointers) are owned by Go, and shouldn't be freed by C

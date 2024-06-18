@@ -38,8 +38,9 @@ type XlaBuilder struct {
 func New(name string) *XlaBuilder {
 	var cBuilder *C.XlaBuilder
 	cName := C.CString(name)
-	cBuilder = C.NewXlaBuilder(cName)
-	cFree(cName)
+	defer cFree(cName)
+
+	cBuilder = (*C.XlaBuilder)(C.NewXlaBuilder(cName))
 	return &XlaBuilder{cBuilder: cBuilder}
 }
 
@@ -65,11 +66,11 @@ func (b *XlaBuilder) addOp(op *Op) error {
 	}
 	op.builder = b
 	serializedOp := serializeToC(op)
-	err := errorFromStatus(C.XlaBuilderAddOp(b.cBuilder, serializedOp))
+	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cBuilder), serializedOp))
 	if err != nil {
 		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
 	}
-	op.cOp = serializedOp.new_op
+	op.cOp = (*C.XlaOp)(serializedOp.new_op)
 	op.Shape = shapeFromCShape(serializedOp.new_shape)
 	freeCSerializedOp(serializedOp)
 	return nil

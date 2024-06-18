@@ -7,7 +7,7 @@ import "C"
 
 // Literal defines a constant value for the graph.
 type Literal struct {
-	cLiteralPtr *C.XlaLiteral
+	cLiteralPtr *C.Literal // C-Wrapper around the XlaLiteral.
 }
 
 // IsNil returns true is either l is nil, or its underlying C pointer is nil.

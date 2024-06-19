@@ -2,6 +2,7 @@ package xlabuilder
 
 import (
 	"flag"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"gopjrt/dtypes"
 	"os"
@@ -18,10 +19,15 @@ func TestXlaBuilder(t *testing.T) {
 	builder := New("x^2")
 	x, err := Parameter(builder, "x", 0, MakeShape(dtypes.F32)) // Scalar float32.
 	require.NoError(t, err)
-	f_x, err := Mul(x, x)
+	fX, err := Mul(x, x)
 	require.NoError(t, err)
-	stableHLO, err := builder.StableHLO(f_x)
+
+	// Get computation created.
+	comp, err := builder.Build(fX)
 	require.NoError(t, err)
+	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+
+	stableHLO := comp.SerializedHLO(fX)
 	defer stableHLO.Free()
 	if *flagStableHLOOutput != "" {
 		f, err := os.Create(*flagStableHLOOutput)

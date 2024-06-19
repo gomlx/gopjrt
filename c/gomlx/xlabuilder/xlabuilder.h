@@ -32,19 +32,20 @@
 #include "xla/client/xla_builder.h"
 #include "xla/client/xla_computation.h"
 
-// Alias to xla::Literal.
-typedef xla::XlaOp XlaOp;
+// Aliases.
 typedef xla::XlaBuilder XlaBuilder;
+typedef xla::XlaComputation XlaComputation;
 
 #else
 // C only: Forward reference of C++ types.
 typedef _Bool bool;
 typedef void XlaBuilder;
+typedef void XlaComputation;
 #endif
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+ #endif
 
 // NewXlaBuilder returns a new xla::XlaBuilder.
 // The caller owns the returned pointer and the name string.
@@ -65,10 +66,22 @@ extern void XlaBuilderDestroy(XlaBuilder *builder);
 // XlaOpDestroy destroys the XlaOp reference.
 extern void XlaOpDestroy(XlaOp *op);
 
-// XlaBuilderSerializedHLO converts the computation built using XlaBuilder to a serialized HLO proto, that can be used by PJRT.
+// XlaBuilderBuildComp builds the computation (*XlaComputation) with the requested operations, or returns a non-ok
+// status.
+// Note that all ops that have been enqueued will be moved to the computation being returned.
+extern StatusOr XlaBuilderBuildComp(XlaBuilder *builder, XlaOp *output_op);
+
+// XlaComputationSerializedHLO returns the serialized HloModule proto (with the StableHLO program), that can be used by PJRT.
 //
-// It returns an error or a VectorData of bytes, with the serialized HLO proto (format is "hlo" when using in PJRT).
-extern StatusOr XlaBuilderSerializedHLO(XlaBuilder *builder, XlaOp *output_node);
+// It returns an error or a VectorData of bytes with the binary blob.
+extern VectorData* XlaComputationSerializedHLO(XlaComputation *xla_comp);
+
+// XlaComputationTextHLO returns the HloModule proto converted to text form for debugging and testing.
+extern char* XlaComputationTextHLO(XlaComputation *xla_comp);
+
+// XlaComputationDestroy destroys the XlaComputation reference.
+extern void XlaComputationDestroy(XlaComputation *op);
+
 
 #ifdef __cplusplus
 }

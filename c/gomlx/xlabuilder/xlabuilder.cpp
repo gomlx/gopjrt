@@ -653,19 +653,31 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   return nullptr;
 }
 
-StatusOr XlaBuilderSerializedHLO(XlaBuilder *builder, XlaOp *output) {
+StatusOr XlaBuilderBuildComp(XlaBuilder *builder, XlaOp *output_op) {
   StatusOr r{0, 0};
 
   // Build XlaComputation.
-  auto comp_or = builder->Build(*output);
+  auto comp_or = builder->Build(*output_op);
   if (!comp_or.ok()) {
     r.status = FromStatus(comp_or.status());
     return r;
   }
   auto xla_comp = new xla::XlaComputation(std::move(comp_or.value()));
-  std::string module_str = xla_comp->proto().SerializeAsString();
-  r.value = static_cast<void*>(str_to_bytes(module_str));
-  delete xla_comp;
+  r.value = xla_comp;
   return r;
 }
 
+void XlaComputationDestroy(XlaComputation *xla_comp) {
+    delete xla_comp;
+}
+
+VectorData* XlaComputationSerializedHLO(XlaComputation *xla_comp) {
+  std::string module_str = xla_comp->proto().SerializeAsString();
+  return str_to_bytes(module_str);
+}
+
+char* XlaComputationTextHLO(XlaComputation *xla_comp) {
+  std::string text;
+  tsl::protobuf::TextFormat::PrintToString(xla_comp->proto(), &text);
+  return c_str(text);
+}

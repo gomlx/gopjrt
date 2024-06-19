@@ -7,7 +7,7 @@ package xlabuilder
 import "C"
 import (
 	"github.com/pkg/errors"
-	"gopjrt/cbuffer"
+	"runtime"
 	"unsafe"
 )
 
@@ -17,11 +17,16 @@ import (
 // We make a copy of chelper.go for every sub-directory that needs it.
 //go:generate go run ../cmd/copy_go_code --original=chelper.go
 
-// XlaBuilder is used to create a "StableHLO" program, that can then be compiled and executed by a PJRT plugin (see package pjrt) on
-// accelerators.
+// XlaBuilder is used to create "computations" (XlaComputation), that are like "StableHLO" functions.
+//
+// In turn XlaComputation can be exported to a serialized `HloModuleProto` (a binary blob) and used by a PJRT plugin
+// (see github.com/gomlx/gopjrt/pjrt package) to compile and execute on accelerators.
 //
 // Once created (New), one can issue "operations" ("ops" for short), like "Add", "Mul", etc, which are recorded.
-// When the computation definition is finalized, call "XlaBuilder.StableHLO" to get the program to use with PJRT.
+// When the computation definition is finalized, call "XlaBuilder.Build" to get the XlaComputation representing
+// the function built.
+// The XlaComputation can then be used with PJRT (see XlaComputation.SerializedHLO), or pretty (+/-, relatively speaking)
+// print (text, HTML, graphviz, etc). See XlaComputation documentation.
 //
 // Once done (usually, just after StableHLO is called) deallocate the underlying C++ resources by calling Free.
 //
@@ -42,14 +47,20 @@ func New(name string) *XlaBuilder {
 	defer cFree(cName)
 
 	cBuilder = (*C.XlaBuilder)(C.NewXlaBuilder(cName))
-	return &XlaBuilder{cBuilder: cBuilder}
+	b := &XlaBuilder{cBuilder: cBuilder}
+	runtime.SetFinalizer(b, xlaBuilderFinalizer)
+	return b
+}
+
+func xlaBuilderFinalizer(b *XlaBuilder) {
+	b.Free()
 }
 
 // Free must be called once the cBuilder is done to free the underlying object.
 // The garbage collector won't free it by itself.
 // It can be called more than once -- once finalized the first time, it becomes a no-op.
 func (b *XlaBuilder) Free() {
-	if b.cBuilder == nil {
+	if b == nil || b.cBuilder == nil {
 		return
 	}
 	C.XlaBuilderDestroy(unsafe.Pointer(b.cBuilder))
@@ -59,7 +70,7 @@ func (b *XlaBuilder) Free() {
 // addOp will add the operation described by op.
 // If it succeeds it fills the fields Op.index and Op.op, with the C++ references.
 func (b *XlaBuilder) addOp(op *Op) error {
-	if b == nil {
+	if b == nil || b.cBuilder == nil {
 		return errors.Errorf("trying to add op %s to a nil XlaBuilder", op.Type)
 	}
 	if op.builder != nil {
@@ -77,22 +88,17 @@ func (b *XlaBuilder) addOp(op *Op) error {
 	return nil
 }
 
-// StableHLO generates the StableHLO program as a <serialized HLOModule proto> (something that PJRT can consume).
+// Build builds the computation (*XlaComputation) with the requested operations (the outputOp and all its dependencies)
+// or returns a non-ok status.
 //
-// The returned CBuffer needs to be freed (CBuffer.Free) after being used (presumably by PJRT, or saved to a file).
-//
-// It takes as input outputOp that is returned by the program.
-func (b *XlaBuilder) StableHLO(outputOp *Op) (*cbuffer.CBuffer, error) {
-	statusOr := C.XlaBuilderSerializedHLO(unsafe.Pointer(b.cBuilder), unsafe.Pointer(outputOp.cOp))
+// Note that all ops that have been enqueued will be moved to the computation being returned and will no longer be valid.
+func (b *XlaBuilder) Build(outputOp *Op) (*XlaComputation, error) {
+	statusOr := C.XlaBuilderBuildComp(unsafe.Pointer(b.cBuilder), unsafe.Pointer(outputOp.cOp))
 	var err error
-	var vectorData *C.VectorData
-	vectorData, err = pointerOrError[C.VectorData](statusOr)
+	var cComp *C.XlaComputation
+	cComp, err = pointerOrError[C.XlaComputation](statusOr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "while converting the XlaBuilder ops to a StableHLO representation")
+		return nil, errors.Wrapf(err, "while building the computation with the XlaBuilder (outputOp=%s)", outputOp.Type)
 	}
-	buf := &cbuffer.CBuffer{
-		Data: unsafe.Pointer(vectorData.data),
-		Size: int(vectorData.count),
-	}
-	return buf, nil
+	return newXlaComputation(cComp), nil
 }

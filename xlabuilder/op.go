@@ -78,7 +78,7 @@ func serializeToC(op *Op) *C.SerializedOp {
 	if numInputs > 0 {
 		// Create the `inputs` array.
 		sOp.op_inputs = cMallocArrayAndSet[C.XlaOpPtr](numInputs, func(ii int) C.XlaOpPtr {
-			return (C.XlaOpPtr)(unsafe.Pointer(op.OpInputs[ii]))
+			return (C.XlaOpPtr)(unsafe.Pointer(op.OpInputs[ii].cOp))
 		})
 	}
 	sOp.shape = cShapeFromShape(op.ShapeArg)

@@ -7,6 +7,7 @@ package xlabuilder
 import "C"
 import (
 	"github.com/pkg/errors"
+	"gopjrt/cbuffer"
 	"unsafe"
 )
 
@@ -76,50 +77,12 @@ func (b *XlaBuilder) addOp(op *Op) error {
 	return nil
 }
 
-// CBuffer defines an interface of something that returns a pointer to an area managed by C memory manager.
-// The semantic of ownership is not defined by this interface.
-type CBuffer interface {
-	// Data returns an unsafe.Pointer to the underlying C data.
-	Data() unsafe.Pointer
-
-	// Size returns the size in bytes of the underlying data.
-	Size() int
-
-	// Free frees the underlying data.
-	Free()
-}
-
-// CBufferToBytes create an unsafe buffer slice to the underlying data, if one wants to use it from Go.
-func CBufferToBytes(cBuf CBuffer) []byte {
-	return unsafe.Slice((*byte)(cBuf.Data()), cBuf.Size())
-}
-
-// cBuffer implements CBuffer.
-type cBuffer struct {
-	data unsafe.Pointer
-	size int
-}
-
-func (b *cBuffer) Data() unsafe.Pointer { return b.data }
-func (b *cBuffer) Size() int            { return b.size }
-func (b *cBuffer) Free() {
-	if b.data == nil || b.size == 0 {
-		return
-	}
-	C.free(b.data)
-	b.data = nil
-	b.size = 0
-}
-
-// Assert cBuffer implements CBuffer
-var _ CBuffer = (*cBuffer)(nil)
-
 // StableHLO generates the StableHLO program as a <serialized HLOModule proto> (something that PJRT can consume).
 //
 // The returned CBuffer needs to be freed (CBuffer.Free) after being used (presumably by PJRT, or saved to a file).
 //
 // It takes as input outputOp that is returned by the program.
-func (b *XlaBuilder) StableHLO(outputOp *Op) (CBuffer, error) {
+func (b *XlaBuilder) StableHLO(outputOp *Op) (*cbuffer.CBuffer, error) {
 	statusOr := C.XlaBuilderSerializedHLO(unsafe.Pointer(b.cBuilder), unsafe.Pointer(outputOp.cOp))
 	var err error
 	var vectorData *C.VectorData
@@ -127,9 +90,9 @@ func (b *XlaBuilder) StableHLO(outputOp *Op) (CBuffer, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "while converting the XlaBuilder ops to a StableHLO representation")
 	}
-	buf := &cBuffer{
-		data: unsafe.Pointer(vectorData.data),
-		size: int(vectorData.count),
+	buf := &cbuffer.CBuffer{
+		Data: unsafe.Pointer(vectorData.data),
+		Size: int(vectorData.count),
 	}
 	return buf, nil
 }

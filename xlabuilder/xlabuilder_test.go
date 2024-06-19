@@ -26,7 +26,7 @@ func TestXlaBuilder(t *testing.T) {
 	if *flagStableHLOOutput != "" {
 		f, err := os.Create(*flagStableHLOOutput)
 		require.NoErrorf(t, err, "Failed to open StableHLO proto output file %q", *flagStableHLOOutput)
-		bufBytes := CBufferToBytes(stableHLO)
+		bufBytes := stableHLO.AsBytes()
 		n, err := f.Write(bufBytes)
 		require.NoErrorf(t, err, "Failed to write StableHLO proto output file %q", *flagStableHLOOutput)
 		require.Equal(t, len(bufBytes), n)

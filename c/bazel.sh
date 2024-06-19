@@ -3,8 +3,7 @@
 # The following environment variables and flags can be defined:
 #
 # * STARTUP_FLAGS and BUILD_FLAGS: passed as `bazel ${STARTUP_FLAGS} build <build_target> ${BUILD_FLAGS}.
-# * --tpu: Also compile for TPUs.
-# * --gpu: Also compile for GPUs.
+# * --debug: Compile in debug mode, with symbols for gdb.
 # * --output <dir>: Directory passed to `bazel --output_base`. Unfortunately, not sure why, bazel still outputs things
 #   to $TEST_TMPDIR and /.cache.
 # * <build_target>: Default is ":gomlx_xlabuilder".
@@ -13,19 +12,13 @@ BUILD_TARGET=":gomlx_xlabuilder"
 
 export USE_BAZEL_VERSION=7.2.0  # Latest as of this writing.
 
-USE_GPU=0
-USE_TPU=0
+DEBUG=0
 OUTPUT_DIR=""
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --gpu)
-      USE_GPU=1
-      shift # past argument
-      ;;
-    --tpu)
-      USE_TPU=1
-      echo "TPU support not tested/tried yet ... this is experimental."
-      shift # past argument
+    --debug)
+      DEBUG=1
+      shift
       ;;
     --output)
       shift
@@ -50,20 +43,20 @@ BAZEL=${BAZEL:-bazel}  # Bazel version > 5.
 PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
 
 # Some environment variables used for XLA configure script, but set here anyway:
-if ((USE_GPU)) ; then
-  export TF_NEED_CUDA=1
-  export TF_CUDA_VERSION=12.3
-  export CUDA_VERSION=12.3
-  export TF_NEED_ROCM=0
-  export TF_CUDA_COMPUTE_CAPABILITIES="6.1,9.0"
-else
-  unset TF_NEED_CUDA
-fi
-export USE_DEFAULT_PYTHON_LIB_PATH=1
-export PYTHON_BIN_PATH=/usr/bin/python3
-export TF_CUDA_CLANG=0
-export GCC_HOST_COMPILER_PATH=/usr/bin/gcc
-export CC_OPT_FLAGS=-Wno-sign-compare
+#if ((USE_GPU)) ; then
+#  export TF_NEED_CUDA=1
+#  export TF_CUDA_VERSION=12.3
+#  export CUDA_VERSION=12.3
+#  export TF_NEED_ROCM=0
+#  export TF_CUDA_COMPUTE_CAPABILITIES="6.1,9.0"
+#else
+#  unset TF_NEED_CUDA
+#fi
+#export USE_DEFAULT_PYTHON_LIB_PATH=1
+#export PYTHON_BIN_PATH=/usr/bin/python3
+#export TF_CUDA_CLANG=0
+#export GCC_HOST_COMPILER_PATH=/usr/bin/gcc
+#export CC_OPT_FLAGS=-Wno-sign-compare
 
 # Check the OpenXLA version (commit hash) changed, and if so, download an
 # updated `openxla_xla_bazelrc` file from github.
@@ -93,11 +86,8 @@ STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.bazelrc"
 # bazel build flags
 BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
 BUILD_FLAGS="${BUILD_FLAGS} --config=linux"  # Linux only for now.
-if ((USE_GPU)) ; then
-  BUILD_FLAGS="${BUILD_FLAGS} --config=cuda"  # Include CUDA.
-fi
-if ((USE_TPU)) ; then
-  BUILD_FLAGS="${BUILD_FLAGS} --config=tpu"  # Include CUDA.
+if ((DEBUG)) ; then
+  BUILD_FLAGS="${BUILD_FLAGS} --config=dbg"
 fi
 
 # OpenXLA sets this to true for now to link with TF. But we need this enabled:

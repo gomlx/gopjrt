@@ -16,7 +16,7 @@ var flagStableHLOOutput = flag.String("hlo", "",
 
 func TestXlaBuilder(t *testing.T) {
 	// f(x) = x^2
-	builder := New("x^2")
+	builder := New("x*x")
 	x, err := Parameter(builder, "x", 0, MakeShape(dtypes.F32)) // Scalar float32.
 	require.NoError(t, err)
 	fX, err := Mul(x, x)

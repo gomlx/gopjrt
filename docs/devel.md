@@ -8,9 +8,12 @@ It still depends on CGO and system libraries (`-ldl` for dynamic loading).
 It includes a copy of the following files:
 
 * `pjrt_c_api.h` from [github.com/openxla/xla/.../xla/pjrt/c/pjrt_c_api.h](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h), with the definitions of the PJRT plugin API.
-  There is no easy way to integrarte Go build system with Bazel (used by PJRT), so we just copied over the file (and mentioned it in the licensing).
+  There is no easy way to integrate Go build system with Bazel (used by PJRT), so we just copied over the file (and mentioned it in the licensing).
 * `compilation_options.proto`: ???
 
+To generate the latest proto Go programs (see [tutorial](https://protobuf.dev/getting-started/gotutorial/)):
+* Install the Protocol Buffers compiler: `sudo apt install protobuf-compiler`
+* Install the most recent `protoc-gen-go`: `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
 
 ## Package `xlabuilder`
 

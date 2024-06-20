@@ -1,0 +1,30 @@
+# Notes For Developers
+
+## Package `pjrt`
+
+The package tries to be independent of installation of any external compiled library -- including the other `xlabuilder` package.
+It still depends on CGO and system libraries (`-ldl` for dynamic loading).
+
+It includes a copy of the following files:
+
+* `pjrt_c_api.h` from [github.com/openxla/xla/.../xla/pjrt/c/pjrt_c_api.h](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h), with the definitions of the PJRT plugin API.
+  There is no easy way to integrarte Go build system with Bazel (used by PJRT), so we just copied over the file (and mentioned it in the licensing).
+* `compilation_options.proto`: ???
+
+
+## Package `xlabuilder`
+
+The package needs to link XLA's XlaBuilder library (and some associated tools). To achieve that, we create in the
+subdirectory `c/` a C/C++ project that builds the `libgomlx_xlabuilder.so` file and associated header files. They
+need to be installed so that `xlabuilder` package compile.
+
+The plan is to have in the release a binary distribution of the required libraries. It's very inconvenient ... but
+XLA is not easy to build (Bazel is complex and finicky) so trying to integrate everything would be tricky.
+
+TODO: investigate distributing all headers and `libgomlx_xlabuilder.so` in the repository so it's fetched with Go,
+and the user won't need to do anything.
+
+## PJRT Plugins
+
+* A prebuilt CUDA (GPU) plugin is  [distributed with Jax (pypi wheel)](https://pypi.org/project/jax-cuda12-pjrt/) (albeit with a [non-standard naming](https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit#heading=h.l9ksu371j9wz))
+* The CPU plugin can be built from the XLA sources: after running `configure.py`, build `bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so`.

@@ -63,6 +63,7 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	pinner.Pin(programPtr)
 	defer pinner.Unpin()
 
+	// Get options.
 	// pjrtClientCompile(...)
 	return nil, nil
 }

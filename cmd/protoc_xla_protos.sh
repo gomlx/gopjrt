@@ -12,6 +12,7 @@ set -e
 
 # List of protos included.
 protos=(
+  "tsl/protobuf/dnn.proto"
   "xla/autotune_results.proto"
   "xla/autotuning.proto"
   "xla/pjrt/compile_options.proto"
@@ -24,12 +25,12 @@ protos=(
 # shellcheck disable=SC2168
 go_opts=()
 for p in "${protos[@]}" ; do
-  go_opts+=("--go_opt=M${p}=github.com/gomlx/gopjrt/pjrt")
+  go_opts+=("--go_opt=M${p}=github.com/gomlx/gopjrt/proto")
 done
 
 set -x
 protoc --go_out=. -I="${XLA_SRC}" -I="${XLA_SRC}/third_party/tsl" \
-  "--go_opt=module=github.com/gomlx/gopjrt/pjrt" \
+  "--go_opt=module=github.com/gomlx/gopjrt/proto" \
   "${go_opts[@]}" \
   "${protos[@]}"
 

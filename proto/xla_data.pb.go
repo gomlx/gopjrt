@@ -19,7 +19,7 @@
 // 	protoc        v3.21.12
 // source: xla/xla_data.proto
 
-package pjrt
+package proto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

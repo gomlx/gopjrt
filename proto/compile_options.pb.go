@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: xla/pjrt/compile_options.proto
 
-package pjrt
+package proto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

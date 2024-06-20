@@ -3,7 +3,9 @@ package pjrt
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"gopjrt/cbuffer"
+	pjrt_proto "gopjrt/proto"
 	"runtime"
 	"unsafe"
 )
@@ -21,13 +23,16 @@ type CompileConfig struct {
 	// program can be a pointer to C/C++ data, but it must be kept alive until after CompileConfig.Done is called.
 	program []byte
 
-	// programType supported formats are:
+	// programFormat supported formats are:
 	// "hlo": code string takes serialized HloModuleProto.
 	// "hlo_with_config": code string takes serialized HloModuleProtoWithConfig.
 	// "mlir": code string takes MLIR module bytecode (or string).
 	// Ownership of `format` varies across API functions.
 	// See PJRT_Program struct in pjrt_c_api.h
-	programType string
+	programFormat string
+
+	// options is teh CompileOptionsProto being configured.
+	options *pjrt_proto.CompileOptionsProto
 
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
@@ -52,7 +57,7 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	}()
 
 	// Other sanity checks.
-	if cc.programType == "" || len(cc.program) == 0 {
+	if cc.programFormat == "" || len(cc.program) == 0 {
 		return nil, errors.New("no program given to Client.Compile(), use Client.Compile().WithComputation() or ClientCompile().WithSLO() " +
 			"to specify a program, before calling Done()")
 	}
@@ -63,13 +68,18 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	pinner.Pin(programPtr)
 	defer pinner.Unpin()
 
-	// Get options.
-	// pjrtClientCompile(...)
-	return nil, nil
+	// Get options and pin it.
+	binOptions, err := proto.Marshal(cc.options)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to marshal the CompileOptionsProto to be passed to the PJRT plugin")
+	}
+	pinner.Pin(unsafe.SliceData(binOptions))
+
+	return pjrtClientCompile(cc.plugin, cc.client, cc.program, cc.programFormat, binOptions)
 }
 
-// WithHLO configures the program to the serialized HLO (HloModule proto).
-// The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
+// WithHLO configures the program to the serialized HLO (HloModule pjrt_proto).
+// The serialized pjrt_proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
 // call to Done is returned.
 //
 // Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
@@ -77,12 +87,12 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
-	if len(cc.program) > 0 || cc.programType != "" {
+	if len(cc.program) > 0 || cc.programFormat != "" {
 		exceptions.Panicf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
 	}
 
 	cc.program = serialized
-	cc.programType = "hlo"
+	cc.programFormat = "hlo"
 	return cc
 }
 
@@ -94,14 +104,14 @@ type XlaComputation interface {
 }
 
 // WithComputation configures the program to the xlabuilder.XlaComputation -- see xlabuilder package.
-// Behind the scenes it is an HLO program (HloModule proto), but this handles the details.
+// Behind the scenes it is an HLO program (HloModule pjrt_proto), but this handles the details.
 //
 // Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
 // It panics if more than one WithHLO or WithComputation is called.
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileConfig {
-	if len(cc.program) > 0 || cc.programType != "" {
+	if len(cc.program) > 0 || cc.programFormat != "" {
 		exceptions.Panicf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
 	}
 

@@ -17,6 +17,7 @@ To generate the latest proto Go programs (see [tutorial](https://protobuf.dev/ge
 * Set XLA_SRC to a clone of the `github.com/openxla/xla` repository.
   * See that either https://github.com/openxla/xla/pull/13985 is merged (or patch it locally, just remove one line) or
     (maybe) that https://github.com/golang/protobuf/issues/1621 is accepted and fixed.
+  * Same issue with https://github.com/openxla/xla/blob/main/third_party/tsl/tsl/protobuf/dnn.proto#L8
 
 ## Package `xlabuilder`
 

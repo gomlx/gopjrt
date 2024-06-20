@@ -8,6 +8,7 @@ package pjrt
 import "C"
 import (
 	"fmt"
+	"gopjrt/proto"
 	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
@@ -88,6 +89,39 @@ func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, er
 		devices[ii] = newDevice(plugin, client, d)
 	}
 	return devices, nil
+}
+
+// pjrtClientCompile compiles the program. Remember to make sure that the both the program and and compileOptionsProto
+// are pinned until the C function returns.
+func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFormat string, compileOptionsProto []byte) (*LoadedExecutable, error) {
+	// Create program structure.
+	var cProgram *C.PJRT_Program
+	cProgram = C.new_PJRT_Program()
+	defer cFree(cProgram)
+	cProgramFormat := C.CString(programFormat)
+	defer cFree(cProgramFormat)
+	cProgram.format = cProgramFormat
+	cProgram.format_size = (C.size_t)(len(programFormat))
+	cProgram.code = (*C.char)(unsafe.Pointer(unsafe.SliceData(program)))
+	cProgram.code_size = (C.size_t)(len(program))
+
+	// Create args for call.
+	args := C.new_PJRT_Client_Compile_Args()
+	defer cFree(args)
+	args.client = client.client
+	args.program = cProgram
+	args.compile_options = (*C.char)(unsafe.Pointer(unsafe.SliceData(compileOptionsProto)))
+	args.compile_options_size = (C.size_t)(len(compileOptionsProto))
+
+	err := toError(plugin, C.call_PJRT_Client_Compile(plugin.api, args))
+	if err != nil {
+		return nil, err
+	}
+	return &LoadedExecutable{
+		plugin:            plugin,
+		client:            client,
+		cLoadedExecutable: args.executable,
+	}, nil
 }
 
 // Client manages the resources of one device: its buffers, compilation and execution of HLO code.
@@ -195,9 +229,10 @@ func (c *Client) AddressableDevices() ([]*Device, error) {
 // https://github.com/openxla/xla/blob/main/xla/pjrt/compile_options.proto .
 // But the proto itself is not documented, instead see documentation in the C++ xla::CompileOptions class defined in:
 // https://github.com/openxla/xla/blob/main/xla/pjrt/pjrt_executable.h .
-func (c *Client) Compile(options string) *CompileConfig {
+func (c *Client) Compile() *CompileConfig {
 	return &CompileConfig{
-		plugin: c.plugin,
-		client: c,
+		plugin:  c.plugin,
+		client:  c,
+		options: &proto.CompileOptionsProto{},
 	}
 }

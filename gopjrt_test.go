@@ -26,7 +26,7 @@ func TestEndToEnd(t *testing.T) {
 	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
 
 	// Extract HLO buffer.
-	hlo := comp.SerializedHLO(fX)
+	hlo := comp.SerializedHLO()
 	_ = hlo
 
 	// PJRT plugin and create a client.

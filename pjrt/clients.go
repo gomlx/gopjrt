@@ -183,3 +183,21 @@ func (c *Client) Devices() ([]*Device, error) {
 func (c *Client) AddressableDevices() ([]*Device, error) {
 	return pjrtClientAddressableDevices(c.plugin, c)
 }
+
+// Compile turn a StableHLO program into a "LoadedExecutable" that is the executable runner.
+//
+// There are different formats of input, and many different compilation options [1], so this returns
+// a CompilationConfig that must be furthered configured. At the very least the program must be given: see
+// CompileConfig.WithComputation or CompileConfig.WithHLO. Then the call to CompileConfig.Done triggers
+// the compilation into a "LoadedExecutable".
+//
+// [1] The original compilation options is defined as the proto CompileOptionsProto:
+// https://github.com/openxla/xla/blob/main/xla/pjrt/compile_options.proto .
+// But the proto itself is not documented, instead see documentation in the C++ xla::CompileOptions class defined in:
+// https://github.com/openxla/xla/blob/main/xla/pjrt/pjrt_executable.h .
+func (c *Client) Compile(options string) *CompileConfig {
+	return &CompileConfig{
+		plugin: c.plugin,
+		client: c,
+	}
+}

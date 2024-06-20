@@ -13,7 +13,7 @@ import (
 
 // XlaComputation represents a computation created with XlaBuilder.
 //
-// It can be exported to PJRT with XlaComputation.SerializedHLO.
+// It can be used as is by pjrt.Client.Compile or serialized (to be saved) with XlaComputation.SerializedHLO.
 //
 // To print the contents of the HloModuleProto, the github.com/openxla/xla repository offers a small utility called
 // `run_hlo_module`. Follow the XLA build instructions and build the target `//xla/tools:run_hlo_module`.
@@ -50,7 +50,7 @@ func (comp *XlaComputation) Free() {
 // The returned CBuffer needs to be freed (CBuffer.Free) after being used (presumably by PJRT, or saved to a file).
 //
 // See XlaComputation documentation on how to pretty-print the computation as text HLO.
-func (comp *XlaComputation) SerializedHLO(outputOp *Op) *cbuffer.CBuffer {
+func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	if comp == nil || comp.cComp == nil {
 		return nil
 	}

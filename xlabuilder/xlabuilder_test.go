@@ -27,7 +27,7 @@ func TestXlaBuilder(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
 
-	stableHLO := comp.SerializedHLO(fX)
+	stableHLO := comp.SerializedHLO()
 	defer stableHLO.Free()
 	if *flagStableHLOOutput != "" {
 		f, err := os.Create(*flagStableHLOOutput)

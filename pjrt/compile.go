@@ -1,8 +1,10 @@
 package pjrt
 
 import (
+	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"gopjrt/cbuffer"
 	pjrt_proto "gopjrt/proto"
@@ -16,6 +18,8 @@ import (
 // Optionally, many other options can be set.
 //
 // Once finished call CompileConfig.Done to trigger the compilation and get back a LoadedExecutable or an error.
+//
+// TODO: expose all (or more) configuration options with "WithX" methods.
 type CompileConfig struct {
 	plugin *Plugin
 	client *Client
@@ -31,11 +35,26 @@ type CompileConfig struct {
 	// See PJRT_Program struct in pjrt_c_api.h
 	programFormat string
 
-	// options is teh CompileOptionsProto being configured.
+	// options is the CompileOptionsProto being configured.
 	options *pjrt_proto.CompileOptionsProto
 
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
+}
+
+func newCompileConfig(client *Client) (cc *CompileConfig) {
+	cc = &CompileConfig{
+		plugin:  client.plugin,
+		client:  client,
+		options: &pjrt_proto.CompileOptionsProto{},
+	}
+	// Default values specified in the comments of the proto (but not as proper proto defaults).
+	cc.options.ExecutableBuildOptions = &pjrt_proto.ExecutableBuildOptionsProto{
+		DeviceOrdinal: -1,
+		NumReplicas:   1,
+		NumPartitions: 1,
+	}
+	return cc
 }
 
 // Done triggers the compilation of the program. If the compilation succeeds a LoadedExecutable is returned, otherwise
@@ -69,6 +88,7 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	defer pinner.Unpin()
 
 	// Get options and pin it.
+	fmt.Printf("CompileOptions: {\n%s}\n", prototext.Format(cc.options))
 	binOptions, err := proto.Marshal(cc.options)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to marshal the CompileOptionsProto to be passed to the PJRT plugin")

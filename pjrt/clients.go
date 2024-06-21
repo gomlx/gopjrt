@@ -8,7 +8,6 @@ package pjrt
 import "C"
 import (
 	"fmt"
-	"gopjrt/proto"
 	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
@@ -230,9 +229,5 @@ func (c *Client) AddressableDevices() ([]*Device, error) {
 // But the proto itself is not documented, instead see documentation in the C++ xla::CompileOptions class defined in:
 // https://github.com/openxla/xla/blob/main/xla/pjrt/pjrt_executable.h .
 func (c *Client) Compile() *CompileConfig {
-	return &CompileConfig{
-		plugin:  c.plugin,
-		client:  c,
-		options: &proto.CompileOptionsProto{},
-	}
+	return newCompileConfig(c)
 }

@@ -33,8 +33,8 @@ func newLoadedExecutable(plugin *Plugin, cLoadedExecutable *C.PJRT_LoadedExecuta
 	return e
 }
 
-// Destroy the client, release resources, and Client is no longer valid.
-// This is automatically called if Client is garbage collected.
+// Destroy the LoadedExecutable, release resources, and LoadedExecutable is no longer valid.
+// This is automatically called if LoadedExecutable is garbage collected.
 func (e *LoadedExecutable) Destroy() error {
 	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
 		// Already destroyed, no-op.

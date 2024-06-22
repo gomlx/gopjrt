@@ -12,7 +12,8 @@ import (
 	"runtime"
 )
 
-// Executable is a reference to a compiled program ready to be executed.
+// Executable is a reference that describes a compiled program -- it cannot be executed, only introspected.
+// It is created by a LoadedExecutable. LoadedExecutable is also the one that can be executed.
 type Executable struct {
 	cExecutable *C.PJRT_Executable
 	plugin      *Plugin
@@ -33,8 +34,8 @@ func newExecutable(plugin *Plugin, cExecutable *C.PJRT_Executable) *Executable {
 	return e
 }
 
-// Destroy the client, release resources, and Client is no longer valid.
-// This is automatically called if Client is garbage collected.
+// Destroy the Executable, release resources, and Executable is no longer valid.
+// This is automatically called if Executable is garbage collected.
 func (e *Executable) Destroy() error {
 	if e == nil || e.plugin == nil || e.cExecutable == nil {
 		// Already destroyed, no-op.
@@ -50,6 +51,7 @@ func (e *Executable) Destroy() error {
 	return err
 }
 
+// NumOutputs returns the number of outputs for the given executable.
 func (e *Executable) NumOutputs() (int, error) {
 	if e == nil || e.plugin == nil || e.cExecutable == nil {
 		return 0, errors.New("Executable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")

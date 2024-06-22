@@ -1,5 +1,10 @@
 package xlabuilder
 
+import (
+	"github.com/pkg/errors"
+	"slices"
+)
+
 // Manual implementation of the special ops.
 
 // Parameter creates a "retrieves a parameter value" op in builder.
@@ -28,4 +33,26 @@ func Parameter(builder *XlaBuilder, name string, paramIndex int, shape Shape) (*
 // DecodeParameter extracts the arguments to the Parameter call that created the op.
 func DecodeParameter(paramOp *Op) (name string, paramIndex int, shape Shape) {
 	return paramOp.Str, paramOp.Int, paramOp.ShapeArg
+}
+
+// Tuple organizes multiple nodes in one tuple-node.
+//
+// This is particularly useful to get multiple outputs to a computation.
+func Tuple(inputs ...*Op) (*Op, error) {
+	builder := inputs[0].builder
+	for ii, input := range inputs {
+		if ii == 0 {
+			continue
+		}
+		if input.builder != builder {
+			return nil, errors.Errorf("arguments 0 and %d of Tuple(inputs...) come from different XlaBuilder objects (or nil)", ii)
+		}
+	}
+	tupleOp := newOp(TupleOp)
+	tupleOp.OpInputs = slices.Clone(inputs)
+	err := builder.addOp(tupleOp)
+	if err != nil {
+		return nil, err
+	}
+	return tupleOp, nil
 }

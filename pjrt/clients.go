@@ -8,6 +8,7 @@ package pjrt
 import "C"
 import (
 	"fmt"
+	"gopjrt/dtypes"
 	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
@@ -227,4 +228,21 @@ func (c *Client) AddressableDevices() ([]*Device, error) {
 // https://github.com/openxla/xla/blob/main/xla/pjrt/pjrt_executable.h .
 func (c *Client) Compile() *CompileConfig {
 	return newCompileConfig(c)
+}
+
+// BufferFromHost creates an on-device buffer with the contents copied (optionally reused, if device is CPU) from
+// the given host buffer.
+//
+// It returns a configuration option that allows one to further configure the transfer -- there are several
+// options, see BufferFromHostConfig for details.
+// Once it is configured call BufferFromHostConfig.Done to trigger the transfer.
+func (c *Client) BufferFromHost(hostRawData []byte, dtype dtypes.DType, dimensions []int) *BufferFromHostConfig {
+	return &BufferFromHostConfig{
+		client:              c,
+		data:                hostRawData,
+		dtype:               dtype,
+		dimensions:          dimensions,
+		device:              nil,
+		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableOnlyDuringCall,
+	}
 }

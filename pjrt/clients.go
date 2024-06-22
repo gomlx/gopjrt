@@ -116,11 +116,7 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 	if err != nil {
 		return nil, err
 	}
-	return &LoadedExecutable{
-		plugin:            plugin,
-		client:            client,
-		cLoadedExecutable: args.executable,
-	}, nil
+	return newLoadedExecutable(plugin, args.executable), nil
 }
 
 // Client manages the resources of one device: its buffers, compilation and execution of HLO code.
@@ -159,7 +155,7 @@ func newClient(plugin *Plugin, client *C.PJRT_Client) *Client {
 // Destroy the client, release resources, and Client is no longer valid.
 // This is automatically called if Client is garbage collected.
 func (c *Client) Destroy() error {
-	if c.plugin == nil {
+	if c.plugin == nil || c.client == nil {
 		// Already destroyed, no-op.
 		return nil
 	}
@@ -169,6 +165,7 @@ func (c *Client) Destroy() error {
 	args.client = c.client
 	err := toError(c.plugin, C.call_PJRT_Client_Destroy(c.plugin.api, args))
 	c.plugin = nil
+	c.client = nil
 	return err
 }
 

@@ -14,7 +14,7 @@ import (
 func pjrtDeviceLocalHardwareId(device *Device) (int, error) {
 	args := C.new_PJRT_Device_LocalHardwareId_Args()
 	defer cFree(args)
-	args.device = device.device
+	args.device = device.cDevice
 	err := toError(device.plugin, C.call_PJRT_Device_LocalHardwareId(device.plugin.api, args))
 	if err != nil {
 		return -1, err
@@ -51,16 +51,16 @@ func pjrtDeviceDescriptionProcessIndex(dDesc *DeviceDescription) (int, error) {
 // Device-Specific Operations: Some PjRT operations (like querying device attributes or transferring data to/from the device)
 // are device-specific and operate on individual PjrtDevice objects (obtained from the PjrtClient_Devices list).
 type Device struct {
-	plugin *Plugin
-	client *Client
-	device *C.PJRT_Device // (PJRT) `device` has the same lifetime as (PJRT) `client`. It is owned by (PJRT) `client`.
+	plugin  *Plugin
+	client  *Client
+	cDevice *C.PJRT_Device // (PJRT) `device` has the same lifetime as (PJRT) `client`. It is owned by (PJRT) `client`.
 
 	localHardwareId int
 }
 
 // newDevice create a new Device reference.
 func newDevice(plugin *Plugin, client *Client, device *C.PJRT_Device) *Device {
-	d := &Device{plugin: plugin, client: client, device: device}
+	d := &Device{plugin: plugin, client: client, cDevice: device}
 	var err error
 	d.localHardwareId, err = pjrtDeviceLocalHardwareId(d)
 	if err != nil {
@@ -73,7 +73,7 @@ func newDevice(plugin *Plugin, client *Client, device *C.PJRT_Device) *Device {
 func (d *Device) IsAddressable() (bool, error) {
 	args := C.new_PJRT_Device_IsAddressable_Args()
 	defer cFree(args)
-	args.device = d.device
+	args.device = d.cDevice
 	err := toError(d.plugin, C.call_PJRT_Device_IsAddressable(d.plugin.api, args))
 	if err != nil {
 		return false, err
@@ -91,7 +91,7 @@ func (d *Device) LocalHardwareId() int {
 func (d *Device) GetDescription() (*DeviceDescription, error) {
 	args := C.new_PJRT_Device_GetDescription_Args()
 	defer cFree(args)
-	args.device = d.device
+	args.device = d.cDevice
 	err := toError(d.plugin, C.call_PJRT_Device_GetDescription(d.plugin.api, args))
 	if err != nil {
 		return nil, err

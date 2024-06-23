@@ -20,7 +20,7 @@ import (
 //
 // Alternatively, in XLA, a value can represent a "tuple" of sub-values.
 // In this case Shape.TupleShapes is defined with the shapes of its sub-values -- it is a recursive structure.
-// In this case DType is set to Invalid, and the shape doesn't have a value of itself.
+// In this case DType is set to InvalidDType, and the shape doesn't have a value of itself.
 type Shape struct {
 	DType      dtypes.DType
 	Dimensions []int
@@ -54,7 +54,7 @@ func (s Shape) TupleSize() int {
 // cShapeFromShape allocates int the C-heap a new C-struct representing the shape.
 // If shape is undefined (not used) it returns nil.
 func cShapeFromShape(shape Shape) *C.Shape {
-	if shape.DType == dtypes.Invalid && shape.TupleSize() == 0 {
+	if shape.DType == dtypes.InvalidDType && shape.TupleSize() == 0 {
 		return nil
 	}
 

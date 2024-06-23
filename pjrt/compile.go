@@ -1,13 +1,13 @@
 package pjrt
 
 import (
-	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"gopjrt/cbuffer"
 	pjrt_proto "gopjrt/proto"
+	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
 )
@@ -88,8 +88,10 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	defer pinner.Unpin()
 
 	// Get options and pin it.
-	fmt.Printf("CompileOptions: {\n%s}\n", prototext.Format(cc.options))
 	binOptions, err := proto.Marshal(cc.options)
+	if klog.V(1).Enabled() {
+		klog.Infof("CompileOptions: {\n%s}\n", prototext.Format(cc.options))
+	}
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to marshal the CompileOptionsProto to be passed to the PJRT plugin")
 	}

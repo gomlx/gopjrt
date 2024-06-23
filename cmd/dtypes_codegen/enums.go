@@ -88,4 +88,5 @@ func generateEnums(contents string) {
 	must.M(enumsFromCTemplate.Execute(f, allValues))
 	must.M(exec.Command("gofmt", "-w", DTypeEnumGoFileName).Run())
 	fmt.Printf("Generated %q based on pjrt_c_api.h\n", DTypeEnumGoFileName)
+	must.M(exec.Command("stringer", "-type=DType", DTypeEnumGoFileName).Run())
 }

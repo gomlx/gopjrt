@@ -75,7 +75,7 @@ func TestClientCompileAndExecute(t *testing.T) {
 
 		// Compile program.
 		loadedExec, err := client.Compile().WithHLO(hloBin).Done()
-		require.NoErrorf(t, err, "Failed to compile %q", programTest)
+		require.NoErrorf(t, err, "Failed to compile %q", programTest.name)
 
 		// Get executable description and check the number of outputs.
 		exec, err := loadedExec.GetExecutable()

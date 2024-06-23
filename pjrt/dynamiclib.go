@@ -117,6 +117,7 @@ func loadNamedPlugin(name string) (*Plugin, error) {
 		return nil, errors.WithMessagef(err, "failed to initialize PJRT plugin for name %q after loading it, this leaves the plugin in an unstable state", name)
 	}
 	loadedPlugins[name] = plugin
+	cudaPluginChecks(name)
 	return plugin, nil
 }
 
@@ -185,4 +186,42 @@ func searchPlugins(searchName string) (pluginsPaths map[string]string) {
 		}
 	}
 	return
+}
+
+// cudaPluginChecks issues warning on cuda plugins if it cannot find the corresponding nvidia library files.
+// It should be called after the named plugin is loaded.
+//
+// This is helpful to try to sort out the mess of path for nvidia libraries. It's something really badly organized
+// at multiple levels (just search to see how many questions there are related to where/how install to CUDA libraries).
+func cudaPluginChecks(name string) {
+	cudaChecks := os.Getenv("GOPJRT_CUDA_CHECKS")
+	if cudaChecks != "" && cudaChecks != "1" && strings.ToUpper(cudaChecks) != "TRUE" && strings.ToUpper(cudaChecks) != "YES" {
+		// Checks disabled.
+		return
+	}
+	if strings.Index(strings.ToUpper(name), "CUDA") == -1 &&
+		strings.Index(strings.ToUpper(name), "NVIDIA") == -1 &&
+		strings.Index(strings.ToUpper(name), "GPU") == -1 {
+		// Assume not a cuda plugin.
+		return
+	}
+
+	plugin, ok := loadedPlugins[name]
+	if !ok {
+		return
+	}
+	nvidiaPath := path.Join(path.Dir(path.Dir(plugin.Path())), "nvidia")
+	fi, err := os.Stat(nvidiaPath)
+	if err == nil && fi.IsDir() {
+		// We assume the NVIDIA libraries are installed correctly.
+		return
+	}
+	klog.Warningf("Can't find nvidia/ subdirectory next to the cuda plugin (%q) in %q. "+
+		"When compiling and executing a program likely the PJRT CUDA plugin will fail to find the many required NVidia's "+
+		"sub-libraries: this is confusing, the plugin usually hard code the search path to $ORIGIN/../nvidia/... and $ORIGIN/../../nvidia/... "+
+		"in a hardcoded variable called RPATH (it can be checked with `readelf -d %q`, look for RPATH). "+
+		"Either install the various nvidia libraries there, or more simply, use the Jax python installation (`pip install -U \"jax[cuda12]\"`), "+
+		"and link its nvidia directories (`ln -s \"<python_virtual_environment_path>/lib/python3.12/site-packages/nvidia\" %q`). "+
+		"If you have things correctly set up, and you want to disable this warning, just set the environment variable `export GOPJR_CUDA_CHECKS=0`.",
+		plugin.Path(), nvidiaPath, plugin.Path(), nvidiaPath)
 }

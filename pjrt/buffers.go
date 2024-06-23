@@ -7,6 +7,7 @@ package pjrt
 */
 import "C"
 import (
+	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"gopjrt/dtypes"
@@ -129,8 +130,9 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 			return C.int64_t(b.dimensions[i])
 		})
 	}
+	fmt.Printf("\tDimensions: %v -- %d\n", b.dimensions, *args.dims)
 	if args.dims != nil {
-		cFree(args.dims)
+		defer cFree(args.dims)
 	}
 	args.host_buffer_semantics = C.PJRT_HostBufferSemantics(b.hostBufferSemantics)
 	args.device = b.device.cDevice
@@ -141,6 +143,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 
 	// We get a PJRT_Buffer even before it's fully transferred.
 	buffer := newBuffer(b.client.plugin, args.buffer)
+	fmt.Printf("\t> buffer=%p\n", args.buffer)
 
 	// Await for transfer to finish.
 	doneEvent := newEvent(b.client.plugin, args.done_with_host_buffer)
@@ -190,4 +193,56 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 	dtype := dtypes.DTypeGeneric[T]()
 	rawSlice := unsafe.Slice((*byte)(unsafe.Pointer(&value)), int(unsafe.Sizeof(value)))
 	return rawSlice, dtype, nil // empty dimensions for scalar
+}
+
+// Size returns the size in bytes if required for the buffer to be transferred with ToHost.
+func (b *Buffer) Size() (int, error) {
+	if b == nil || b.plugin == nil || b.cBuffer == nil {
+		// Already destroyed ?
+		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	}
+	defer runtime.KeepAlive(b)
+	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
+	defer cFree(args)
+	args.src = b.cBuffer
+	args.dst = nil // Don't transfer, only inquire about size.
+	err := toError(b.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.plugin.api, args))
+	if err != nil {
+		return 0, errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer for inquiring size of the buffer")
+	}
+	return int(args.dst_size), nil
+}
+
+// ToHost transfers the contents of buffer stored on device to the host.
+// The space in dst has to hold enough space (see Buffer.Size) to hold the required data, or an error is returned.
+func (b *Buffer) ToHost(dst []byte) error {
+	if b == nil || b.plugin == nil || b.cBuffer == nil {
+		// Already destroyed ?
+		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	}
+
+	// Make sure garbage collection doesn't free or move data before they are used by C/C++.
+	var pinner runtime.Pinner
+	pinner.Pin(b)
+	pinner.Pin(unsafe.SliceData(dst))
+	defer pinner.Unpin()
+
+	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
+	defer cFree(args)
+	args.src = b.cBuffer
+	args.dst = unsafe.Pointer(unsafe.SliceData(dst))
+	args.dst_size = C.size_t(len(dst))
+	err := toError(b.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.plugin.api, args))
+	if err != nil {
+		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
+	}
+
+	// Await for transfer to finish.
+	doneEvent := newEvent(b.plugin, args.event)
+	defer func() { _ = doneEvent.Destroy() }()
+	err = doneEvent.Await()
+	if err != nil {
+		return errors.WithMessage(err, "Failed to wait Buffer.ToHost transfer to finish")
+	}
+	return nil
 }

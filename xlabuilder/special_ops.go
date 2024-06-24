@@ -19,8 +19,8 @@ func Parameter(builder *XlaBuilder, name string, paramIndex int, shape Shape) (*
 	paramOp := newOp(ParameterOp)
 
 	// Convert to the compact Op parameters form.
-	paramOp.Int = paramIndex
-	paramOp.Str = name
+	paramOp.IntArg = paramIndex
+	paramOp.StrArg = name
 	paramOp.ShapeArg = shape
 
 	err := builder.addOp(paramOp)
@@ -32,7 +32,7 @@ func Parameter(builder *XlaBuilder, name string, paramIndex int, shape Shape) (*
 
 // DecodeParameter extracts the arguments to the Parameter call that created the op.
 func DecodeParameter(paramOp *Op) (name string, paramIndex int, shape Shape) {
-	return paramOp.Str, paramOp.Int, paramOp.ShapeArg
+	return paramOp.StrArg, paramOp.IntArg, paramOp.ShapeArg
 }
 
 // Tuple organizes multiple nodes in one tuple-node.

@@ -13,7 +13,9 @@ import (
 )
 
 // Executable is a reference that describes a compiled program -- it cannot be executed, only introspected.
-// It is created by a LoadedExecutable. LoadedExecutable is also the one that can be executed.
+//
+// This is usually not directly used: the LoadedExecutable when create automatically extracts the Executable
+// and related information.
 type Executable struct {
 	cExecutable *C.PJRT_Executable
 	plugin      *Plugin
@@ -25,12 +27,7 @@ func newExecutable(plugin *Plugin, cExecutable *C.PJRT_Executable) *Executable {
 		plugin:      plugin,
 		cExecutable: cExecutable,
 	}
-	runtime.SetFinalizer(e, func(e *Executable) {
-		err := e.Destroy()
-		if err != nil {
-			klog.Errorf("Executable.Destroy failed: %v", err)
-		}
-	})
+	runtime.SetFinalizer(e, func(e *Executable) { e.destroyOrLog() })
 	return e
 }
 
@@ -51,6 +48,14 @@ func (e *Executable) Destroy() error {
 	return err
 }
 
+// destroyOrLog destroys the Executable and log any errors.
+func (e *Executable) destroyOrLog() {
+	err := e.Destroy()
+	if err != nil {
+		klog.Errorf("Executable.Destroy failed: %v", err)
+	}
+}
+
 // NumOutputs returns the number of outputs for the given executable.
 func (e *Executable) NumOutputs() (int, error) {
 	if e == nil || e.plugin == nil || e.cExecutable == nil {
@@ -65,4 +70,20 @@ func (e *Executable) NumOutputs() (int, error) {
 		return 0, err
 	}
 	return int(args.num_outputs), nil
+}
+
+// Name returns the name of the executable.
+func (e *Executable) Name() (string, error) {
+	if e == nil || e.plugin == nil || e.cExecutable == nil {
+		return "", errors.New("Executable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	}
+	defer runtime.KeepAlive(e)
+	args := C.new_PJRT_Executable_Name_Args()
+	defer cFree(args)
+	args.executable = e.cExecutable
+	err := toError(e.plugin, C.call_PJRT_Executable_Name(e.plugin.api, args))
+	if err != nil {
+		return "", err
+	}
+	return cCharArray(args.executable_name, args.executable_name_size), nil
 }

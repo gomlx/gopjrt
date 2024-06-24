@@ -33,7 +33,7 @@ func pjrtDeviceDescriptionProcessIndex(dDesc *DeviceDescription) (int, error) {
 	return int(args.process_index), nil
 }
 
-// Device is a lightweight reference to a Device managed by a Client.
+// Device is a lightweight reference to a Device managed by a Client -- it doesn't own the underlying object.
 //
 // (Explanation by Gemini)
 // The meaning of Device in PJRT/XLA is a bit nuanced, it refers to an individual unit of processing capable of executing XLA computations.
@@ -48,7 +48,7 @@ func pjrtDeviceDescriptionProcessIndex(dDesc *DeviceDescription) (int, error) {
 // Device Selection: When creating a PjrtClient, you can either let PjRT choose a default device or explicitly specify which device to use.
 // The PjrtClient_Devices function can help you list the available devices.
 //
-// Device-Specific Operations: Some PjRT operations (like querying device attributes or transferring data to/from the device)
+// Device-Specific Operations: Some PJRT operations (like querying device attributes or transferring data to/from the device)
 // are device-specific and operate on individual PjrtDevice objects (obtained from the PjrtClient_Devices list).
 type Device struct {
 	plugin  *Plugin

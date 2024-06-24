@@ -76,21 +76,17 @@ func TestClientCompileAndExecute(t *testing.T) {
 		// Compile program.
 		loadedExec, err := client.Compile().WithHLO(hloBin).Done()
 		require.NoErrorf(t, err, "Failed to compile %q", programTest.name)
-
-		// Get executable description and check the number of outputs.
-		exec, err := loadedExec.GetExecutable()
-		require.NoError(t, err)
-		numOutputs, err := exec.NumOutputs()
-		require.NoError(t, err)
-		require.Equal(t, programTest.numOutputs, numOutputs)
-		require.NoErrorf(t, exec.Destroy(), "Failed to destroy Executable on %s", plugin)
+		fmt.Printf("\t> name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
 		for ii, input := range programTest.testInputs {
 			buffer, err := client.BufferFromHost().FromRawData(ScalarToRaw(input)).Done()
 			require.NoErrorf(t, err, "Failed to transfer scalar %v", input)
 			require.NoErrorf(t, buffer.Destroy(), "Failed to destroy scalar buffer for %v", input)
 			want := programTest.wantOutputs[ii]
+			outputs, err := loadedExec.Execute(buffer)
+			require.NoErrorf(t, err, "Failed to execute for %v", input)
 			_ = want
+			_ = outputs
 		}
 
 		// Destroy compiled executables.

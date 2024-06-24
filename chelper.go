@@ -45,6 +45,15 @@ func cMallocArray[T any](n int) (ptr *T) {
 	return cPtr
 }
 
+// cMallocArrayFromSlice allocates space to hold n copies of T in the C heap and copy over the slice.
+// It must be manually freed with C.free() by the user.
+func cMallocArrayFromSlice[T any](values []T) (ptr *T) {
+	ptr = cMallocArray[T](len(values))
+	dst := unsafe.Slice(ptr, len(values))
+	copy(dst, values)
+	return ptr
+}
+
 // cMallocArrayAndSet allocates space to hold n copies of T in the C heap, and set each element `i` with the result of
 // `setFn(i)`.
 // It must be manually freed with C.free() by the user.

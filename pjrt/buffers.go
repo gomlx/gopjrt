@@ -7,7 +7,6 @@ package pjrt
 */
 import "C"
 import (
-	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"gopjrt/dtypes"
@@ -130,7 +129,6 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 			return C.int64_t(b.dimensions[i])
 		})
 	}
-	fmt.Printf("\tDimensions: %v -- %d\n", b.dimensions, *args.dims)
 	if args.dims != nil {
 		defer cFree(args.dims)
 	}
@@ -143,7 +141,6 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 
 	// We get a PJRT_Buffer even before it's fully transferred.
 	buffer := newBuffer(b.client.plugin, args.buffer)
-	fmt.Printf("\t> buffer=%p\n", args.buffer)
 
 	// Await for transfer to finish.
 	doneEvent := newEvent(b.client.plugin, args.done_with_host_buffer)

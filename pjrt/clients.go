@@ -116,7 +116,7 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 	if err != nil {
 		return nil, err
 	}
-	return newLoadedExecutable(plugin, args.executable), nil
+	return newLoadedExecutable(plugin, client, args.executable)
 }
 
 // Client manages the resources of one device: its buffers, compilation and execution of HLO code.

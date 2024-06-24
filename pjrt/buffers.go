@@ -243,3 +243,26 @@ func (b *Buffer) ToHost(dst []byte) error {
 	}
 	return nil
 }
+
+// BufferToScalar is a generic function that transfer a Buffer back to host as a scalar of the given type.
+func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
+	var pinner runtime.Pinner
+	pinner.Pin(b)
+	pinner.Pin(&value)
+	defer pinner.Unpin()
+
+	dst := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
+	err = b.ToHost(dst)
+	return
+}
+
+func BufferFromScalar[T dtypes.Supported](client *Client, value T) (b *Buffer, err error) {
+	var pinner runtime.Pinner
+	pinner.Pin(client)
+	pinner.Pin(&value)
+	defer pinner.Unpin()
+
+	dtype := dtypes.DTypeGeneric[T]()
+	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
+	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
+}

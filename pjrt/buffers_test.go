@@ -36,6 +36,7 @@ func TestScalarDataToRaw(t *testing.T) {
 func testTransfersImpl[T interface {
 	float64 | float32 | int64 | int8
 }](t *testing.T, client *Client) {
+	// Transfer arrays.
 	input := []T{1, 2, 3}
 	fmt.Printf("From %#v\n", input)
 	buffer, err := client.BufferFromHost().FromRawData(FlatDataToRaw(input, 3, 1)).Done()
@@ -53,6 +54,16 @@ func testTransfersImpl[T interface {
 	require.NoError(t, err)
 	fmt.Printf("\t> output=%#v\n", output)
 	require.Equal(t, input, output)
+
+	// Transfer scalars.
+	from := T(13)
+	fmt.Printf("From %T(%v)\n", from, from)
+	buffer, err = BufferFromScalar(client, from)
+	require.NoError(t, err)
+	to, err := BufferToScalar[T](buffer)
+	require.NoError(t, err)
+	fmt.Printf("\t> got %v\n", to)
+	require.Equal(t, from, to)
 }
 
 func TestTransfers(t *testing.T) {

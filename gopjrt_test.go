@@ -49,12 +49,19 @@ func TestEndToEnd(t *testing.T) {
 	wants := []float32{0.01, 1, 9, 16, 25}
 	fmt.Printf("f(x) = x^2 :\n")
 	for ii, input := range inputs {
+		// Transfer input to a on-device buffer.
 		inputBuffer, err := pjrt.BufferFromScalar(client, input)
 		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
+
+		// Execute: it returns the output on-device buffer(s).
 		outputBuffers, err := loadedExec.Execute(inputBuffer)
 		require.NoErrorf(t, err, "Failed to execute on input %d", input)
+
+		// Transfer output on-device buffer to a "host" value (in Go).
 		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
 		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+
+		// Print an check value is what we wanted.
 		fmt.Printf("\tf(x=%g) = %g\n", input, output)
 		require.InDelta(t, output, wants[ii], 0.001)
 	}

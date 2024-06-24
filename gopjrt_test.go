@@ -23,23 +23,41 @@ func TestEndToEnd(t *testing.T) {
 	// Get computation created.
 	comp, err := builder.Build(fX)
 	require.NoError(t, err, "Failed to build XlaComputation from ops.")
-	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
-
-	// Extract HLO buffer.
-	hlo := comp.SerializedHLO()
-	_ = hlo
+	//fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
 
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
-	require.NoError(t, err, "Failed GetPlugin")
+	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
 	fmt.Printf("Loaded %s\n", plugin)
-
-	// Create a client.
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	fmt.Printf("	client: %s\n", client)
+
+	// Sanity check: verify that there are addressable devices -- not needed usually, an proper error will be returned
+	// if there isn't any.
 	devices, err := client.AddressableDevices()
 	require.NoErrorf(t, err, "Failed to fetch AddressableDevices() from client on %s", plugin)
 	require.NotEmptyf(t, devices, "No addressable devices for client on %s", plugin)
+
+	// Compile program.
+	loadedExec, err := client.Compile().WithComputation(comp).Done()
+	require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
+	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
+
+	// Test values:
+	inputs := []float32{0.1, 1, 3, 4, 5}
+	wants := []float32{0.01, 1, 9, 16, 25}
+	fmt.Printf("f(x) = x^2 :\n")
+	for ii, input := range inputs {
+		inputBuffer, err := pjrt.BufferFromScalar(client, input)
+		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
+		outputBuffers, err := loadedExec.Execute(inputBuffer)
+		require.NoErrorf(t, err, "Failed to execute on input %d", input)
+		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
+		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+		fmt.Printf("\tf(x=%g) = %g\n", input, output)
+		require.InDelta(t, output, wants[ii], 0.001)
+	}
 
 	// Destroy the client and leave.
 	err = client.Destroy()

@@ -81,12 +81,16 @@ func TestCompileAndExecute(t *testing.T) {
 		for ii, input := range programTest.testInputs {
 			buffer, err := client.BufferFromHost().FromRawData(ScalarToRaw(input)).Done()
 			require.NoErrorf(t, err, "Failed to transfer scalar %v", input)
-			require.NoErrorf(t, buffer.Destroy(), "Failed to destroy scalar buffer for %v", input)
 			want := programTest.wantOutputs[ii]
 			outputs, err := loadedExec.Execute(buffer)
 			require.NoErrorf(t, err, "Failed to execute for %v", input)
-			_ = want
-			_ = outputs
+			require.Len(t, outputs, len(want))
+			if len(outputs) == 1 {
+				got, err := BufferToScalar[float32](outputs[0])
+				require.NoErrorf(t, err, "Failed to transfer output to host for %v", input)
+				fmt.Printf("\t> input=%f, output=%f, want=%f\n", input, got, want[0])
+			}
+			require.NoErrorf(t, buffer.Destroy(), "Failed to destroy scalar buffer for %v", input)
 		}
 
 		// Destroy compiled executables.

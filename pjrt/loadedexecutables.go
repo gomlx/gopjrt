@@ -7,7 +7,7 @@ package pjrt
 */
 import "C"
 import (
-	"fmt"
+	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
@@ -142,7 +142,6 @@ func (e *LoadedExecutable) Execute(inputs ...*Buffer) ([]*Buffer, error) {
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
 	//defer cFree(args.device_complete_events)
 
-	fmt.Printf("\t> Execute(): %+v\n", args)
 	err = toError(e.plugin, C.call_PJRT_LoadedExecutable_Execute(e.plugin.api, args))
 	if err != nil {
 		return nil, err
@@ -157,11 +156,16 @@ func allocatePerDeviceBufferList(numDevices int, buffers []*Buffer) ***C.PJRT_Bu
 	// Top level:
 	perDevice := make([]**C.PJRT_Buffer, numDevices)
 	for deviceIdx := range perDevice {
-		perDevice[deviceIdx] = cMallocArrayAndSet[*C.PJRT_Buffer](len(buffers), func(i int) *C.PJRT_Buffer {
-			if buffers[i] == nil {
+		perDevice[deviceIdx] = cMallocArrayAndSet[*C.PJRT_Buffer](len(buffers), func(idxBuffer int) *C.PJRT_Buffer {
+			if buffers[idxBuffer] == nil {
+				// No buffer given for structure.
 				return nil
 			}
-			return buffers[i].cBuffer
+			if buffers[idxBuffer].cBuffer == nil {
+				// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
+				exceptions.Panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", idxBuffer)
+			}
+			return buffers[idxBuffer].cBuffer
 		})
 	}
 	return cMallocArrayFromSlice(perDevice)

@@ -12,6 +12,8 @@ import (
 
 var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path")
 
+// TestEndToEnd builds, compiles and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
+// and pjrt to compile and execute it.
 func TestEndToEnd(t *testing.T) {
 	// f(x) = x^2
 	builder := xlabuilder.New("x*x")
@@ -32,12 +34,6 @@ func TestEndToEnd(t *testing.T) {
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
 	fmt.Printf("	client: %s\n", client)
-
-	// Sanity check: verify that there are addressable devices -- not needed usually, an proper error will be returned
-	// if there isn't any.
-	devices, err := client.AddressableDevices()
-	require.NoErrorf(t, err, "Failed to fetch AddressableDevices() from client on %s", plugin)
-	require.NotEmptyf(t, devices, "No addressable devices for client on %s", plugin)
 
 	// Compile program.
 	loadedExec, err := client.Compile().WithComputation(comp).Done()

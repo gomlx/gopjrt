@@ -7,6 +7,7 @@ package pjrt
 */
 import "C"
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
@@ -138,10 +139,15 @@ func (e *LoadedExecutable) Execute(inputs ...*Buffer) ([]*Buffer, error) {
 	defer freePerDeviceBufferList(args.argument_lists, numDevices)
 	args.output_lists = allocatePerDeviceBufferList(numDevices, make([]*Buffer, e.NumOutputs))
 	defer freePerDeviceBufferList(args.output_lists, numDevices)
+	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
+	//defer cFree(args.device_complete_events)
+
+	fmt.Printf("\t> Execute(): %+v\n", args)
 	err = toError(e.plugin, C.call_PJRT_LoadedExecutable_Execute(e.plugin.api, args))
 	if err != nil {
 		return nil, err
 	}
+
 	perDevice := gatherPerDeviceBufferList(e.plugin, args.output_lists, numDevices, e.NumOutputs)
 	return perDevice[0], nil
 }

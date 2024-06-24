@@ -50,7 +50,7 @@ func TestPlugin_NewClient(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
 }
 
-func TestClientCompileAndExecute(t *testing.T) {
+func TestCompileAndExecute(t *testing.T) {
 	plugin, err := GetPlugin(*flagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)

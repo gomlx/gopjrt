@@ -81,3 +81,29 @@ func Iota(builder *XlaBuilder, shape Shape, iotaAxis int) (*Op, error) {
 func DecodeIota(op *Op) (shape Shape, iotaAxis int) {
 	return op.ShapeArg, op.IntArg
 }
+
+// Identity returns an Op whose output is the same as its input.
+//
+// It's a no-op that is not registered with the C++ XlaBuilder, it's simply serves as a place-holder
+// for some arbitrary meta-data the user may want to include in the UserPayload field.
+func Identity(input *Op) *Op {
+	builder := input.builder
+	op := newOp(IdentityOp)
+	op.OpInputs = []*Op{input}
+	_ = builder.addOp(op) // addOp doesn't return any errors for the identity op.
+	return op
+}
+
+// Constant introduces an Op
+func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
+	if x == nil || x.cLiteralPtr == nil {
+		return nil, errors.New("Constant() needs a non-nil literal value")
+	}
+	op := newOp(ConstantOp)
+	op.LiteralArg = x
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}

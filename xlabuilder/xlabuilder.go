@@ -77,6 +77,11 @@ func (b *XlaBuilder) addOp(op *Op) error {
 		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cBuilder", op.Type)
 	}
 	op.builder = b
+	if op.Type == IdentityOp {
+		op.cOp = op.OpInputs[0].cOp
+		op.Shape = op.OpInputs[0].Shape
+		return nil
+	}
 	serializedOp := serializeToC(op)
 	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cBuilder), serializedOp))
 	if err != nil {

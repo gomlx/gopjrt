@@ -69,7 +69,6 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 		if cc.cbufferToFree != nil {
 			cc.cbufferToFree.Free()
 		}
-
 		// CompileConfig can only be used once.
 		cc.client = nil
 		cc.plugin = nil
@@ -121,6 +120,8 @@ func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
 // XlaComputation is an interface that matches xlabuilder.XlaComputation method needed by PJRT.
 //
 // Created here to avoid creating a hard dependency to the xlabuilder package.
+//
+// The returned buffer ownership is returned (the caller must free the buffer).
 type XlaComputation interface {
 	SerializedHLO() *cbuffer.CBuffer
 }
@@ -139,5 +140,5 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 
 	// Get HLO program from computation.
 	cc.cbufferToFree = computation.SerializedHLO()
-	return cc.WithHLO(cc.cbufferToFree.AsBytes())
+	return cc.WithHLO(cc.cbufferToFree.Bytes())
 }

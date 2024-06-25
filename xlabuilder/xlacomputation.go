@@ -56,10 +56,7 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	}
 	var vectorData *C.VectorData
 	vectorData = (*C.VectorData)(C.XlaComputationSerializedHLO(unsafe.Pointer(comp.cComp)))
-	return &cbuffer.CBuffer{
-		Data: unsafe.Pointer(vectorData.data),
-		Size: int(vectorData.count),
-	}
+	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
 }
 
 // TextHLO generates the StableHLO program as a <serialized HLOModule proto> and returns its text representation.

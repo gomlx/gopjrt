@@ -46,6 +46,9 @@ func (s Shape) Rank() int {
 	return len(s.Dimensions)
 }
 
+// IsScalar returns whether the Shape is a scalar, i.e. its len(Shape.Dimensions) == 0.
+func (s Shape) IsScalar() bool { return s.Rank() == 0 }
+
 // TupleSize is an alias to len(Shape.TupleShapes).
 func (s Shape) TupleSize() int {
 	return len(s.TupleShapes)

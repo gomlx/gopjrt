@@ -10,9 +10,10 @@ extern "C" {
 
 enum OpType {
   InvalidOp,
-  ConstantOp,
-  IotaOp,
   ParameterOp,
+  IotaOp,
+  ConstantOp,
+  IdentityOp,
   ConvertTypeOp,
   WhereOp,
   TupleOp,

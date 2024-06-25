@@ -7,9 +7,10 @@ type OpType int32
 
 const (
 	InvalidOp OpType = iota
-	ConstantOp
-	IotaOp
 	ParameterOp
+	IotaOp
+	ConstantOp
+	IdentityOp
 	ConvertTypeOp
 	WhereOp
 	TupleOp

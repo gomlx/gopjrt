@@ -15,9 +15,10 @@
 Invalid:invalid
 
 // Special ops:
-Constant:special
-Iota:special
 Parameter:special
+Iota:special
+Constant:special
+Identity:special
 ConvertType:special
 Where:special
 Tuple:special

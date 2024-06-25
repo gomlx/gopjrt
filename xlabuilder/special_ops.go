@@ -56,3 +56,28 @@ func Tuple(inputs ...*Op) (*Op, error) {
 	}
 	return tupleOp, nil
 }
+
+// Iota creates a constant of the given shape with increasing numbers (starting from 0)
+// on the given axis. So Iota([2,2], 1) returns [[0 1][0 1]], while Iota([2,2], 0)
+// returns [[0 0][1 1]].
+func Iota(builder *XlaBuilder, shape Shape, iotaAxis int) (*Op, error) {
+	if shape.IsScalar() {
+		return nil, errors.Errorf("cannot Iota a scalar shape, shape=%s", shape)
+	}
+	if iotaAxis < 0 || iotaAxis >= shape.Rank() {
+		return nil, errors.Errorf("invalid axis #%d for Iota, when shape is rank %d", iotaAxis, shape.Rank())
+	}
+	op := newOp(IotaOp)
+	op.ShapeArg = shape
+	op.IntArg = iotaAxis
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeIota retrieves the arguments of an IotaOp.
+func DecodeIota(op *Op) (shape Shape, iotaAxis int) {
+	return op.ShapeArg, op.IntArg
+}

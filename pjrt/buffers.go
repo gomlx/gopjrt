@@ -12,6 +12,7 @@ import (
 	"gopjrt/dtypes"
 	"k8s.io/klog/v2"
 	"runtime"
+	"slices"
 	"unsafe"
 )
 
@@ -51,6 +52,48 @@ func (b *Buffer) Destroy() error {
 	b.plugin = nil
 	b.cBuffer = nil
 	return err
+}
+
+// Dimensions of the Buffer.
+func (b *Buffer) Dimensions() (dims []int, err error) {
+	if b == nil || b.plugin == nil || b.cBuffer == nil {
+		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+		return
+	}
+	defer runtime.KeepAlive(b)
+
+	args := C.new_PJRT_Buffer_Dimensions_Args()
+	defer cFree(args)
+	args.buffer = b.cBuffer
+	err = toError(b.plugin, C.call_PJRT_Buffer_Dimensions(b.plugin.api, args))
+	if err != nil {
+		return
+	}
+	if args.num_dims == 0 {
+		return // dims = nil
+	}
+	dims = slices.Clone(cDataToSlice[int](unsafe.Pointer(args.dims), int(args.num_dims)))
+	return
+}
+
+// DType of the Buffer (PJRT_Buffer_ElementType).
+func (b *Buffer) DType() (dtype dtypes.DType, err error) {
+	dtype = dtypes.InvalidDType
+	if b == nil || b.plugin == nil || b.cBuffer == nil {
+		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+		return
+	}
+	defer runtime.KeepAlive(b)
+
+	args := C.new_PJRT_Buffer_ElementType_Args()
+	defer cFree(args)
+	args.buffer = b.cBuffer
+	err = toError(b.plugin, C.call_PJRT_Buffer_ElementType(b.plugin.api, args))
+	if err != nil {
+		return
+	}
+	dtype = dtypes.DType(args._type)
+	return
 }
 
 // BufferFromHostConfig is used to configure the transfer from a buffer from host memory to on-device memory, it is
@@ -156,23 +199,23 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	return buffer, nil
 }
 
-// FlatDataToRaw takes a flat slice of values and the target dimensions of the underlying array and convert
+// FlatDataToRawWithDimensions takes a flat slice of values and the target dimensions of the underlying array and convert
 // to the raw data, dtype and dimensions needed by BufferFromHostConfig.FromRawData.
 //
 // If len(flat) != Product(dimensions) or if any dimension is 0, it panics.
 //
 // Scalars can be defined with len(dimensions) == 0 and len(flat) == 1.
-func FlatDataToRaw[T dtypes.Supported](flat []T, dimensions ...int) ([]byte, dtypes.DType, []int) {
+func FlatDataToRawWithDimensions[T dtypes.Supported](flat []T, dimensions ...int) ([]byte, dtypes.DType, []int) {
 	// Checks dimensions.
 	expectedSize := 1
 	for _, dim := range dimensions {
 		if dim <= 0 {
-			exceptions.Panicf("FlatDataToRaw cannot be given zero or negative dimensions, got %v", dimensions)
+			exceptions.Panicf("FlatDataToRawWithDimensions cannot be given zero or negative dimensions, got %v", dimensions)
 		}
 		expectedSize *= dim
 	}
 	if len(flat) != expectedSize {
-		exceptions.Panicf("FlatDataToRaw given a flat slice of size %d that doesn't match dimensions %v (total size %d)",
+		exceptions.Panicf("FlatDataToRawWithDimensions given a flat slice of size %d that doesn't match dimensions %v (total size %d)",
 			len(flat), dimensions, expectedSize)
 	}
 	dtype := dtypes.DTypeGeneric[T]()
@@ -256,7 +299,11 @@ func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
 	return
 }
 
-func BufferFromScalar[T dtypes.Supported](client *Client, value T) (b *Buffer, err error) {
+// ScalarToBuffer transfers the scalar value to a Buffer on the default device.
+//
+// It is a shortcut to Client.BufferFromHost call with default parameters.
+// If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
+func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err error) {
 	var pinner runtime.Pinner
 	pinner.Pin(client)
 	pinner.Pin(&value)
@@ -265,4 +312,54 @@ func BufferFromScalar[T dtypes.Supported](client *Client, value T) (b *Buffer, e
 	dtype := dtypes.DTypeGeneric[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
+}
+
+// ArrayToBuffer transfer a slice to a Buffer on the default device.
+// The underlying array is provided with its flat values as a slice, and the underlying dimensions.
+//
+// It is a shortcut to Client.BufferFromHost call with default parameters.
+// If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
+func ArrayToBuffer[T dtypes.Supported](client *Client, flatValues []T, dimensions ...int) (b *Buffer, err error) {
+	return client.BufferFromHost().FromRawData(FlatDataToRawWithDimensions(flatValues, dimensions...)).Done()
+}
+
+// BufferToArray transfers the buffer to an array defined by a slice with its flat values, and its underlying dimensions.
+func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensions []int, err error) {
+	var dtype dtypes.DType
+	dtype, err = buffer.DType()
+	if err != nil {
+		return
+	}
+	requestedDType := dtypes.DTypeGeneric[T]()
+	if dtype != requestedDType {
+		var dummy T
+		err = errors.Errorf("called BufferToArray[%T](...), but underlying buffer has dtype %s", dummy, dtype)
+		return
+	}
+	dimensions, err = buffer.Dimensions()
+	if err != nil {
+		return
+	}
+	totalSize := 1
+	for _, dim := range dimensions {
+		totalSize *= dim
+	}
+	if totalSize <= 0 {
+		// Odd empty buffer (likely one of the dimensions was 0), we return nil for the flatValues, the reported dimensions
+		// and no error.
+		return
+	}
+	flatValues = make([]T, totalSize)
+	flatValuesPtr := unsafe.SliceData(flatValues)
+
+	var pinner runtime.Pinner
+	pinner.Pin(buffer)
+	pinner.Pin(flatValuesPtr)
+	defer pinner.Unpin()
+
+	dst := unsafe.Slice((*byte)(
+		unsafe.Pointer(flatValuesPtr)),
+		totalSize*int(unsafe.Sizeof(flatValues[0])))
+	err = buffer.ToHost(dst)
+	return
 }

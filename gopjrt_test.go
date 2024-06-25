@@ -46,7 +46,7 @@ func TestEndToEnd(t *testing.T) {
 	fmt.Printf("f(x) = x^2 :\n")
 	for ii, input := range inputs {
 		// Transfer input to a on-device buffer.
-		inputBuffer, err := pjrt.BufferFromScalar(client, input)
+		inputBuffer, err := pjrt.ScalarToBuffer(client, input)
 		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
 
 		// Execute: it returns the output on-device buffer(s).

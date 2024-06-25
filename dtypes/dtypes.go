@@ -8,31 +8,6 @@ import (
 // Generate automatic C-to-Go boilerplate code for pjrt_c_api.h.
 //go:generate go run ../cmd/dtypes_codegen
 
-// Aliases to the dtypes defined in pjrt_c_api.h
-const (
-	// InvalidDType (an alias for INVALID) represents an invalid (or not set) dtype.
-	InvalidDType = INVALID
-
-	// Bool (an alias for PRED) is used as the output and input of logic operations.
-	Bool = PRED
-
-	Int8  = S8
-	Int16 = S16
-	Int32 = S32
-	Int64 = S64
-
-	Uint8  = U8
-	Uint16 = U16
-	Uint32 = U32
-	Uint64 = U64
-
-	Float32 = F32
-	Float64 = F64
-
-	Complex64  = C64
-	Complex128 = C128
-)
-
 // Supported lists the Go types that `gopjrt` knows how to convert -- there are more types that can be manually
 // converted.
 // Used as traits for generics.

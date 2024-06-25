@@ -8,22 +8,22 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[INVALID-0]
-	_ = x[PRED-1]
-	_ = x[S8-2]
-	_ = x[S16-3]
-	_ = x[S32-4]
-	_ = x[S64-5]
-	_ = x[U8-6]
-	_ = x[U16-7]
-	_ = x[U32-8]
-	_ = x[U64-9]
+	_ = x[InvalidDType-0]
+	_ = x[Bool-1]
+	_ = x[Int8-2]
+	_ = x[Int16-3]
+	_ = x[Int32-4]
+	_ = x[Int64-5]
+	_ = x[Uint8-6]
+	_ = x[Uint16-7]
+	_ = x[Uint32-8]
+	_ = x[Uint64-9]
 	_ = x[F16-10]
-	_ = x[F32-11]
-	_ = x[F64-12]
+	_ = x[Float32-11]
+	_ = x[Float64-12]
 	_ = x[BF16-13]
-	_ = x[C64-14]
-	_ = x[C128-15]
+	_ = x[Complex64-14]
+	_ = x[Complex128-15]
 	_ = x[F8E5M2-16]
 	_ = x[F8E4M3FN-17]
 	_ = x[F8E4M3B11FNUZ-18]
@@ -36,9 +36,9 @@ func _() {
 	_ = x[U2-25]
 }
 
-const _DType_name = "INVALIDPREDS8S16S32S64U8U16U32U64F16F32F64BF16C64C128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2"
+const _DType_name = "InvalidDTypeBoolInt8Int16Int32Int64Uint8Uint16Uint32Uint64F16Float32Float64BF16Complex64Complex128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2"
 
-var _DType_index = [...]uint8{0, 7, 11, 13, 16, 19, 22, 24, 27, 30, 33, 36, 39, 42, 46, 49, 53, 59, 67, 80, 90, 100, 102, 104, 109, 111, 113}
+var _DType_index = [...]uint8{0, 12, 16, 20, 25, 30, 35, 40, 46, 52, 58, 61, 68, 75, 79, 88, 98, 104, 112, 125, 135, 145, 147, 149, 154, 156, 158}
 
 func (i DType) String() string {
 	if i < 0 || i >= DType(len(_DType_index)-1) {

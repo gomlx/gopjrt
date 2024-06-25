@@ -16,6 +16,23 @@ const (
 	DTypeEnumGoFileName = "gen_dtype_enum.go"
 )
 
+var aliases = map[string]string{
+	"INVALID": "InvalidDType",
+	"PRED":    "Bool",
+	"S8":      "Int8",
+	"S16":     "Int16",
+	"S32":     "Int32",
+	"S64":     "Int64",
+	"U8":      "Uint8",
+	"U16":     "Uint16",
+	"U32":     "Uint32",
+	"U64":     "Uint64",
+	"F32":     "Float32",
+	"F64":     "Float64",
+	"C64":     "Complex64",
+	"C128":    "Complex128",
+}
+
 var (
 	reEnums = regexp.MustCompile(
 		`(?m)(typedef enum \{\n([^}]+)}` + // Enum definition
@@ -35,10 +52,16 @@ package dtypes
 // The package provides some aliases.
 type DType int32
 const ({{range .}}
-	// {{.Name}} is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_{{.Name}}). {{range .Comments}}
+	// {{.Name}} is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_{{.Original}}). {{range .Comments}}
 	{{.}}{{end}}
 	{{.Name}} DType = {{.Value}}
 {{end}})
+
+// Original (from pjrt_c_api.h) DType names are aliased here:
+const ({{range .}}{{if .HasAlias}}
+	// {{.Original}} (or PJRT_Buffer_Type_{{.Original}}) is the C enum name for {{.Name}}.
+	{{.Original}} = {{.Name}}
+{{end}}{{end}})
 `))
 )
 
@@ -46,6 +69,8 @@ type enumValue struct {
 	Name     string
 	Comments []string
 	Value    int
+	HasAlias bool
+	Original string
 }
 
 func generateEnums(contents string) {
@@ -79,6 +104,11 @@ func generateEnums(contents string) {
 			} else {
 				enumV.Value = allValues[len(allValues)-1].Value + 1
 			}
+		}
+		enumV.Original, enumV.HasAlias = aliases[enumV.Name]
+		if enumV.HasAlias {
+			// Swap:
+			enumV.Name, enumV.Original = enumV.Original, enumV.Name
 		}
 		allValues = append(allValues, enumV)
 		enumV = nil

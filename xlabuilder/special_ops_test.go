@@ -162,5 +162,26 @@ func TestBroadcast(t *testing.T) {
 	got, dims := execArrayOutput[float32](t, client, exec)
 	require.Equal(t, []float32{0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{2, 3, 2}, dims)
+}
 
+func TestBroadcastInDim(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	input := capture(Iota(builder, MakeShape(dtypes.Float32, 3, 1), 0)).Test(t)
+	outputShape := MakeShape(dtypes.Float32, 2, 3, 3)
+	broadcastAxes := []int{1, 2}
+	output := capture(BroadcastInDim(input, outputShape, broadcastAxes)).Test(t)
+
+	// Check decoding.
+	gotShape, gotAxes := DecodeBroadcastInDim(output)
+	require.Equal(t, outputShape.Dimensions, gotShape.Dimensions)
+	require.Equal(t, broadcastAxes, gotAxes)
+
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, outputShape.Dimensions, dims)
+	require.Equal(t, []float32{
+		0, 0, 0, 1, 1, 1, 2, 2, 2,
+		0, 0, 0, 1, 1, 1, 2, 2, 2}, got)
 }

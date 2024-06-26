@@ -182,3 +182,61 @@ func Broadcast(x *Op, prefixDims ...int) (*Op, error) {
 
 // DecodeBroadcast retrieves the arguments for a Broadcast op.
 func DecodeBroadcast(op *Op) (prefixDims []int) { return op.IntsArg }
+
+// BroadcastInDim broadcasts x to an output with the given shape.
+// broadcastAxes has an output axes value for each x axes (len(broadcastAxes) == x.Shape.Rank()).
+// The i-th axis of x is mapped to the broadcastDim[i]-th dimension of the output.
+// broadcastAxes must be also increasing: this operation cannot be used to transpose axes, it will only
+// broadcast and introduce new axes in-between.
+//
+// This also requires that the i-th input dimension is either 1 or is the same as the
+// output dimension it's broadcasting into.
+//
+// For example, say operand `x = (s32)[2]{1, 2}`; outputShape = `(s32)[2,2]`:
+//   - Specifying []int{1} as broadcast_dimension will generate output
+//     {{1, 2},
+//     {1, 2}}
+//   - On the other hand, specifying []int{0} as broadcast_dimension
+//     will generate output
+//     {{1 , 1},
+//     {2 , 2}}
+func BroadcastInDim(x *Op, outputShape Shape, broadcastAxes []int) (*Op, error) {
+	if x.Shape.DType != outputShape.DType {
+		return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot change the DType of the shape", x.Shape, outputShape, broadcastAxes)
+	}
+	for _, dim := range outputShape.Dimensions {
+		if dim <= 0 {
+			return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot create a shape with an axis with dimension <= 0", x.Shape, outputShape, broadcastAxes)
+		}
+	}
+	if x.Shape.Rank() != len(broadcastAxes) {
+		return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): there must be one broadcastAxes value for each axis of x", x.Shape, outputShape, broadcastAxes)
+	}
+	for xAxis, outputAxis := range broadcastAxes {
+		if xAxis > 0 {
+			if broadcastAxes[xAxis-1] >= outputAxis {
+				return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): broadcastAxes[%d] is out-of-order, the values must be strictly increasing", x.Shape, outputShape, broadcastAxes, xAxis)
+			}
+		}
+		if outputAxis < 0 || outputAxis >= outputShape.Rank() {
+			return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): broadcastAxes values should be 0 <= axis < outputShape.Rank(), got axis=%d instead", x.Shape, outputShape, broadcastAxes, outputAxis)
+		}
+		if x.Shape.Dimensions[xAxis] != outputShape.Dimensions[outputAxis] && x.Shape.Dimensions[xAxis] != 1 {
+			return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): x axis %d (dimension=%d) is being broadcast to axis %d (dimension=%d) of the output -- x axis is changing dimension but it is not originally 1: only axes of dimension 1 can be broadcast",
+				x.Shape, outputShape, broadcastAxes, xAxis, x.Shape.Dimensions[xAxis], outputAxis, outputShape.Dimensions[outputAxis])
+		}
+	}
+	op := newOp(BroadcastInDimOp, x)
+	op.ShapeArg = outputShape
+	op.IntsArg = slices.Clone(broadcastAxes)
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBroadcastInDim retrieves the arguments for a BroadcastInDim op.
+func DecodeBroadcastInDim(op *Op) (outputShape Shape, broadcastAxes []int) {
+	return op.ShapeArg, op.IntsArg
+}

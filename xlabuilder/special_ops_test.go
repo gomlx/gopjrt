@@ -84,3 +84,16 @@ func TestIota(t *testing.T) {
 	require.Equal(t, []int{2, 3}, dims)
 
 }
+
+func TestIdentity(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New("TestConstants")
+
+	// Exact same test as iota, just with an identity op in between.
+	iotaOp := getValue(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	identityOp := Identity(iotaOp)
+	exec := compile(t, client, getValue(builder.Build(identityOp)).Test(t))
+	got, dims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{0, 0, 1, 1, 2, 2}, got)
+	require.Equal(t, []int{3, 2}, dims)
+}

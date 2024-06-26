@@ -15,8 +15,8 @@ type Supported interface {
 	bool | float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | complex64 | complex128
 }
 
-// DTypeGeneric returns the DType enum for the given type that this package knows about.
-func DTypeGeneric[T Supported]() DType {
+// DTypeFor returns the DType enum for the given type that this package knows about.
+func DTypeFor[T Supported]() DType {
 	var t T
 	switch (any(t)).(type) {
 	case float64:

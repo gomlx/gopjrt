@@ -62,7 +62,7 @@ Literal **LiteralDecomposeTuple(Literal *literal) {
   return results;
 }
 
-void DeleteLiteral(Literal *literal) {
+void LiteralDestroy(Literal *literal) {
   literal->data = nullptr; // Owned by the underlying xla::Literal.
   if (literal->literal != nullptr) {
     delete literal->literal;
@@ -86,6 +86,7 @@ Literal *MakeLiteralFromShape(Shape *shape) {
     literal->data = literal->literal->untyped_data();
     literal->size = literal->literal->element_count();
     literal->size_bytes = literal->literal->size_bytes();
+    memset(literal->data, 0, literal->size_bytes);
   }
   return literal;
 }

@@ -15,12 +15,16 @@ var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path
 // TestEndToEnd builds, compiles and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
 // and pjrt to compile and execute it.
 func TestEndToEnd(t *testing.T) {
-	// f(x) = x^2
-	builder := xlabuilder.New("x*x")
+	// f(x) = x^2+1
+	builder := xlabuilder.New("x*x+1")
 	x, err := xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32)) // Scalar float32.
 	require.NoError(t, err, "Failed to create Parameter")
 	fX, err := xlabuilder.Mul(x, x)
 	require.NoError(t, err, "Failed operation Mul")
+	one, err := xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(1)))
+	require.NoError(t, err, "Failed to create constant of 1")
+	fX, err = xlabuilder.Add(fX, one)
+	require.NoError(t, err, "Failed operation Add")
 
 	// Get computation created.
 	comp, err := builder.Build(fX)
@@ -42,8 +46,8 @@ func TestEndToEnd(t *testing.T) {
 
 	// Test values:
 	inputs := []float32{0.1, 1, 3, 4, 5}
-	wants := []float32{0.01, 1, 9, 16, 25}
-	fmt.Printf("f(x) = x^2 :\n")
+	wants := []float32{1.01, 2, 10, 17, 26}
+	fmt.Printf("f(x) = x^2 + 1:\n")
 	for ii, input := range inputs {
 		// Transfer input to a on-device buffer.
 		inputBuffer, err := pjrt.ScalarToBuffer(client, input)

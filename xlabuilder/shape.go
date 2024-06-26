@@ -5,9 +5,11 @@ package xlabuilder
 */
 import "C"
 import (
+	"fmt"
 	"github.com/gomlx/exceptions"
 	"gopjrt/dtypes"
 	"slices"
+	"strings"
 	"unsafe"
 )
 
@@ -40,18 +42,42 @@ func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 	return s
 }
 
+// IsScalar returns whether the Shape is a scalar, i.e. its len(Shape.Dimensions) == 0.
+func (s Shape) IsScalar() bool { return s.Rank() == 0 }
+
 // Rank of a shape is the number of axes. A shortcut to len(Shape.Dimensions).
 // Scalar values have rank 0.
 func (s Shape) Rank() int {
 	return len(s.Dimensions)
 }
 
-// IsScalar returns whether the Shape is a scalar, i.e. its len(Shape.Dimensions) == 0.
-func (s Shape) IsScalar() bool { return s.Rank() == 0 }
+// Size returns the total size of the shape. E.g.: a Shape of dimensions [3, 5] has size 15. A scalar has size 1.
+func (s Shape) Size() int {
+	size := 1
+	for _, dim := range s.Dimensions {
+		size *= dim
+	}
+	return size
+}
 
 // TupleSize is an alias to len(Shape.TupleShapes).
 func (s Shape) TupleSize() int {
 	return len(s.TupleShapes)
+}
+
+// String implements fmt.Stringer and pretty-print the shape.
+func (s Shape) String() string {
+	if s.TupleSize() > 0 {
+		parts := make([]string, 0, s.TupleSize())
+		for _, tuple := range s.TupleShapes {
+			parts = append(parts, tuple.String())
+		}
+		return fmt.Sprintf("Tuple<%s>", strings.Join(parts, ", "))
+	}
+	if s.Rank() == 0 {
+		return fmt.Sprintf("(%s)[]", s.DType)
+	}
+	return fmt.Sprintf("(%s)%v", s.DType, s.Dimensions)
 }
 
 // cShapeFromShape allocates int the C-heap a new C-struct representing the shape.

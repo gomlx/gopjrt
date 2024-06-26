@@ -96,7 +96,7 @@ func Identity(input *Op) *Op {
 
 // Constant introduces an Op
 func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
-	if x == nil || x.cLiteralPtr == nil {
+	if x == nil || x.IsNil() {
 		return nil, errors.New("Constant() needs a non-nil literal value")
 	}
 	op := newOp(ConstantOp)

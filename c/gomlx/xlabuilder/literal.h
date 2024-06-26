@@ -67,8 +67,8 @@ typedef struct Literal {
   int64_t size, size_bytes;
 } Literal;
 
-// Delete the given structure, and the xla::Literal held by it.
-extern void DeleteLiteral(Literal *literal);
+// LiteralDestroy frees all associated resources.
+extern void LiteralDestroy(Literal *literal);
 
 // MakeFromShape create a new literal with the given shape, with uninitialized
 // data. It takes ownership of the given `Shape*` pointer, and stores it within

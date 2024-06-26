@@ -92,7 +92,7 @@ func serializeToC(op *Op) *C.SerializedOp {
 		sOp.string = C.CString(op.StrArg)
 	}
 	if !op.LiteralArg.IsNil() {
-		sOp.literal = op.LiteralArg.cLiteralPtr
+		sOp.literal = op.LiteralArg.cLiteral
 	}
 	if len(op.IntsArg) > 0 {
 		sOp.integer_array_size = C.int32_t(len(op.IntsArg))

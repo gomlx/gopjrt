@@ -70,11 +70,11 @@ func execWithScalars[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 	// Transfer output on-device buffer to a "host" value (in Go).
 	output, err := pjrt.BufferToScalar[T](outputBuffers[0])
 	fmt.Printf("  > f(%v)=%v\n", input, output)
-	require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+	require.NoErrorf(t, err, "Failed to transfer results of %q execution on input %d", exec.Name, input)
 	return output
 }
 
-func execWithSlice[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable, input []T) (flat []T, dims []int) {
+func execWithSlices[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable, input []T) (flat []T, dims []int) {
 	inputBuffer, err := pjrt.ArrayToBuffer(client, input, len(input))
 	require.NoErrorf(t, err, "Failed to create on-device buffer for input %v", input)
 	defer func() { require.NoError(t, inputBuffer.Destroy()) }()
@@ -87,7 +87,20 @@ func execWithSlice[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *
 	// Transfer output on-device buffer to a "host" value (in Go).
 	flat, dims, err = pjrt.BufferToArray[T](outputBuffers[0])
 	fmt.Printf("  > f(%v)=(%T%v) %v\n", input, flat[0], dims, flat)
-	require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+	require.NoErrorf(t, err, "Failed to transfer results of %q execution on input %d", exec.Name, input)
+	return
+}
+
+func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable) (flat []T, dims []int) {
+	outputBuffers := getValue(exec.Execute()).Test(t)
+	require.Len(t, outputBuffers, 1, "Expected only one output")
+	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
+
+	// Transfer output on-device buffer to a "host" value (in Go).
+	var err error
+	flat, dims, err = pjrt.BufferToArray[T](outputBuffers[0])
+	fmt.Printf("  > f()=(%T%v) %v\n", flat[0], dims, flat)
+	require.NoErrorf(t, err, "Failed to transfer results of %q execution", exec.Name)
 	return
 }
 

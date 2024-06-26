@@ -62,7 +62,25 @@ func TestConstants(t *testing.T) {
 
 	// Check values.
 	addOne = compile(t, client, comp)
-	got, dims := execWithSlice(t, client, addOne, []int64{1, 7, 13})
+	got, dims := execWithSlices(t, client, addOne, []int64{1, 7, 13})
 	require.Equal(t, []int64{1 + 1, 7 + 1, 13 + 1}, got)
 	require.Equal(t, []int{3}, dims)
+}
+
+func TestIota(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New("TestConstants")
+
+	iotaOp := getValue(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	exec := compile(t, client, getValue(builder.Build(iotaOp)).Test(t))
+	got, dims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{0, 0, 1, 1, 2, 2}, got)
+	require.Equal(t, []int{3, 2}, dims)
+
+	iotaOp = getValue(Iota(builder, MakeShape(dtypes.F64, 2, 3), 1)).Test(t)
+	exec = compile(t, client, getValue(builder.Build(iotaOp)).Test(t))
+	got, dims = execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{0, 1, 2, 0, 1, 2}, got)
+	require.Equal(t, []int{2, 3}, dims)
+
 }

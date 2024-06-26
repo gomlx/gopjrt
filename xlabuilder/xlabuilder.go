@@ -76,6 +76,12 @@ func (b *XlaBuilder) addOp(op *Op) error {
 	if op.builder != nil {
 		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cBuilder", op.Type)
 	}
+	for ii, input := range op.OpInputs {
+		if input.builder != b {
+			return errors.Errorf("XlaBuilder.Op %s being added to a different builder than its input #%d (%s)", op.Type, ii, input.Type)
+		}
+	}
+
 	op.builder = b
 	if op.Type == IdentityOp {
 		op.cOp = op.OpInputs[0].cOp

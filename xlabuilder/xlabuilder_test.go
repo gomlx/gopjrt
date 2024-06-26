@@ -99,7 +99,8 @@ func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 	// Transfer output on-device buffer to a "host" value (in Go).
 	var err error
 	flat, dims, err = pjrt.BufferToArray[T](outputBuffers[0])
-	fmt.Printf("  > f()=(%T%v) %v\n", flat[0], dims, flat)
+	var v T
+	fmt.Printf("  > f()=(%T%v) %v\n", v, dims, flat)
 	require.NoErrorf(t, err, "Failed to transfer results of %q execution", exec.Name)
 	return
 }

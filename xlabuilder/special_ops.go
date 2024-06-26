@@ -122,3 +122,14 @@ func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
 
 // DecodeConvertDType retrieves the arguments for a ConvertDType op.
 func DecodeConvertDType(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }
+
+// Where takes element-wise values from onTrue or onFalse depending on the value of condition (expected to be boolean).
+func Where(condition, onTrue, onFalse *Op) (*Op, error) {
+	builder := condition.builder
+	op := newOp(WhereOp, condition, onTrue, onFalse)
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}

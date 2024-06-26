@@ -104,9 +104,34 @@ func TestConvertDType(t *testing.T) {
 
 	// Exact same test as iota, but change the dtype of the result.
 	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
-	outputOp := capture(ConvertDType(iotaOp, dtypes.Int64)).Test(t)
-	exec := compile(t, client, capture(builder.Build(outputOp)).Test(t))
+	output := capture(ConvertDType(iotaOp, dtypes.Int64)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
 	got, dims := execArrayOutput[int64](t, client, exec)
 	require.Equal(t, []int64{0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{3, 2}, dims)
+}
+
+func TestWhere(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New("TestConstants")
+
+	// Exact same test as iota, but change the dtype of the result.
+	shape := MakeShape(dtypes.Float32, 5, 3)
+	zeros := capture(Constant(builder, NewLiteralFromShape(shape))).Test(t)
+	one := capture(Constant(builder, NewScalarLiteral(float32(1)))).Test(t)
+	ones := capture(Add(zeros, one)).Test(t)
+	values := capture(Iota(builder, shape, 0)).Test(t)
+	two := capture(Constant(builder, NewScalarLiteral(float32(2)))).Test(t)
+	greaterThanTwo := capture(GreaterThan(values, two)).Test(t)
+	output := capture(Where(greaterThanTwo, ones, zeros)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, []float32{
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		1, 1, 1,
+		1, 1, 1,
+	}, got)
+	require.Equal(t, shape.Dimensions, dims)
 }

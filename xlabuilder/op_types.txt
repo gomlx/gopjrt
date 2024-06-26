@@ -26,6 +26,8 @@ GetTupleElement:special
 Reshape:special
 Broadcast:special
 BroadcastInDim:special
+Transpose:special
+
 ReduceSum:special
 ReduceMax:special
 ReduceMultiply:special
@@ -36,7 +38,6 @@ Scatter:special
 Concatenate:special
 ConvGeneralDilated:special
 Reverse:special
-Transpose:special
 ReduceWindow:special
 SelectAndScatter:special
 BatchNormTraining:special

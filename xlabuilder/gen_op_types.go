@@ -18,6 +18,7 @@ const (
 	ReshapeOp
 	BroadcastOp
 	BroadcastInDimOp
+	TransposeOp
 	ReduceSumOp
 	ReduceMaxOp
 	ReduceMultiplyOp
@@ -28,7 +29,6 @@ const (
 	ConcatenateOp
 	ConvGeneralDilatedOp
 	ReverseOp
-	TransposeOp
 	ReduceWindowOp
 	SelectAndScatterOp
 	BatchNormTrainingOp

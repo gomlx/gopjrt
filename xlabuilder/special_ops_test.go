@@ -185,3 +185,16 @@ func TestBroadcastInDim(t *testing.T) {
 		0, 0, 0, 1, 1, 1, 2, 2, 2,
 		0, 0, 0, 1, 1, 1, 2, 2, 2}, got)
 }
+
+func TestTranspose(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	input := capture(Iota(builder, MakeShape(dtypes.Float32, 3, 1, 2), 0)).Test(t)
+	output := capture(Transpose(input, 2, 0, 1)).Test(t)
+	require.Equal(t, []int{2, 0, 1}, DecodeTranspose(output)) // Check decoding.
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, []float32{0, 1, 2, 0, 1, 2}, got)
+	require.Equal(t, []int{2, 3, 1}, dims)
+}

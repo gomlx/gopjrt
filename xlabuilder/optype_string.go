@@ -20,17 +20,17 @@ func _() {
 	_ = x[ReshapeOp-9]
 	_ = x[BroadcastOp-10]
 	_ = x[BroadcastInDimOp-11]
-	_ = x[ReduceSumOp-12]
-	_ = x[ReduceMaxOp-13]
-	_ = x[ReduceMultiplyOp-14]
-	_ = x[SliceOp-15]
-	_ = x[PadOp-16]
-	_ = x[GatherOp-17]
-	_ = x[ScatterOp-18]
-	_ = x[ConcatenateOp-19]
-	_ = x[ConvGeneralDilatedOp-20]
-	_ = x[ReverseOp-21]
-	_ = x[TransposeOp-22]
+	_ = x[TransposeOp-12]
+	_ = x[ReduceSumOp-13]
+	_ = x[ReduceMaxOp-14]
+	_ = x[ReduceMultiplyOp-15]
+	_ = x[SliceOp-16]
+	_ = x[PadOp-17]
+	_ = x[GatherOp-18]
+	_ = x[ScatterOp-19]
+	_ = x[ConcatenateOp-20]
+	_ = x[ConvGeneralDilatedOp-21]
+	_ = x[ReverseOp-22]
 	_ = x[ReduceWindowOp-23]
 	_ = x[SelectAndScatterOp-24]
 	_ = x[BatchNormTrainingOp-25]
@@ -90,9 +90,9 @@ func _() {
 	_ = x[RngUniformOp-79]
 }
 
-const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpReduceSumOpReduceMaxOpReduceMultiplyOpSliceOpPadOpGatherOpScatterOpConcatenateOpConvGeneralDilatedOpReverseOpTransposeOpReduceWindowOpSelectAndScatterOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpDotGeneralOpArgMinMaxOpFftOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOpRngBitGeneratorOpRngNormalOpRngUniformOp"
+const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpTransposeOpReduceSumOpReduceMaxOpReduceMultiplyOpSliceOpPadOpGatherOpScatterOpConcatenateOpConvGeneralDilatedOpReverseOpReduceWindowOpSelectAndScatterOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpDotGeneralOpArgMinMaxOpFftOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOpRngBitGeneratorOpRngNormalOpRngUniformOp"
 
-var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 149, 165, 172, 177, 185, 194, 207, 227, 236, 247, 261, 279, 298, 318, 333, 345, 356, 361, 366, 371, 376, 383, 390, 396, 403, 408, 415, 427, 437, 443, 448, 453, 458, 464, 470, 477, 483, 489, 495, 500, 505, 510, 515, 520, 525, 529, 534, 539, 544, 549, 554, 563, 570, 580, 596, 609, 622, 632, 649, 669, 695, 718, 741, 761, 778, 789, 801}
+var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 149, 160, 176, 183, 188, 196, 205, 218, 238, 247, 261, 279, 298, 318, 333, 345, 356, 361, 366, 371, 376, 383, 390, 396, 403, 408, 415, 427, 437, 443, 448, 453, 458, 464, 470, 477, 483, 489, 495, 500, 505, 510, 515, 520, 525, 529, 534, 539, 544, 549, 554, 563, 570, 580, 596, 609, 622, 632, 649, 669, 695, 718, 741, 761, 778, 789, 801}
 
 func (i OpType) String() string {
 	if i < 0 || i >= OpType(len(_OpType_index)-1) {

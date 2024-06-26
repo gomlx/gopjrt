@@ -240,3 +240,35 @@ func BroadcastInDim(x *Op, outputShape Shape, broadcastAxes []int) (*Op, error) 
 func DecodeBroadcastInDim(op *Op) (outputShape Shape, broadcastAxes []int) {
 	return op.ShapeArg, op.IntsArg
 }
+
+// Transpose axes of x.
+// There should be one value in permutations for each axis in x.
+// The output will have: output.Shape.Dimension[permutation[i]] = x.Shape.Dimension[i].
+func Transpose(x *Op, permutations ...int) (*Op, error) {
+	rank := x.Shape.Rank()
+	if len(permutations) != rank {
+		return nil, errors.Errorf("in TransposeAllDims(x=%s, %v), there must be one permutation per axis in x, but x rank is %d",
+			x.Shape, permutations, rank)
+	}
+	used := make([]bool, rank)
+	for xAxis, outputAxis := range permutations {
+		if outputAxis >= rank || outputAxis < 0 {
+			return nil, errors.Errorf("in TransposeAllDims(x=%s, %v), the permutations[%d]=%d is out-of-range",
+				x.Shape, permutations, xAxis, outputAxis)
+		}
+		if used[outputAxis] {
+			return nil, errors.Errorf("in TransposeAllDims(x=%s, %v), the output axis %d appears more than once",
+				x.Shape, permutations, outputAxis)
+		}
+	}
+	op := newOp(TransposeOp, x)
+	op.IntsArg = slices.Clone(permutations)
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeTranspose retrieves the arguments for a Transpose op.
+func DecodeTranspose(op *Op) (permutations []int) { return op.IntsArg }

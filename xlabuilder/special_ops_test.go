@@ -149,3 +149,15 @@ func TestReshape(t *testing.T) {
 	require.Equal(t, []int8{0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{6, 1, 1}, dims)
 }
+
+func TestBroadcast(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	input := capture(Iota(builder, MakeShape(dtypes.Float32, 3, 2), 0)).Test(t)
+	output := capture(Broadcast(input, 2)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, []float32{0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2}, got)
+	require.Equal(t, []int{2, 3, 2}, dims)
+}

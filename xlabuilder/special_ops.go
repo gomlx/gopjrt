@@ -155,3 +155,30 @@ func Reshape(x *Op, dimensions ...int) (*Op, error) {
 	}
 	return op, nil
 }
+
+// DecodeReshape retrieves the arguments for a Reshape op.
+func DecodeReshape(op *Op) (dimensions []int) { return op.ShapeArg.Dimensions }
+
+// Broadcast prefixes dimensions to an array by duplicating the data in the array.
+// See BroadcastInDim for a broadcast in between the axes.
+//
+// The new dimensions dims are inserted on the left, i.e., if
+// prefixDims has values `{a0, ..., aN}` and the operand shape
+// has dimensions {b0, ..., bM} then the shape of the output has
+// dimensions {a0, ..., aN, b0, ..., bM}.
+//
+// The new dimensions id into copies of the operand, i.e.
+//
+//	output[i0, ..., iN, j0, ..., jM] = operand[j0, ..., jM]
+func Broadcast(x *Op, prefixDims ...int) (*Op, error) {
+	op := newOp(BroadcastOp, x)
+	op.IntsArg = slices.Clone(prefixDims)
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBroadcast retrieves the arguments for a Broadcast op.
+func DecodeBroadcast(op *Op) (prefixDims []int) { return op.IntsArg }

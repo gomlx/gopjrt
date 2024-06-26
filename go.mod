@@ -1,4 +1,4 @@
-module gopjrt
+module github.com/gomlx/gopjrt
 
 go 1.22
 

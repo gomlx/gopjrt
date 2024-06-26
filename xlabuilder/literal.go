@@ -6,7 +6,7 @@ package xlabuilder
 import "C"
 import (
 	"github.com/gomlx/exceptions"
-	"gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/dtypes"
 	"runtime"
 	"unsafe"
 )

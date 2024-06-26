@@ -8,8 +8,8 @@ package pjrt
 import "C"
 import (
 	"github.com/gomlx/exceptions"
+	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
-	"gopjrt/dtypes"
 	"k8s.io/klog/v2"
 	"runtime"
 	"slices"

@@ -2,8 +2,8 @@ package pjrt
 
 import (
 	"fmt"
+	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/stretchr/testify/require"
-	"gopjrt/dtypes"
 	"testing"
 	"unsafe"
 )

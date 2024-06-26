@@ -1,9 +1,10 @@
-package xlabuilder
+package xlabuilder_test
 
 import (
 	"fmt"
+	"github.com/gomlx/gopjrt/dtypes"
+	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
-	"gopjrt/dtypes"
 	"os"
 	"testing"
 )

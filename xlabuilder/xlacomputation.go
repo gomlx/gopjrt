@@ -6,7 +6,7 @@ package xlabuilder
 */
 import "C"
 import (
-	"gopjrt/cbuffer"
+	"github.com/gomlx/gopjrt/cbuffer"
 	"runtime"
 	"unsafe"
 )

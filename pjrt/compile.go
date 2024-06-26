@@ -2,11 +2,11 @@ package pjrt
 
 import (
 	"github.com/gomlx/exceptions"
+	"github.com/gomlx/gopjrt/cbuffer"
+	pjrt_proto "github.com/gomlx/gopjrt/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
-	"gopjrt/cbuffer"
-	pjrt_proto "gopjrt/proto"
 	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"

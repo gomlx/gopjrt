@@ -7,7 +7,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/gomlx/exceptions"
-	"gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/dtypes"
 	"slices"
 	"strings"
 	"unsafe"

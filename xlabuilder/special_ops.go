@@ -133,3 +133,25 @@ func Where(condition, onTrue, onFalse *Op) (*Op, error) {
 	}
 	return op, nil
 }
+
+// Reshape reshapes x to the new dimensions.
+// Total size cannot change, it's just a "reinterpretation" of the same flat data.
+//
+// The dtype remains the same, see ConvertDType to actually convert the values.
+func Reshape(x *Op, dimensions ...int) (*Op, error) {
+	newSize := 1
+	for _, dim := range dimensions {
+		newSize *= dim
+	}
+	if newSize != x.Shape.Size() {
+		return nil, errors.Errorf("trying to Reshape(x, %v), where x size (%d elements) doesn't match new size of %d",
+			dimensions, x.Shape.Size(), newSize)
+	}
+	op := newOp(ReshapeOp, x)
+	op.ShapeArg = MakeShape(x.Shape.DType, dimensions...)
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}

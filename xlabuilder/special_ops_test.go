@@ -41,7 +41,7 @@ func TestTuple(t *testing.T) {
 
 func TestConstants(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New("TestConstants")
+	builder := New(t.Name())
 
 	// f(x)=x+1
 	x := capture(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
@@ -69,7 +69,7 @@ func TestConstants(t *testing.T) {
 
 func TestIota(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New("TestConstants")
+	builder := New(t.Name())
 
 	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
 	exec := compile(t, client, capture(builder.Build(iotaOp)).Test(t))
@@ -87,7 +87,7 @@ func TestIota(t *testing.T) {
 
 func TestIdentity(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New("TestConstants")
+	builder := New(t.Name())
 
 	// Exact same test as iota, just with an identity op in between.
 	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
@@ -100,7 +100,7 @@ func TestIdentity(t *testing.T) {
 
 func TestConvertDType(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New("TestConstants")
+	builder := New(t.Name())
 
 	// Exact same test as iota, but change the dtype of the result.
 	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
@@ -113,7 +113,7 @@ func TestConvertDType(t *testing.T) {
 
 func TestWhere(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New("TestConstants")
+	builder := New(t.Name())
 
 	// Exact same test as iota, but change the dtype of the result.
 	shape := MakeShape(dtypes.Float32, 5, 3)
@@ -134,4 +134,18 @@ func TestWhere(t *testing.T) {
 		1, 1, 1,
 	}, got)
 	require.Equal(t, shape.Dimensions, dims)
+}
+
+func TestReshape(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	input := capture(Iota(builder, MakeShape(dtypes.Int8, 3, 2), 0)).Test(t)
+	_, err := Reshape(input, 7) // Bad reshape.
+	require.Error(t, err)
+	output := capture(Reshape(input, 6, 1, 1)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[int8](t, client, exec)
+	require.Equal(t, []int8{0, 0, 1, 1, 2, 2}, got)
+	require.Equal(t, []int{6, 1, 1}, dims)
 }

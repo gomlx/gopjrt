@@ -38,3 +38,31 @@ func TestTuple(t *testing.T) {
 		require.NoError(t, f.Close(), "Failed to close StableHLO proto output file %q", *flagStableHLOOutput)
 	}
 }
+
+func TestConstants(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New("TestConstants")
+
+	// f(x)=x+1
+	x := getValue(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
+	one := getValue(Constant(builder, NewScalarLiteral(float32(1)))).Test(t)
+	fX := getValue(Add(x, one)).Test(t)
+	comp := getValue(builder.Build(fX)).Test(t)
+
+	// Check values.
+	addOne := compile(t, client, comp)
+	require.InDelta(t, float32(2), execWithScalars(t, client, addOne, float32(1)), 1e-3)
+	require.InDelta(t, float32(8), execWithScalars(t, client, addOne, float32(7)), 1e-3)
+
+	// f(x)=x+1 with broadcast
+	x = getValue(Parameter(builder, "x", 0, MakeShape(dtypes.Int64, 3))).Test(t) // Scalar float32.
+	one = getValue(Constant(builder, NewScalarLiteral(int64(1)))).Test(t)
+	fX = getValue(Add(x, one)).Test(t)
+	comp = getValue(builder.Build(fX)).Test(t)
+
+	// Check values.
+	addOne = compile(t, client, comp)
+	got, dims := execWithSlice(t, client, addOne, []int64{1, 7, 13})
+	require.Equal(t, []int64{1 + 1, 7 + 1, 13 + 1}, got)
+	require.Equal(t, []int{3}, dims)
+}

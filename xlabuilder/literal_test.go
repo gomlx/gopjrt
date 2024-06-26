@@ -15,5 +15,5 @@ func TestLiterals(t *testing.T) {
 	require.NotPanics(t, func() { _ = NewScalarLiteral[float32](0) })
 	require.NotPanics(t, func() { _ = NewScalarLiteral[complex128](complex(1.0, 0.0)) })
 	require.NotPanics(t, func() { NewScalarLiteral[int8](0).Destroy() })
-	require.NotPanics(t, func() { NewLiteralFromFlatData([]float32{1, 2, 3, 4, 5, 6}, 2, 3).Destroy() })
+	require.NotPanics(t, func() { NewArrayLiteral([]float32{1, 2, 3, 4, 5, 6}, 2, 3).Destroy() })
 }

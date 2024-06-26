@@ -30,11 +30,11 @@ func NewLiteralFromShape(shape Shape) *Literal {
 	return newLiteral(cLiteral, shape)
 }
 
-// NewLiteralFromFlatData creates a Literal initialized from the given flat data (a slice) and the dimensions of the array.
-func NewLiteralFromFlatData[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
+// NewArrayLiteral creates a Literal initialized from the array flat data (a slice) and the dimensions of the array.
+func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
 	shape := MakeShape(dtypes.DTypeFor[T](), dimensions...)
 	if shape.Size() != len(flat) {
-		exceptions.Panicf("NewLiteralFromFlatData got a slice of length %d, but the shape %s given has %d elements",
+		exceptions.Panicf("NewArrayLiteral got a slice of length %d, but the shape %s given has %d elements",
 			len(flat), shape, shape.Size())
 	}
 	l := NewLiteralFromShape(shape)

@@ -19,7 +19,7 @@ Parameter:special
 Iota:special
 Constant:special
 Identity:special
-ConvertType:special
+ConvertDType:special
 Where:special
 Tuple:special
 GetTupleElement:special

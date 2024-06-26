@@ -44,10 +44,10 @@ func TestConstants(t *testing.T) {
 	builder := New("TestConstants")
 
 	// f(x)=x+1
-	x := getValue(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	one := getValue(Constant(builder, NewScalarLiteral(float32(1)))).Test(t)
-	fX := getValue(Add(x, one)).Test(t)
-	comp := getValue(builder.Build(fX)).Test(t)
+	x := capture(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
+	one := capture(Constant(builder, NewScalarLiteral(float32(1)))).Test(t)
+	fX := capture(Add(x, one)).Test(t)
+	comp := capture(builder.Build(fX)).Test(t)
 
 	// Check values.
 	addOne := compile(t, client, comp)
@@ -55,10 +55,10 @@ func TestConstants(t *testing.T) {
 	require.InDelta(t, float32(8), execWithScalars(t, client, addOne, float32(7)), 1e-3)
 
 	// f(x)=x+1 with broadcast
-	x = getValue(Parameter(builder, "x", 0, MakeShape(dtypes.Int64, 3))).Test(t) // Scalar float32.
-	one = getValue(Constant(builder, NewScalarLiteral(int64(1)))).Test(t)
-	fX = getValue(Add(x, one)).Test(t)
-	comp = getValue(builder.Build(fX)).Test(t)
+	x = capture(Parameter(builder, "x", 0, MakeShape(dtypes.Int64, 3))).Test(t) // Scalar float32.
+	one = capture(Constant(builder, NewScalarLiteral(int64(1)))).Test(t)
+	fX = capture(Add(x, one)).Test(t)
+	comp = capture(builder.Build(fX)).Test(t)
 
 	// Check values.
 	addOne = compile(t, client, comp)
@@ -71,14 +71,14 @@ func TestIota(t *testing.T) {
 	client := getPJRTClient(t)
 	builder := New("TestConstants")
 
-	iotaOp := getValue(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
-	exec := compile(t, client, getValue(builder.Build(iotaOp)).Test(t))
+	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	exec := compile(t, client, capture(builder.Build(iotaOp)).Test(t))
 	got, dims := execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []float64{0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{3, 2}, dims)
 
-	iotaOp = getValue(Iota(builder, MakeShape(dtypes.F64, 2, 3), 1)).Test(t)
-	exec = compile(t, client, getValue(builder.Build(iotaOp)).Test(t))
+	iotaOp = capture(Iota(builder, MakeShape(dtypes.F64, 2, 3), 1)).Test(t)
+	exec = compile(t, client, capture(builder.Build(iotaOp)).Test(t))
 	got, dims = execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []float64{0, 1, 2, 0, 1, 2}, got)
 	require.Equal(t, []int{2, 3}, dims)
@@ -90,10 +90,23 @@ func TestIdentity(t *testing.T) {
 	builder := New("TestConstants")
 
 	// Exact same test as iota, just with an identity op in between.
-	iotaOp := getValue(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
 	identityOp := Identity(iotaOp)
-	exec := compile(t, client, getValue(builder.Build(identityOp)).Test(t))
+	exec := compile(t, client, capture(builder.Build(identityOp)).Test(t))
 	got, dims := execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []float64{0, 0, 1, 1, 2, 2}, got)
+	require.Equal(t, []int{3, 2}, dims)
+}
+
+func TestConvertDType(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New("TestConstants")
+
+	// Exact same test as iota, but change the dtype of the result.
+	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	outputOp := capture(ConvertDType(iotaOp, dtypes.Int64)).Test(t)
+	exec := compile(t, client, capture(builder.Build(outputOp)).Test(t))
+	got, dims := execArrayOutput[int64](t, client, exec)
+	require.Equal(t, []int64{0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{3, 2}, dims)
 }

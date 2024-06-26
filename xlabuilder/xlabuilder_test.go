@@ -23,8 +23,8 @@ type errTester[T any] struct {
 	err   error
 }
 
-// getValue is a shortcut to test that there is no error and return the value.
-func getValue[T any](value T, err error) errTester[T] {
+// capture is a shortcut to test that there is no error and return the value.
+func capture[T any](value T, err error) errTester[T] {
 	return errTester[T]{value, err}
 }
 
@@ -92,7 +92,7 @@ func execWithSlices[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec 
 }
 
 func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable) (flat []T, dims []int) {
-	outputBuffers := getValue(exec.Execute()).Test(t)
+	outputBuffers := capture(exec.Execute()).Test(t)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
 

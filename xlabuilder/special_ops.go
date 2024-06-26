@@ -1,6 +1,7 @@
 package xlabuilder
 
 import (
+	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"slices"
 )
@@ -77,7 +78,7 @@ func Iota(builder *XlaBuilder, shape Shape, iotaAxis int) (*Op, error) {
 	return op, nil
 }
 
-// DecodeIota retrieves the arguments of an IotaOp.
+// DecodeIota retrieves the arguments of an Iota op.
 func DecodeIota(op *Op) (shape Shape, iotaAxis int) {
 	return op.ShapeArg, op.IntArg
 }
@@ -107,3 +108,17 @@ func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
 	}
 	return op, nil
 }
+
+// ConvertDType of x to dtype.
+func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
+	op := newOp(ConvertDTypeOp, x)
+	op.IntArg = int(dtype)
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeConvertDType retrieves the arguments for a ConvertDType op.
+func DecodeConvertDType(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }

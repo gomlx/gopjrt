@@ -11,7 +11,7 @@ const (
 	IotaOp
 	ConstantOp
 	IdentityOp
-	ConvertTypeOp
+	ConvertDTypeOp
 	WhereOp
 	TupleOp
 	GetTupleElementOp

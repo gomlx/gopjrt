@@ -123,7 +123,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case ParameterOp:
     op = xla::Parameter(builder, serialized_op->integer, shape, serialized_op->string);
     break;
-  case ConvertTypeOp:
+  case ConvertDTypeOp:
     op = xla::ConvertElementType(
         *inputs[0], static_cast<xla::PrimitiveType>(serialized_op->integer));
     break;

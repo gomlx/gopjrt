@@ -39,6 +39,7 @@ type XlaBuilder struct {
 	// cXlaBuilder is registered to be destroyed in the finalizer -> only use it protected by a runtime.KeepAlive(XlaBuilder).
 	cXlaBuilder *C.XlaBuilder
 	name        string
+	parent      *XlaBuilder // parent builder, if created with CreateSubBuilder.
 }
 
 // New create a new XlaBuilder with the given name, that can be used to create a new StableHLO program.
@@ -70,6 +71,7 @@ func (b *XlaBuilder) Destroy() {
 	}
 	C.XlaBuilderDestroy(unsafe.Pointer(b.cXlaBuilder))
 	b.cXlaBuilder = nil
+	b.parent = nil // Help the GC just in case.
 }
 
 // Name returns the name after it was canonicalized by the XlaBuilder library -- so it may be different from the
@@ -138,5 +140,7 @@ func (b *XlaBuilder) CreateSubBuilder(computationName string) *XlaBuilder {
 	defer cFree(cName)
 	var cNewBuilder *C.XlaBuilder
 	cNewBuilder = (*C.XlaBuilder)(C.XlaBuilderCreateSubBuilder(unsafe.Pointer(b.cXlaBuilder), cName))
-	return newXlaBuilder(cNewBuilder)
+	newB := newXlaBuilder(cNewBuilder)
+	newB.parent = b
+	return newB
 }

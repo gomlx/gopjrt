@@ -218,7 +218,7 @@ func TestCall(t *testing.T) {
 	exec := compile(t, client, capture(builder.Build(output)).Test(t))
 
 	inputs := []float32{1, 3, 7}
-	fmt.Printf("f(x) = (x+1) * (x+2):\n")
+	fmt.Printf("f(x) = (x+1) * (x+2), using %q:\n", xPlusOneComp.Name())
 	for _, input := range inputs {
 		want := (input + 1) * (input + 2)
 		got := execWithScalars(t, client, exec, input)

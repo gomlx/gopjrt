@@ -56,6 +56,11 @@ func (comp *XlaComputation) IsNil() bool {
 	return comp == nil || comp.cXlaComputation == nil
 }
 
+// Name returns the name assigned to the computation (given at the builder construction).
+func (comp *XlaComputation) Name() string {
+	return comp.name
+}
+
 // SerializedHLO generates the StableHLO program as a <serialized HLOModule proto> (something that PJRT can consume) for
 // the given computation.
 //

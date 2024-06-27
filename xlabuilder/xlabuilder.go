@@ -64,6 +64,7 @@ func newXlaBuilder(cXlaBuilder *C.XlaBuilder) *XlaBuilder {
 		cXlaBuilder:                cXlaBuilder,
 		name:                       cStrFree(C.XlaBuilderName(unsafe.Pointer(cXlaBuilder))),
 		cachedStandardComputations: map[string]*XlaComputation{},
+		cachedStandardConstants:    map[string]*Op{},
 	}
 	runtime.SetFinalizer(b, func(b *XlaBuilder) { b.Destroy() })
 	return b

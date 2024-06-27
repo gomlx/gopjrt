@@ -6,6 +6,7 @@ package xlabuilder
 */
 import "C"
 import (
+	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"runtime"
 	"unsafe"
@@ -40,6 +41,12 @@ type XlaBuilder struct {
 	cXlaBuilder *C.XlaBuilder
 	name        string
 	parent      *XlaBuilder // parent builder, if created with CreateSubBuilder.
+
+	// cacheStandardComputations are sub-computations used on standard operations, like Reduce{Max,Min,Mul,Sum}.
+	cachedStandardComputations map[string]*XlaComputation
+
+	// cacheStandardComputations for things like the initial values for reductions, for each dtype.
+	cachedStandardConstants map[string]*Op
 }
 
 // New create a new XlaBuilder with the given name, that can be used to create a new StableHLO program.
@@ -54,24 +61,32 @@ func New(name string) *XlaBuilder {
 
 func newXlaBuilder(cXlaBuilder *C.XlaBuilder) *XlaBuilder {
 	b := &XlaBuilder{
-		cXlaBuilder: cXlaBuilder,
-		name:        cStrFree(C.XlaBuilderName(unsafe.Pointer(cXlaBuilder))),
+		cXlaBuilder:                cXlaBuilder,
+		name:                       cStrFree(C.XlaBuilderName(unsafe.Pointer(cXlaBuilder))),
+		cachedStandardComputations: map[string]*XlaComputation{},
 	}
 	runtime.SetFinalizer(b, func(b *XlaBuilder) { b.Destroy() })
 	return b
 }
+
+// IsNil returns true if either b is nil or the contained C++ XlaBuilder. Usually true for destroyed XlaBuilder objects.
+func (b *XlaBuilder) IsNil() bool { return b == nil || b.cXlaBuilder == nil }
 
 // Destroy and free the underlying C++ object.
 // It can be called more than once -- once finalized the first time, it becomes a no-op.
 //
 // It is called at garbage-collection automatically.
 func (b *XlaBuilder) Destroy() {
-	if b == nil || b.cXlaBuilder == nil {
+	if b.IsNil() {
 		return
 	}
-	C.XlaBuilderDestroy(unsafe.Pointer(b.cXlaBuilder))
 	b.cXlaBuilder = nil
 	b.parent = nil // Help the GC just in case.
+	for _, subComp := range b.cachedStandardComputations {
+		subComp.Destroy()
+	}
+	b.cachedStandardComputations = nil
+	C.XlaBuilderDestroy(unsafe.Pointer(b.cXlaBuilder))
 }
 
 // Name returns the name after it was canonicalized by the XlaBuilder library -- so it may be different from the
@@ -83,7 +98,7 @@ func (b *XlaBuilder) Name() string {
 // addOp will add the operation described by op.
 // If it succeeds it fills the fields Op.index and Op.op, with the C++ references.
 func (b *XlaBuilder) addOp(op *Op) error {
-	if b == nil || b.cXlaBuilder == nil {
+	if b.IsNil() {
 		return errors.Errorf("trying to add op %s to a nil XlaBuilder", op.Type)
 	}
 	if op.builder != nil {
@@ -117,6 +132,9 @@ func (b *XlaBuilder) addOp(op *Op) error {
 //
 // Note that all ops that have been enqueued will be moved to the computation being returned and will no longer be valid.
 func (b *XlaBuilder) Build(outputOp *Op) (*XlaComputation, error) {
+	if b.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	statusOr := C.XlaBuilderBuildComp(unsafe.Pointer(b.cXlaBuilder), unsafe.Pointer(outputOp.cOp))
 	var err error
 	var cComp *C.XlaComputation
@@ -136,6 +154,9 @@ func (b *XlaBuilder) Build(outputOp *Op) (*XlaComputation, error) {
 //
 // It takes as input the computationName that is going to be built with it.
 func (b *XlaBuilder) CreateSubBuilder(computationName string) *XlaBuilder {
+	if b.IsNil() {
+		exceptions.Panicf("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	cName := C.CString(computationName)
 	defer cFree(cName)
 	var cNewBuilder *C.XlaBuilder

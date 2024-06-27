@@ -1,6 +1,7 @@
 package xlabuilder
 
 import (
+	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"slices"
@@ -89,6 +90,9 @@ func DecodeIota(op *Op) (shape Shape, iotaAxis int) {
 // for some arbitrary meta-data the user may want to include in the UserPayload field.
 func Identity(input *Op) *Op {
 	builder := input.builder
+	if builder.IsNil() {
+		exceptions.Panicf("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	op := newOp(IdentityOp)
 	op.OpInputs = []*Op{input}
 	_ = builder.addOp(op) // addOp doesn't return any errors for the identity op.
@@ -97,6 +101,9 @@ func Identity(input *Op) *Op {
 
 // Constant introduces an Op
 func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
+	if builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	if x == nil || x.IsNil() {
 		return nil, errors.New("Constant() needs a non-nil literal value")
 	}
@@ -111,6 +118,9 @@ func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
 
 // ConvertDType of x to dtype.
 func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
+	if x.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	op := newOp(ConvertDTypeOp, x)
 	op.IntArg = int(dtype)
 	err := x.builder.addOp(op)
@@ -125,6 +135,9 @@ func DecodeConvertDType(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.In
 
 // Where takes element-wise values from onTrue or onFalse depending on the value of condition (expected to be boolean).
 func Where(condition, onTrue, onFalse *Op) (*Op, error) {
+	if condition.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	builder := condition.builder
 	op := newOp(WhereOp, condition, onTrue, onFalse)
 	err := builder.addOp(op)
@@ -139,6 +152,9 @@ func Where(condition, onTrue, onFalse *Op) (*Op, error) {
 //
 // The dtype remains the same, see ConvertDType to actually convert the values.
 func Reshape(x *Op, dimensions ...int) (*Op, error) {
+	if x.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	newSize := 1
 	for _, dim := range dimensions {
 		newSize *= dim
@@ -201,6 +217,9 @@ func DecodeBroadcast(op *Op) (prefixDims []int) { return op.IntsArg }
 //     {{1 , 1},
 //     {2 , 2}}
 func BroadcastInDim(x *Op, outputShape Shape, broadcastAxes []int) (*Op, error) {
+	if x.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	if x.Shape.DType != outputShape.DType {
 		return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot change the DType of the shape", x.Shape, outputShape, broadcastAxes)
 	}
@@ -277,6 +296,9 @@ func DecodeTranspose(op *Op) (permutations []int) { return op.IntsArg }
 // The given subComputation must have been created with a sub-builder (see XlaBuilder.CreateSubBuilder) of the given
 // builder.
 func Call(builder *XlaBuilder, subComputation *XlaComputation, operands ...*Op) (*Op, error) {
+	if builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
 	op := newOp(CallOp, operands...)
 	op.ComputationArg = subComputation
 	err := builder.addOp(op)

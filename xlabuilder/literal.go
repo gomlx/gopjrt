@@ -7,6 +7,8 @@ import "C"
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/x448/float16"
+	"reflect"
 	"runtime"
 	"unsafe"
 )
@@ -32,7 +34,7 @@ func NewLiteralFromShape(shape Shape) *Literal {
 
 // NewArrayLiteral creates a Literal initialized from the array flat data (a slice) and the dimensions of the array.
 func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
-	shape := MakeShape(dtypes.DTypeFor[T](), dimensions...)
+	shape := MakeShape(dtypes.FromGoType[T](), dimensions...)
 	if shape.Size() != len(flat) {
 		exceptions.Panicf("NewArrayLiteral got a slice of length %d, but the shape %s given has %d elements",
 			len(flat), shape, shape.Size())
@@ -45,9 +47,46 @@ func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
 
 // NewScalarLiteral creates a scalar Literal initialized with the given value.
 func NewScalarLiteral[T dtypes.Supported](value T) *Literal {
-	shape := MakeShape(dtypes.DTypeFor[T]())
+	shape := MakeShape(dtypes.FromGoType[T]())
 	l := NewLiteralFromShape(shape)
 	*(*T)(unsafe.Pointer(l.cLiteral.data)) = value
+	return l
+}
+
+// NewScalarLiteralFromFloat64 creates a scalar Literal with the given dtype initialized from the given value as float64.
+// This can be used to create common constants for arbitrary dtypes.
+//
+// It panics if the value cannot be converted to the dtype.
+func NewScalarLiteralFromFloat64(value float64, dtype dtypes.DType) *Literal {
+	// Scalar value.
+	if dtype == dtypes.Bool {
+		return NewScalarLiteral(value != 0)
+	}
+	if dtype == dtypes.Complex64 {
+		return NewScalarLiteral(complex(float32(value), 0))
+	}
+	if dtype == dtypes.Complex128 {
+		return NewScalarLiteral(complex(value, 0))
+	}
+	if dtype == dtypes.Float16 {
+		return NewScalarLiteral(float16.Fromfloat32(float32(value)))
+	}
+
+	convertedValue := reflect.ValueOf(value).Convert(dtype.GoType())
+	l := NewLiteralFromShape(MakeShape(dtype))
+	lValueOf := reflect.NewAt(dtype.GoType(), unsafe.Pointer(l.cLiteral.data)).Elem()
+	lValueOf.Set(convertedValue)
+	return l
+}
+
+// NewScalarLiteralFromAny creates a scalar Literal with the given dynamically typed value.
+// It uses reflection to inspect the type.
+func NewScalarLiteralFromAny(value any) *Literal {
+	valueOf := reflect.ValueOf(value)
+	dtype := dtypes.FromType(valueOf.Type())
+	l := NewLiteralFromShape(MakeShape(dtype))
+	lValueOf := reflect.NewAt(dtype.GoType(), unsafe.Pointer(l.cLiteral.data)).Elem()
+	lValueOf.Set(valueOf)
 	return l
 }
 

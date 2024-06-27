@@ -44,9 +44,9 @@ const (
 	// Uint64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_U64).
 	Uint64 DType = 9
 
-	// F16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_).
+	// Float16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F16).
 	// Floating-point values of fixed width.
-	F16 DType = 10
+	Float16 DType = 10
 
 	// Float32 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F32).
 	Float32 DType = 11
@@ -135,6 +135,9 @@ const (
 
 	// U64 (or PJRT_Buffer_Type_U64) is the C enum name for Uint64.
 	U64 = Uint64
+
+	// F16 (or PJRT_Buffer_Type_F16) is the C enum name for Float16.
+	F16 = Float16
 
 	// F32 (or PJRT_Buffer_Type_F32) is the C enum name for Float32.
 	F32 = Float32

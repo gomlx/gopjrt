@@ -105,6 +105,20 @@ func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 	return
 }
 
+// execScalarOutput executes the LoadedExecutable with no inputs, and a scalar output of the given type.
+func execScalarOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable) (value T) {
+	outputBuffers := capture(exec.Execute()).Test(t)
+	require.Len(t, outputBuffers, 1, "Expected only one output")
+	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
+
+	// Transfer output on-device buffer to a "host" value (in Go).
+	var err error
+	value, err = pjrt.BufferToScalar[T](outputBuffers[0])
+	fmt.Printf("  > f()=(%T) %v\n", value, value)
+	require.NoErrorf(t, err, "Failed to transfer results of %q execution", exec.Name)
+	return
+}
+
 func TestXlaBuilder(t *testing.T) {
 	// f(x) = x^2
 	builder := New("x*x")

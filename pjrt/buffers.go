@@ -218,7 +218,7 @@ func FlatDataToRawWithDimensions[T dtypes.Supported](flat []T, dimensions ...int
 		exceptions.Panicf("FlatDataToRawWithDimensions given a flat slice of size %d that doesn't match dimensions %v (total size %d)",
 			len(flat), dimensions, expectedSize)
 	}
-	dtype := dtypes.DTypeFor[T]()
+	dtype := dtypes.FromGoType[T]()
 	if len(flat) == 0 {
 		return nil, dtype, dimensions
 	}
@@ -230,7 +230,7 @@ func FlatDataToRawWithDimensions[T dtypes.Supported](flat []T, dimensions ...int
 
 // ScalarToRaw generates the raw values needed by BufferFromHostConfig.FromRawData to feed a simple scalar value.
 func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
-	dtype := dtypes.DTypeFor[T]()
+	dtype := dtypes.FromGoType[T]()
 	rawSlice := unsafe.Slice((*byte)(unsafe.Pointer(&value)), int(unsafe.Sizeof(value)))
 	return rawSlice, dtype, nil // empty dimensions for scalar
 }
@@ -309,7 +309,7 @@ func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err
 	pinner.Pin(&value)
 	defer pinner.Unpin()
 
-	dtype := dtypes.DTypeFor[T]()
+	dtype := dtypes.FromGoType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
 }
@@ -330,7 +330,7 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 	if err != nil {
 		return
 	}
-	requestedDType := dtypes.DTypeFor[T]()
+	requestedDType := dtypes.FromGoType[T]()
 	if dtype != requestedDType {
 		var dummy T
 		err = errors.Errorf("called BufferToArray[%T](...), but underlying buffer has dtype %s", dummy, dtype)

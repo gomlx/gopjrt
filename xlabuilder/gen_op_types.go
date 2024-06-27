@@ -14,15 +14,14 @@ const (
 	ConvertDTypeOp
 	WhereOp
 	TupleOp
-	GetTupleElementOp
 	ReshapeOp
 	BroadcastOp
 	BroadcastInDimOp
 	TransposeOp
 	CallOp
-	ReduceSumOp
-	ReduceMaxOp
-	ReduceMultiplyOp
+	ReduceOp
+	GetTupleElementOp
+	ReduceWindowOp
 	SliceOp
 	PadOp
 	GatherOp
@@ -30,7 +29,6 @@ const (
 	ConcatenateOp
 	ConvGeneralDilatedOp
 	ReverseOp
-	ReduceWindowOp
 	SelectAndScatterOp
 	BatchNormTrainingOp
 	BatchNormInferenceOp

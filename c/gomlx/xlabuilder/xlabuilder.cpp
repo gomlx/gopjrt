@@ -64,30 +64,6 @@ void XlaOpDestroy(XlaOp *op) {
     delete (static_cast<xla::XlaOp *>(op));
 }
 
-xla::StatusOr<xla::XlaComputation> xlaCompForReduction(xla::XlaBuilder *builder,
-                                                       xla::XlaOp &init_op,
-                                                       int32_t op_type) {
-  auto shape_or = builder->GetShape(init_op);
-  if (!shape_or.ok()) {
-    return shape_or.status();
-  }
-  xla::PrimitiveType primitive_type =
-      shape_or.value().element_type(); // They are both ints.
-
-  switch (op_type) {
-  case ReduceSumOp:
-    return CreateScalarAddComputation(primitive_type, builder);
-  case ReduceMaxOp:
-    return CreateScalarMaxComputation(primitive_type, builder);
-  case ReduceMultiplyOp:
-    return CreateScalarMultiplyComputation(primitive_type, builder);
-  }
-  return xla::Status(
-      absl::StatusCode::kInvalidArgument,
-      absl::StrFormat("invalid op_type=%d for xlaCompForReduction",
-                      op_type));
-}
-
 // TODO: Rewrite with more sane serialized representation, and for simple ops, auto-generated.
 XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   // Create new XlaOp.
@@ -160,7 +136,6 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case BroadcastInDimOp:
     op = xla::BroadcastInDim(*inputs[0], shape_dimensions, list_of_ints);
     break;
-
   case CallOp: {
     vector<xla::XlaOp> operands;
     for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
@@ -169,20 +144,11 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = xla::Call(builder, *(serialized_op->computation), operands);
     break;
   }
-
-  case ReduceSumOp:
-  case ReduceMultiplyOp:
-  case ReduceMaxOp: {
-    auto reduce_comp_or =
-        xlaCompForReduction(builder, *inputs[1], serialized_op->op_type);
-    if (!reduce_comp_or.ok()) {
-      return new xla::Status(reduce_comp_or.status());
-    }
-    auto reduce_comp = std::move(reduce_comp_or.value());
+  case ReduceOp: {
     if (serialized_op->integer_array_size > 0) {
-      op = xla::Reduce(*inputs[0], *inputs[1], reduce_comp, list_of_ints);
+      op = xla::Reduce(*inputs[0], *inputs[1], *serialized_op->computation, list_of_ints);
     } else {
-      op = xla::ReduceAll(*inputs[0], *inputs[1], reduce_comp);
+      op = xla::ReduceAll(*inputs[0], *inputs[1], *serialized_op->computation);
     }
     break;
   }
@@ -358,15 +324,6 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     break;
   }
   case ReduceWindowOp: {
-    // Create reduction comp.
-    int64_t reduction_type = serialized_op->integer;
-    auto reduce_comp_or =
-        xlaCompForReduction(builder, *inputs[1], reduction_type);
-    if (!reduce_comp_or.ok()) {
-      return new xla::Status(reduce_comp_or.status());
-    }
-    auto reduce_comp = std::move(reduce_comp_or.value());
-
     // Decode parameters.
     int64_t rank = decode();
     int64_t len_base_dilations = decode();
@@ -384,7 +341,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     }
 
     op = xla::ReduceWindowWithGeneralPadding(
-        *inputs[0], *inputs[1], reduce_comp, window_dimensions, window_strides,
+        *inputs[0], *inputs[1], *(serialized_op->computation), window_dimensions, window_strides,
         base_dilations, window_dilations, paddings);
     break;
   }

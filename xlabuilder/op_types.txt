@@ -22,16 +22,15 @@ Identity:special
 ConvertDType:special
 Where:special
 Tuple:special
-GetTupleElement:special
 Reshape:special
 Broadcast:special
 BroadcastInDim:special
 Transpose:special
 Call:special
+Reduce:special
 
-ReduceSum:special
-ReduceMax:special
-ReduceMultiply:special
+GetTupleElement:special
+ReduceWindow:special
 Slice:special
 Pad:special
 Gather:special
@@ -39,7 +38,6 @@ Scatter:special
 Concatenate:special
 ConvGeneralDilated:special
 Reverse:special
-ReduceWindow:special
 SelectAndScatter:special
 BatchNormTraining:special
 BatchNormInference:special

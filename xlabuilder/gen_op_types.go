@@ -19,6 +19,7 @@ const (
 	BroadcastOp
 	BroadcastInDimOp
 	TransposeOp
+	CallOp
 	ReduceSumOp
 	ReduceMaxOp
 	ReduceMultiplyOp

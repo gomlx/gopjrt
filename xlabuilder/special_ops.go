@@ -272,3 +272,16 @@ func Transpose(x *Op, permutations ...int) (*Op, error) {
 
 // DecodeTranspose retrieves the arguments for a Transpose op.
 func DecodeTranspose(op *Op) (permutations []int) { return op.IntsArg }
+
+// Call will evaluate a subComputation with the given operands.
+// The given subComputation must have been created with a sub-builder (see XlaBuilder.CreateSubBuilder) of the given
+// builder.
+func Call(builder *XlaBuilder, subComputation *XlaComputation, operands ...*Op) (*Op, error) {
+	op := newOp(CallOp, operands...)
+	op.ComputationArg = subComputation
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}

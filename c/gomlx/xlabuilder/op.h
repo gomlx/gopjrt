@@ -33,14 +33,17 @@
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
 #include "xla/client/xla_builder.h"
+#include "xla/client/xla_computation.h"
 #include "xla/shape.h"
 
 typedef xla::XlaOp XlaOp;
+typedef xla::XlaComputation XlaComputation;
 
 #else
 // C and CGO only code.
 typedef _Bool bool;
 typedef void XlaOp;
+typedef void XlaComputation;
 #endif
 
 #ifdef __cplusplus
@@ -67,6 +70,7 @@ typedef struct {
   Shape *shape;
   char *string;
   float float_v;
+  XlaComputation *computation;
 
   // Output: information about the new op created, filled in by XlaBuilderAddOp.
   // Space allocated in C, but ownership is transferred back to the caller (in Go).

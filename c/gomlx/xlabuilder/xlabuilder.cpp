@@ -51,6 +51,15 @@ void XlaBuilderDestroy(XlaBuilder *builder) {
   }
 }
 
+char* XlaBuilderName(XlaBuilder *builder) {
+    return c_str(builder->name());
+}
+
+XlaBuilder * XlaBuilderCreateSubBuilder(XlaBuilder *builder, char* name) {
+    auto newBuilder = builder->CreateSubBuilder(name);  // unique_ptr<XlaBuilder>
+    return newBuilder.release();  // Ownership is returned.
+}
+
 void XlaOpDestroy(XlaOp *op) {
     delete (static_cast<xla::XlaOp *>(op));
 }
@@ -151,6 +160,16 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case BroadcastInDimOp:
     op = xla::BroadcastInDim(*inputs[0], shape_dimensions, list_of_ints);
     break;
+
+  case CallOp: {
+    vector<xla::XlaOp> operands;
+    for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
+      operands.push_back(*inputs[ii]);
+    }
+    op = xla::Call(builder, *(serialized_op->computation), operands);
+    break;
+  }
+
   case ReduceSumOp:
   case ReduceMultiplyOp:
   case ReduceMaxOp: {
@@ -665,6 +684,10 @@ StatusOr XlaBuilderBuildComp(XlaBuilder *builder, XlaOp *output_op) {
   auto xla_comp = new xla::XlaComputation(std::move(comp_or.value()));
   r.value = xla_comp;
   return r;
+}
+
+char* XlaComputationName(XlaComputation *xla_comp) {
+    return c_str(xla_comp->name());
 }
 
 void XlaComputationDestroy(XlaComputation *xla_comp) {

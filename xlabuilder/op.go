@@ -40,12 +40,13 @@ type Op struct {
 	// Other inputs are "static", meaning they are independent of the values during the calculation.
 	OpInputs []*Op // Index to other nodes that are used as inputs.
 
-	LiteralArg *Literal // If a LiteralArg (constant) is involved in the operation.
-	IntArg     int      // Used for any static integer inputs.
-	StrArg     string   // Used for any static string argument.
-	IntsArg    []int    // List of integer numbers.
-	FloatArg   float32  // For a float parameter.
-	ShapeArg   Shape    // For Ops that require a shape parameter.
+	LiteralArg     *Literal        // If a LiteralArg (constant) is involved in the operation.
+	IntArg         int             // Used for any static integer inputs.
+	StrArg         string          // Used for any static string argument.
+	IntsArg        []int           // List of integer numbers.
+	FloatArg       float32         // For a float parameter.
+	ShapeArg       Shape           // For Ops that require a shape parameter.
+	ComputationArg *XlaComputation // For Ops that require a sub-computation.
 }
 
 // newOp creates the Op of the given type with the given Op inputs and sets the correct finalizer.
@@ -97,6 +98,9 @@ func serializeToC(op *Op) *C.SerializedOp {
 	if len(op.IntsArg) > 0 {
 		sOp.integer_array_size = C.int32_t(len(op.IntsArg))
 		sOp.integer_array = cMallocArrayAndSet[C.int64_t](len(op.IntsArg), func(ii int) C.int64_t { return C.int64_t(op.IntsArg[ii]) })
+	}
+	if op.ComputationArg != nil {
+		sOp.computation = unsafe.Pointer(op.ComputationArg.cXlaComputation)
 	}
 	return sOp
 }

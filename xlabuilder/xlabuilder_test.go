@@ -108,6 +108,7 @@ func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 func TestXlaBuilder(t *testing.T) {
 	// f(x) = x^2
 	builder := New("x*x")
+	fmt.Printf("XlaBuilder %q:\n", builder.Name())
 	x, err := Parameter(builder, "x", 0, MakeShape(dtypes.F32)) // Scalar float32.
 	require.NoError(t, err)
 	fX, err := Mul(x, x)

@@ -28,15 +28,17 @@ import (
 // The XlaComputation can then be used with PJRT (see XlaComputation.SerializedHLO), or pretty (+/-, relatively speaking)
 // print (text, HTML, graphviz, etc). See XlaComputation documentation.
 //
-// Once done (usually, just after StableHLO is called) deallocate the underlying C++ resources by calling Free.
+// Once done (usually, just after StableHLO is called) deallocate the underlying C++ resources by calling Destroy.
 //
 // Some observations:
 //
 //   - The XlaBuilder is used by all ops creating functions (like "Add", "Mul", etc.). But since the input of most ops,
-//     are other created ops, and they hold a link to the cBuilder, there is no need to explicitly pass the XlaBuilder to
+//     are other created ops, and they hold a link to the XlaBuilder, there is no need to explicitly pass the XlaBuilder to
 //     every op function.
 type XlaBuilder struct {
-	cBuilder *C.XlaBuilder
+	// cXlaBuilder is registered to be destroyed in the finalizer -> only use it protected by a runtime.KeepAlive(XlaBuilder).
+	cXlaBuilder *C.XlaBuilder
+	name        string
 }
 
 // New create a new XlaBuilder with the given name, that can be used to create a new StableHLO program.
@@ -45,36 +47,45 @@ func New(name string) *XlaBuilder {
 	var cBuilder *C.XlaBuilder
 	cName := C.CString(name)
 	defer cFree(cName)
-
 	cBuilder = (*C.XlaBuilder)(C.NewXlaBuilder(cName))
-	b := &XlaBuilder{cBuilder: cBuilder}
-	runtime.SetFinalizer(b, xlaBuilderFinalizer)
+	return newXlaBuilder(cBuilder)
+}
+
+func newXlaBuilder(cXlaBuilder *C.XlaBuilder) *XlaBuilder {
+	b := &XlaBuilder{
+		cXlaBuilder: cXlaBuilder,
+		name:        cStrFree(C.XlaBuilderName(unsafe.Pointer(cXlaBuilder))),
+	}
+	runtime.SetFinalizer(b, func(b *XlaBuilder) { b.Destroy() })
 	return b
 }
 
-func xlaBuilderFinalizer(b *XlaBuilder) {
-	b.Free()
-}
-
-// Free must be called once the cBuilder is done to free the underlying object.
-// The garbage collector won't free it by itself.
+// Destroy and free the underlying C++ object.
 // It can be called more than once -- once finalized the first time, it becomes a no-op.
-func (b *XlaBuilder) Free() {
-	if b == nil || b.cBuilder == nil {
+//
+// It is called at garbage-collection automatically.
+func (b *XlaBuilder) Destroy() {
+	if b == nil || b.cXlaBuilder == nil {
 		return
 	}
-	C.XlaBuilderDestroy(unsafe.Pointer(b.cBuilder))
-	b.cBuilder = nil
+	C.XlaBuilderDestroy(unsafe.Pointer(b.cXlaBuilder))
+	b.cXlaBuilder = nil
+}
+
+// Name returns the name after it was canonicalized by the XlaBuilder library -- so it may be different from the
+// one given.
+func (b *XlaBuilder) Name() string {
+	return b.name
 }
 
 // addOp will add the operation described by op.
 // If it succeeds it fills the fields Op.index and Op.op, with the C++ references.
 func (b *XlaBuilder) addOp(op *Op) error {
-	if b == nil || b.cBuilder == nil {
+	if b == nil || b.cXlaBuilder == nil {
 		return errors.Errorf("trying to add op %s to a nil XlaBuilder", op.Type)
 	}
 	if op.builder != nil {
-		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cBuilder", op.Type)
+		return errors.Errorf("XlaBuilder.Op %s being added seems to have been already added to some cXlaBuilder", op.Type)
 	}
 	for ii, input := range op.OpInputs {
 		if input.builder != b {
@@ -89,7 +100,7 @@ func (b *XlaBuilder) addOp(op *Op) error {
 		return nil
 	}
 	serializedOp := serializeToC(op)
-	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cBuilder), serializedOp))
+	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cXlaBuilder), serializedOp))
 	if err != nil {
 		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
 	}
@@ -104,12 +115,28 @@ func (b *XlaBuilder) addOp(op *Op) error {
 //
 // Note that all ops that have been enqueued will be moved to the computation being returned and will no longer be valid.
 func (b *XlaBuilder) Build(outputOp *Op) (*XlaComputation, error) {
-	statusOr := C.XlaBuilderBuildComp(unsafe.Pointer(b.cBuilder), unsafe.Pointer(outputOp.cOp))
+	statusOr := C.XlaBuilderBuildComp(unsafe.Pointer(b.cXlaBuilder), unsafe.Pointer(outputOp.cOp))
 	var err error
 	var cComp *C.XlaComputation
 	cComp, err = pointerOrError[C.XlaComputation](statusOr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "while building the computation with the XlaBuilder (outputOp=%s)", outputOp.Type)
 	}
+
 	return newXlaComputation(cComp), nil
+}
+
+// CreateSubBuilder returns a new XlaBuilder whose resultant Computation is used only by this
+// XlaBuilder.
+//
+// Some operations, like Call and Reduce, take as input a sub-computation (the reduction function), that can be created
+// with a sub-builder.
+//
+// It takes as input the computationName that is going to be built with it.
+func (b *XlaBuilder) CreateSubBuilder(computationName string) *XlaBuilder {
+	cName := C.CString(computationName)
+	defer cFree(cName)
+	var cNewBuilder *C.XlaBuilder
+	cNewBuilder = (*C.XlaBuilder)(C.XlaBuilderCreateSubBuilder(unsafe.Pointer(b.cXlaBuilder), cName))
+	return newXlaBuilder(cNewBuilder)
 }

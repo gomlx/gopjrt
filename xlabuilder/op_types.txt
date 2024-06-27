@@ -27,6 +27,7 @@ Reshape:special
 Broadcast:special
 BroadcastInDim:special
 Transpose:special
+Call:special
 
 ReduceSum:special
 ReduceMax:special

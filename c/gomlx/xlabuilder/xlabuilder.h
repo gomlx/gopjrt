@@ -71,6 +71,16 @@ extern void XlaOpDestroy(XlaOp *op);
 // Note that all ops that have been enqueued will be moved to the computation being returned.
 extern StatusOr XlaBuilderBuildComp(XlaBuilder *builder, XlaOp *output_op);
 
+// XlaBuilderName returns the name of the XlaBuilder.
+extern char* XlaBuilderName(XlaBuilder *builder);
+
+// XlaBuilderCreateSubBuilder returns a new XlaBuilder whose resultant Computation is used only by this
+// XlaBuilder. The sub-XlaBuilder has the same die_immediately_on_error behavior as the parent.
+extern XlaBuilder * XlaBuilderCreateSubBuilder(XlaBuilder *builder, char* name);
+
+// XlaComputationName returns the name of the XlaComputation.
+extern char* XlaComputationName(XlaComputation *xla_comp);
+
 // XlaComputationSerializedHLO returns the serialized HloModule proto (with the StableHLO program), that can be used by PJRT.
 //
 // It returns an error or a VectorData of bytes with the binary blob.

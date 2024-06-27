@@ -42,7 +42,7 @@ func New(data unsafe.Pointer, size int, withStack bool) *CBuffer {
 		// uses the output of CBuffer.Bytes() and no longer uses the CBuffer it may immediately be garbage
 		// collected before the goroutine using the returned C++ pointer (as []byte) has had a chance to use it.
 		// To avoid this the user would have to use a `runtime.KeepAlive(*CBuffer)` call after they use `CBuffer.Bytes()`.
-		// But then it's better to have the user to call CBuffer.Free -- a memory leak with a warning is better than
+		// But then it's better to have the user to call CBuffer.Destroy -- a memory leak with a warning is better than
 		// some mysterious spurious errors due to reuse of a freed pointer.
 
 		// Log about CBuffer not having been freed.

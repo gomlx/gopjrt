@@ -198,3 +198,31 @@ func TestTranspose(t *testing.T) {
 	require.Equal(t, []float32{0, 1, 2, 0, 1, 2}, got)
 	require.Equal(t, []int{2, 3, 1}, dims)
 }
+
+func TestCall(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	// Create a sub-computation.
+	subBuilder := builder.CreateSubBuilder("x_plus_one")
+	fmt.Printf("\tSubBuilder %q:\n", subBuilder.Name())
+	p2X := capture(Parameter(subBuilder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
+	p2One := capture(Constant(subBuilder, NewScalarLiteral(float32(1)))).Test(t)
+	p2Output := capture(Add(p2X, p2One)).Test(t)
+	xPlusOneComp := capture(subBuilder.Build(p2Output)).Test(t)
+
+	x := capture(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
+	xOne := capture(Call(builder, xPlusOneComp, x)).Test(t)
+	xTwo := capture(Call(builder, xPlusOneComp, xOne)).Test(t)
+	output := capture(Mul(xOne, xTwo)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+
+	inputs := []float32{1, 3, 7}
+	fmt.Printf("f(x) = (x+1) * (x+2):\n")
+	for _, input := range inputs {
+		want := (input + 1) * (input + 2)
+		got := execWithScalars(t, client, exec, input)
+		fmt.Printf("\tf(%g) = %g, got %g\n", input, want, got)
+		require.InDelta(t, want, got, 1e-3)
+	}
+}

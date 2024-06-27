@@ -6,6 +6,7 @@ package xlabuilder
 */
 import "C"
 import (
+	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/cbuffer"
 	"runtime"
 	"unsafe"
@@ -15,6 +16,9 @@ import (
 //
 // It can be used as is by pjrt.Client.Compile or serialized (to be saved) with XlaComputation.SerializedHLO.
 //
+// It is also used as a "subroutine" for other XlaBuilder ops, like Reduce, which takes the computation to use for
+// reduction.
+//
 // To print the contents of the HloModuleProto, the github.com/openxla/xla repository offers a small utility called
 // `run_hlo_module`. Follow the XLA build instructions and build the target `//xla/tools:run_hlo_module`.
 // E.g.: if you saved your serialized HLO to a file name "my_hlo.ph", you can print it out as:
@@ -23,39 +27,51 @@ import (
 //
 // The `run_hlo_module` tool can also be used to run the program, export go HTML, graphviz, etc.
 type XlaComputation struct {
-	cComp *C.XlaComputation
+	cXlaComputation *C.XlaComputation
+	name            string
 }
 
 func newXlaComputation(cComp *C.XlaComputation) *XlaComputation {
-	comp := &XlaComputation{cComp: cComp}
-	runtime.SetFinalizer(comp, xlaComputationFinalizer)
+	comp := &XlaComputation{
+		cXlaComputation: cComp,
+		name:            cStrFree(C.XlaComputationName(unsafe.Pointer(cComp))),
+	}
+	runtime.SetFinalizer(comp, func(comp *XlaComputation) { comp.Destroy() })
 	return comp
 }
 
-func xlaComputationFinalizer(comp *XlaComputation) {
-	comp.Free()
-}
-
-func (comp *XlaComputation) Free() {
-	if comp == nil || comp.cComp == nil {
+// Destroy immediately the underlying (C/C++) XlaComputation.
+// This is called automatically at garbage-collection.
+func (comp *XlaComputation) Destroy() {
+	if comp == nil || comp.cXlaComputation == nil {
 		return
 	}
-	C.XlaComputationDestroy(unsafe.Pointer(comp.cComp))
-	comp.cComp = nil
+	C.XlaComputationDestroy(unsafe.Pointer(comp.cXlaComputation))
+	comp.cXlaComputation = nil
+}
+
+// IsNil returns whether the computation or the underlying C/C++ object are nil.
+// It's true after it is destroyed.
+func (comp *XlaComputation) IsNil() bool {
+	return comp == nil || comp.cXlaComputation == nil
 }
 
 // SerializedHLO generates the StableHLO program as a <serialized HLOModule proto> (something that PJRT can consume) for
 // the given computation.
 //
-// The returned CBuffer needs to be freed (CBuffer.Free) after being used (presumably by PJRT, or saved to a file).
+// The returned CBuffer needs to be freed (CBuffer.Destroy) after being used (presumably by PJRT, or saved to a file).
 //
 // See XlaComputation documentation on how to pretty-print the computation as text HLO.
 func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
-	if comp == nil || comp.cComp == nil {
+	if comp.IsNil() {
+		exceptions.Panicf("XlaComputation is nil, maybe it has already been destroyed?")
+	}
+	defer runtime.KeepAlive(comp)
+	if comp == nil || comp.cXlaComputation == nil {
 		return nil
 	}
 	var vectorData *C.VectorData
-	vectorData = (*C.VectorData)(C.XlaComputationSerializedHLO(unsafe.Pointer(comp.cComp)))
+	vectorData = (*C.VectorData)(C.XlaComputationSerializedHLO(unsafe.Pointer(comp.cXlaComputation)))
 	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
 }
 
@@ -64,8 +80,12 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 //
 // Alternatively, see XlaComputation documentation on how to pretty-print the computation as text HLO.
 func (comp *XlaComputation) TextHLO() string {
-	if comp == nil || comp.cComp == nil {
+	if comp.IsNil() {
+		exceptions.Panicf("XlaComputation is nil, maybe it has already been destroyed?")
+	}
+	defer runtime.KeepAlive(comp)
+	if comp == nil || comp.cXlaComputation == nil {
 		return ""
 	}
-	return cStrFree(C.XlaComputationTextHLO(unsafe.Pointer(comp.cComp)))
+	return cStrFree(C.XlaComputationTextHLO(unsafe.Pointer(comp.cXlaComputation)))
 }

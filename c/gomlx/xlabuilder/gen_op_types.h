@@ -22,6 +22,7 @@ enum OpType {
   BroadcastOp,
   BroadcastInDimOp,
   TransposeOp,
+  CallOp,
   ReduceSumOp,
   ReduceMaxOp,
   ReduceMultiplyOp,

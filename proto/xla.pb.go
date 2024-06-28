@@ -711,7 +711,7 @@ type DebugOptions struct {
 	// Paths to files with LLVM code.
 	XlaGpuLlvmIrFile              []string                        `protobuf:"bytes,150,rep,name=xla_gpu_llvm_ir_file,json=xlaGpuLlvmIrFile,proto3" json:"xla_gpu_llvm_ir_file,omitempty"`
 	XlaGpuDisableAsyncCollectives []DebugOptions_CollectiveOpType `protobuf:"varint,289,rep,packed,name=xla_gpu_disable_async_collectives,json=xlaGpuDisableAsyncCollectives,proto3,enum=xla.DebugOptions_CollectiveOpType" json:"xla_gpu_disable_async_collectives,omitempty"`
-	// size threshold (in bytes) for the GPU collective combiners.
+	// Size threshold (in bytes) for the GPU collective combiners.
 	XlaGpuAllReduceCombineThresholdBytes     int64 `protobuf:"varint,157,opt,name=xla_gpu_all_reduce_combine_threshold_bytes,json=xlaGpuAllReduceCombineThresholdBytes,proto3" json:"xla_gpu_all_reduce_combine_threshold_bytes,omitempty"`
 	XlaGpuAllGatherCombineThresholdBytes     int64 `protobuf:"varint,212,opt,name=xla_gpu_all_gather_combine_threshold_bytes,json=xlaGpuAllGatherCombineThresholdBytes,proto3" json:"xla_gpu_all_gather_combine_threshold_bytes,omitempty"`
 	XlaGpuReduceScatterCombineThresholdBytes int64 `protobuf:"varint,213,opt,name=xla_gpu_reduce_scatter_combine_threshold_bytes,json=xlaGpuReduceScatterCombineThresholdBytes,proto3" json:"xla_gpu_reduce_scatter_combine_threshold_bytes,omitempty"`
@@ -778,7 +778,7 @@ type DebugOptions struct {
 	XlaGpuGraphMinGraphSize int32 `protobuf:"varint,208,opt,name=xla_gpu_graph_min_graph_size,json=xlaGpuGraphMinGraphSize,proto3" json:"xla_gpu_graph_min_graph_size,omitempty"`
 	// Identify concurrent regions in GPU graphs and execute them concurrently.
 	XlaGpuGraphEnableConcurrentRegion bool `protobuf:"varint,215,opt,name=xla_gpu_graph_enable_concurrent_region,json=xlaGpuGraphEnableConcurrentRegion,proto3" json:"xla_gpu_graph_enable_concurrent_region,omitempty"`
-	// size threshold (in megabytes) for the GPU redzone scratch allocator.
+	// Size threshold (in megabytes) for the GPU redzone scratch allocator.
 	XlaGpuRedzoneScratchMaxMegabytes int64 `protobuf:"varint,167,opt,name=xla_gpu_redzone_scratch_max_megabytes,json=xlaGpuRedzoneScratchMaxMegabytes,proto3" json:"xla_gpu_redzone_scratch_max_megabytes,omitempty"`
 	// Amount of padding the redzone allocator will put on one side of each buffer
 	// it allocates.  (So the buffer's total size will be increased by 2x this

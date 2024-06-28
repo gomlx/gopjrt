@@ -11,8 +11,9 @@ import "github.com/gomlx/gopjrt/proto"
 // The package provides some aliases.
 //
 // It is unfortunate, but the data types enums used in XLA/PJRT (which DType is modeled after)
-// and XlaBuilder (and other parts of XLA) don't match.
-// The library provides DType.PrimitiveType and FromPrimitiveType for conversion.
+// and in C++ XlaBuilder (and other parts of XLA) don't match.
+// The gopjrt project uses the PJRT enum everywhere, and makes the conversions when needed to call C++ code (see
+// DType.PrimitiveType and FromPrimitiveType for conversion).
 type DType int32
 
 const (
@@ -158,10 +159,11 @@ const (
 	C128 = Complex128
 )
 
-// PrimitiveType returns the DType equivalent used in XlaBuilder.
+// PrimitiveType returns the DType equivalent used in C++ XlaBuilder.
+// For internal use only.
 //
 // It is unfortunate, but the data types enums used in PJRT (which DType is modeled after)
-// and XlaBuilder (and other parts of XLA) don't match.
+// and C++ XlaBuilder (and other parts of XLA) don't match.
 func (dtype DType) PrimitiveType() proto.PrimitiveType {
 	switch dtype {
 	case InvalidDType:
@@ -222,9 +224,10 @@ func (dtype DType) PrimitiveType() proto.PrimitiveType {
 }
 
 // FromPrimitiveType returns the equivalent DType.
+// For internal use only.
 //
 // It is unfortunate, but the data types enums used in PJRT (which DType is modeled after)
-// and XlaBuilder (and other parts of XLA) don't match.
+// and C++ XlaBuilder (and other parts of XLA) don't match.
 func FromPrimitiveType(primitiveType proto.PrimitiveType) DType {
 	switch primitiveType {
 	case proto.PrimitiveType_PRIMITIVE_TYPE_INVALID:

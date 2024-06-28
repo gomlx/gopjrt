@@ -29,13 +29,13 @@ BroadcastInDim:special
 Transpose:special
 Call:special
 Reduce:special
+Concatenate:special
 
 ReduceWindow:special
 Slice:special
 Pad:special
 Gather:special
 Scatter:special
-Concatenate:special
 ConvGeneralDilated:special
 Reverse:special
 SelectAndScatter:special

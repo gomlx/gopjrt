@@ -21,12 +21,12 @@ const (
 	TransposeOp
 	CallOp
 	ReduceOp
+	ConcatenateOp
 	ReduceWindowOp
 	SliceOp
 	PadOp
 	GatherOp
 	ScatterOp
-	ConcatenateOp
 	ConvGeneralDilatedOp
 	ReverseOp
 	SelectAndScatterOp

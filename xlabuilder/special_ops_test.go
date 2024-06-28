@@ -227,3 +227,27 @@ func TestCall(t *testing.T) {
 		require.InDelta(t, want, got, 1e-3)
 	}
 }
+
+func TestConcatenate(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	// Try 2 different axes to concatenate the arrays:
+	x0 := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	x1 := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 1)).Test(t)
+	output := capture(Concatenate(0, x0, x1)).Test(t)
+	require.Equal(t, 0, DecodeConcatenate(output))
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{0, 0, 1, 1, 2, 2, 0, 1, 0, 1, 0, 1}, got)
+	require.Equal(t, []int{6, 2}, dims)
+
+	x0 = capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	x1 = capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 1)).Test(t)
+	output = capture(Concatenate(1, x0, x1)).Test(t)
+	require.Equal(t, 1, DecodeConcatenate(output))
+	exec = compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims = execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{0, 0, 0, 1, 1, 1, 0, 1, 2, 2, 0, 1}, got)
+	require.Equal(t, []int{3, 4}, dims)
+}

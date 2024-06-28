@@ -315,3 +315,30 @@ func Call(builder *XlaBuilder, subComputation *XlaComputation, operands ...*Op) 
 	}
 	return op, nil
 }
+
+// Concatenate results on the given axis.
+//
+// All axes that are not being concatenated must match dimensions.
+// It doesn't work with scalars -- use ExpandDims.
+//
+// If there is only one operand, it is returned and this is a no-op.
+func Concatenate(axis int, operands ...*Op) (*Op, error) {
+	if len(operands) == 0 {
+		return nil, errors.New("cannot Concatenate with 0 operands")
+	}
+	if len(operands) == 1 {
+		// Trivial solution.
+		return operands[0], nil
+	}
+	builder := operands[0].builder
+	op := newOp(ConcatenateOp, operands...)
+	op.IntArg = axis
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeConcatenate retrieves the arguments for a Concatenate op.
+func DecodeConcatenate(op *Op) (axis int) { return op.IntArg }

@@ -30,9 +30,9 @@ Transpose:special
 Call:special
 Reduce:special
 Concatenate:special
+Slice:special
 
 ReduceWindow:special
-Slice:special
 Pad:special
 Gather:special
 Scatter:special

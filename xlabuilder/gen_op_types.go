@@ -22,8 +22,8 @@ const (
 	CallOp
 	ReduceOp
 	ConcatenateOp
-	ReduceWindowOp
 	SliceOp
+	ReduceWindowOp
 	PadOp
 	GatherOp
 	ScatterOp

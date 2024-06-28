@@ -342,3 +342,25 @@ func Concatenate(axis int, operands ...*Op) (*Op, error) {
 
 // DecodeConcatenate retrieves the arguments for a Concatenate op.
 func DecodeConcatenate(op *Op) (axis int) { return op.IntArg }
+
+/*
+// Slice an array, given start and limit, and strides.
+func Slice(x *Op, starts, limits, strides []int) (*Op, error) {
+	g := validateGraphFromInputs(x)
+	rank := x.shape.Rank()
+	if len(starts) != rank || len(limits) != rank || len(strides) != rank {
+		Panicf("in SliceWithStridesXLA(x, starts, limits, strides) passed %d start values, %d limits values and %d stride values, but x has rank %d", len(starts), len(limits), len(strides), rank)
+	}
+
+	// Encode starts, limits and strides sequentially, since their size are the same,
+	// it will be easy to separate them in Const++.
+	ints := make([]int, 0, 3*rank)
+	ints = append(ints, starts...)
+	ints = append(ints, limits...)
+	ints = append(ints, strides...)
+	return newNode(g, &xla.SerializedNode{
+		Type: xla.SliceNode,
+		Ints: ints,
+	}, []*Node{x})
+}
+*/

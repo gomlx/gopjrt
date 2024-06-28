@@ -29,13 +29,13 @@ func TestGetTupleElement(t *testing.T) {
 	builder := New(t.Name())
 
 	x0 := capture(Constant(builder, NewScalarLiteral(int32(7)))).Test(t)
-	x1 := capture(Constant(builder, NewArrayLiteral([]float32{11, 15}))).Test(t)
-	x2 := capture(Constant(builder, NewScalarLiteral(complex128(1.0)))).Test(t)
+	x1 := capture(Constant(builder, NewArrayLiteral([]complex64{11, 15}))).Test(t)
+	x2 := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
 	tuple := capture(Tuple(x0, x1, x2)).Test(t)
 	output := capture(GetTupleElement(tuple, 1)).Test(t)
 	exec := compile(t, client, capture(builder.Build(output)).Test(t))
-	want := []float32{11, 15}
-	got, dims := execArrayOutput[float32](t, client, exec)
+	want := []complex64{11, 15}
+	got, dims := execArrayOutput[complex64](t, client, exec)
 	require.Equal(t, want, got)
 	require.Equal(t, []int{2}, dims)
 }

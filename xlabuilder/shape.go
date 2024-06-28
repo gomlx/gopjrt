@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/proto"
 	"slices"
 	"strings"
 	"unsafe"
@@ -82,6 +83,8 @@ func (s Shape) String() string {
 
 // cShapeFromShape allocates int the C-heap a new C-struct representing the shape.
 // If shape is undefined (not used) it returns nil.
+//
+// Notice the dtype is converted to PrimitiveType, since in shape we are still using the PJRT's dtype.
 func cShapeFromShape(shape Shape) *C.Shape {
 	if shape.DType == dtypes.InvalidDType && shape.TupleSize() == 0 {
 		return nil
@@ -89,7 +92,7 @@ func cShapeFromShape(shape Shape) *C.Shape {
 
 	var cShape *C.Shape
 	cShape = cMalloc[C.Shape]()
-	cShape.dtype = C.int32_t(shape.DType)
+	cShape.dtype = C.int32_t(shape.DType.PrimitiveType())
 	rank := shape.Rank()
 	cShape.rank = C.int64_t(rank)
 	if rank > 0 {
@@ -109,7 +112,7 @@ func shapeFromCShape(cShape *C.Shape) (shape Shape) {
 	if cShape == nil {
 		return
 	}
-	shape.DType = dtypes.DType(cShape.dtype)
+	shape.DType = dtypes.FromPrimitiveType(proto.PrimitiveType(cShape.dtype))
 	rank := int(cShape.rank)
 	if rank > 0 {
 		shape.Dimensions = make([]int, cShape.rank)

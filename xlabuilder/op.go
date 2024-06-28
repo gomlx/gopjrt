@@ -9,6 +9,7 @@ package xlabuilder
 import "C"
 import (
 	"runtime"
+	"slices"
 	"unsafe"
 )
 
@@ -56,7 +57,7 @@ type Op struct {
 func newOp(opType OpType, opInputs ...*Op) *Op {
 	op := &Op{
 		Type:     opType,
-		OpInputs: opInputs,
+		OpInputs: slices.Clone(opInputs),
 	}
 	runtime.SetFinalizer(op, opFinalizer)
 	return op

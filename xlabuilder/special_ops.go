@@ -42,21 +42,29 @@ func DecodeParameter(paramOp *Op) (name string, paramIndex int, shape Shape) {
 // This is particularly useful to get multiple outputs to a computation.
 func Tuple(inputs ...*Op) (*Op, error) {
 	builder := inputs[0].builder
-	for ii, input := range inputs {
-		if ii == 0 {
-			continue
-		}
-		if input.builder != builder {
-			return nil, errors.Errorf("arguments 0 and %d of Tuple(inputs...) come from different XlaBuilder objects (or nil)", ii)
-		}
-	}
-	tupleOp := newOp(TupleOp)
-	tupleOp.OpInputs = slices.Clone(inputs)
+	tupleOp := newOp(TupleOp, inputs...)
 	err := builder.addOp(tupleOp)
 	if err != nil {
 		return nil, err
 	}
 	return tupleOp, nil
+}
+
+// GetTupleElement extracts one element from a Tuple.
+func GetTupleElement(input *Op, elementIdx int) (*Op, error) {
+	builder := input.builder
+	op := newOp(GetTupleElementOp, input)
+	op.IntArg = elementIdx
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeGetTupleElement retrieves the arguments of an GetTupleElement op.
+func DecodeGetTupleElement(op *Op) (elementIdx int) {
+	return op.IntArg
 }
 
 // Iota creates a constant of the given shape with increasing numbers (starting from 0)

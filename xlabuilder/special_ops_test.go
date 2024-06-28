@@ -5,38 +5,39 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
-	"os"
 	"testing"
 )
 
 func TestTuple(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
 	// f(x) = [x^2, sqrt(x)]
-	builder := New("x*x, sqrt(x)")
-	x, err := Parameter(builder, "x", 0, MakeShape(dtypes.F32)) // Scalar float32.
-	require.NoError(t, err)
-	x2, err := Mul(x, x)
-	require.NoError(t, err)
-	sqrtX, err := Sqrt(x)
-	require.NoError(t, err)
-	fX, err := Tuple(x2, sqrtX)
-	require.NoError(t, err)
+	x := capture(Parameter(builder, "x", 0, MakeShape(dtypes.F32))).Test(t) // Scalar float32.
+	x2 := capture(Mul(x, x)).Test(t)
+	sqrtX := capture(Sqrt(x)).Test(t)
+	fX := capture(Tuple(x2, sqrtX)).Test(t)
 
-	// Get computation created.
-	comp, err := builder.Build(fX)
-	require.NoError(t, err)
-	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+	// Take program and compile.
+	comp := capture(builder.Build(fX)).Test(t)
+	exec := compile(t, client, comp)
+	require.Equal(t, 2, exec.NumOutputs)
+}
 
-	stableHLO := comp.SerializedHLO()
-	defer stableHLO.Free()
-	if *flagStableHLOOutput != "" {
-		f, err := os.Create(*flagStableHLOOutput)
-		require.NoErrorf(t, err, "Failed to open StableHLO proto output file %q", *flagStableHLOOutput)
-		bufBytes := stableHLO.Bytes()
-		n, err := f.Write(bufBytes)
-		require.NoErrorf(t, err, "Failed to write StableHLO proto output file %q", *flagStableHLOOutput)
-		require.Equal(t, len(bufBytes), n)
-		require.NoError(t, f.Close(), "Failed to close StableHLO proto output file %q", *flagStableHLOOutput)
-	}
+func TestGetTupleElement(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	x0 := capture(Constant(builder, NewScalarLiteral(int32(7)))).Test(t)
+	x1 := capture(Constant(builder, NewArrayLiteral([]float32{11, 15}))).Test(t)
+	x2 := capture(Constant(builder, NewScalarLiteral(complex128(1.0)))).Test(t)
+	tuple := capture(Tuple(x0, x1, x2)).Test(t)
+	output := capture(GetTupleElement(tuple, 1)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	want := []float32{11, 15}
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, want, got)
+	require.Equal(t, []int{2}, dims)
 }
 
 func TestConstants(t *testing.T) {

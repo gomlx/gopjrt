@@ -14,13 +14,13 @@ const (
 	ConvertDTypeOp
 	WhereOp
 	TupleOp
+	GetTupleElementOp
 	ReshapeOp
 	BroadcastOp
 	BroadcastInDimOp
 	TransposeOp
 	CallOp
 	ReduceOp
-	GetTupleElementOp
 	ReduceWindowOp
 	SliceOp
 	PadOp

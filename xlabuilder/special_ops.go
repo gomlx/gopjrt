@@ -3,6 +3,7 @@ package xlabuilder
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/proto"
 	"github.com/pkg/errors"
 	"slices"
 )
@@ -391,5 +392,47 @@ func DecodeSlice(op *Op) (starts, limits, strides []int) {
 	starts = op.IntsArg[0:rank]
 	limits = op.IntsArg[rank : 2*rank]
 	strides = op.IntsArg[2*rank:]
+	return
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+// ArgMinMax calculates the "argmin" or "argmax" across an axis of the given input array x.
+// outputDType defines the output of the argmin/argmax, it doesn't need to be the same as the input.
+//
+// It's a form of reduction on the given axis, and that axis goes away. So the rank of the result is one less than
+// the rank of x.
+//
+// Examples:
+//
+//	ArgMinMax(x={{2, 0, 7}, {-3, 4, 2}}, axis=1, isMin=true) -> {1, 0}  // (it chooses the 0 and the -3)
+//	ArgMinMax(x={{2, 0, 7}, {-3, 4, 2}}, axis=0, isMin=false) -> {0, 1, 0} // (it choose the 2, 4 and 7)
+func ArgMinMax(x *Op, axis int, outputDType dtypes.DType, isMin bool) (*Op, error) {
+	builder := x.builder
+	rank := x.Shape.Rank()
+	if axis < 0 || axis >= rank {
+		return nil, errors.Errorf("in ArgMinMax(): axis=%d must be between 0 and x.Shape.Rank()=%d", axis, rank)
+	}
+	op := newOp(ArgMinMaxOp, x)
+	op.IntArg = axis
+	op.IntsArg = []int{boolToInt(isMin), int(outputDType.PrimitiveType())}
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeArgMinMax retrieves the arguments for a ArgMinMax op.
+func DecodeArgMinMax(op *Op) (axis int, outputDType dtypes.DType, isMin bool) {
+	axis = op.IntArg
+	isMin = op.IntsArg[0] != 0
+	outputDType = dtypes.FromPrimitiveType(proto.PrimitiveType(op.IntsArg[1]))
 	return
 }

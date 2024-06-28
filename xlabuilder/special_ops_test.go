@@ -278,5 +278,23 @@ func TestSlice(t *testing.T) {
 	got, dims = execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []float64{2, 4}, got)
 	require.Equal(t, []int{2}, dims)
+}
 
+func TestArgMinMax(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	x := capture(Constant(builder, NewArrayLiteral([]int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
+	output := capture(ArgMinMax(x, 1, dtypes.Int8, true)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[int8](t, client, exec)
+	require.Equal(t, []int8{1, 0}, got)
+	require.Equal(t, []int{2}, dims)
+
+	x = capture(Constant(builder, NewArrayLiteral([]int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
+	output = capture(ArgMinMax(x, 0, dtypes.Int8, false)).Test(t)
+	exec = compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims = execArrayOutput[int8](t, client, exec)
+	require.Equal(t, []int8{0, 1, 0}, got)
+	require.Equal(t, []int{3}, dims)
 }

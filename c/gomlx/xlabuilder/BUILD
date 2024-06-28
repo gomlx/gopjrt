@@ -3,10 +3,6 @@ package(default_visibility = ["//visibility:public"])
 # Dependencies needed for XlaBuilder and XlaComputation
 # A stripped-down version of what is defined in the `xla_cc_binary` rule, defined in //@xla/xla/xla.bzl.
 gomlx_xlabuilder_deps = [
-    "@xla//xla:xla_data_proto_cc_impl",
-    "@xla//xla:xla_proto_cc_impl",
-    "@com_google_protobuf//:protobuf",
-    "@tsl//tsl/platform:env_impl",
     "@com_google_absl//absl/types:span",
     "@com_google_absl//absl/types:optional",
     "@com_google_absl//absl/base:log_severity",

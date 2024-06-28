@@ -343,24 +343,53 @@ func Concatenate(axis int, operands ...*Op) (*Op, error) {
 // DecodeConcatenate retrieves the arguments for a Concatenate op.
 func DecodeConcatenate(op *Op) (axis int) { return op.IntArg }
 
-/*
-// Slice an array, given start and limit, and strides.
+// Slice extracts a sub-array from the input array.
+// The sub-array is of the same rank as the input and contains the values inside a bounding box within the input array
+// where the dimensions and indices of the bounding box are given as arguments to the slice operation.
+//
+// The strides set the input stride of the slice in each axis and must be >= 1.
+// It is optional, and if missing it is assumed to be 1 for every dimension.
+//
+// Examples:
+//
+//	Slice(x={0, 1, 2, 3, 4}, starts={2}, limits={4}, strides=nil) -> {2, 3}
+//	Slice(x={0, 1, 2, 3, 4}, starts={2}, limits={5}, strides={2}) -> {2, 4}
 func Slice(x *Op, starts, limits, strides []int) (*Op, error) {
-	g := validateGraphFromInputs(x)
-	rank := x.shape.Rank()
+	builder := x.builder
+	rank := x.Shape.Rank()
+	if len(strides) == 0 {
+		strides = make([]int, rank)
+		for ii := range strides {
+			strides[ii] = 1
+		}
+	}
 	if len(starts) != rank || len(limits) != rank || len(strides) != rank {
-		Panicf("in SliceWithStridesXLA(x, starts, limits, strides) passed %d start values, %d limits values and %d stride values, but x has rank %d", len(starts), len(limits), len(strides), rank)
+		return nil, errors.Errorf("in SliceWithStridesXLA(x, starts, limits, strides) passed %d start values, %d limits values and %d stride values, but x has rank %d -- they must all match.", len(starts), len(limits), len(strides), rank)
 	}
 
 	// Encode starts, limits and strides sequentially, since their size are the same,
 	// it will be easy to separate them in Const++.
-	ints := make([]int, 0, 3*rank)
-	ints = append(ints, starts...)
-	ints = append(ints, limits...)
-	ints = append(ints, strides...)
-	return newNode(g, &xla.SerializedNode{
-		Type: xla.SliceNode,
-		Ints: ints,
-	}, []*Node{x})
+	op := newOp(SliceOp, x)
+	op.IntsArg = make([]int, 0, 3*rank)
+	op.IntsArg = append(op.IntsArg, starts...)
+	op.IntsArg = append(op.IntsArg, limits...)
+	op.IntsArg = append(op.IntsArg, strides...)
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
 }
-*/
+
+// DecodeSlice retrieves the arguments for a Slice op.
+func DecodeSlice(op *Op) (starts, limits, strides []int) {
+	rank := op.OpInputs[0].Shape.Rank()
+	if len(op.IntsArg) != 3*rank {
+		exceptions.Panicf("DecodeSlice() has input of rank %d, but arguments don't have 3*%d elements, instead got %d",
+			rank, 3*rank, len(op.IntsArg))
+	}
+	starts = op.IntsArg[0:rank]
+	limits = op.IntsArg[rank : 2*rank]
+	strides = op.IntsArg[2*rank:]
+	return
+}

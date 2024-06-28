@@ -251,3 +251,32 @@ func TestConcatenate(t *testing.T) {
 	require.Equal(t, []float64{0, 0, 0, 1, 1, 1, 0, 1, 2, 2, 0, 1}, got)
 	require.Equal(t, []int{3, 4}, dims)
 }
+
+func TestSlice(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	// Try 2 different axes to concatenate the arrays:
+	x := capture(Iota(builder, MakeShape(dtypes.F64, 7), 0)).Test(t)
+	output := capture(Slice(x, []int{2}, []int{5}, nil)).Test(t)
+	starts, limits, strides := DecodeSlice(output)
+	require.Equal(t, []int{2}, starts)
+	require.Equal(t, []int{5}, limits)
+	require.Equal(t, []int{1}, strides) // Default should be 1.
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{2, 3, 4}, got)
+	require.Equal(t, []int{3}, dims)
+
+	x = capture(Iota(builder, MakeShape(dtypes.F64, 7), 0)).Test(t)
+	output = capture(Slice(x, []int{2}, []int{5}, []int{2})).Test(t)
+	starts, limits, strides = DecodeSlice(output)
+	require.Equal(t, []int{2}, starts)
+	require.Equal(t, []int{5}, limits)
+	require.Equal(t, []int{2}, strides)
+	exec = compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims = execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{2, 4}, got)
+	require.Equal(t, []int{2}, dims)
+
+}

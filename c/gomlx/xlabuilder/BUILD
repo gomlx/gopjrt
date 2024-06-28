@@ -5,7 +5,6 @@ package(default_visibility = ["//visibility:public"])
 gomlx_xlabuilder_deps = [
     "@xla//xla:xla_data_proto_cc_impl",
     "@xla//xla:xla_proto_cc_impl",
-    "@xla//xla/service:hlo_proto_cc_impl",
     "@com_google_protobuf//:protobuf",
     "@tsl//tsl/platform:env_impl",
     "@com_google_absl//absl/types:span",
@@ -24,10 +23,6 @@ gomlx_xlabuilder_deps = [
     "@xla//xla/client:xla_builder",
     "@xla//xla/client:xla_computation",
     "@xla//xla/client/lib:math",
-    # StableHLO conversion,
-    "@stablehlo//:stablehlo_serialization",
-    "@stablehlo//:stablehlo_portable_api",
-    # "@xla//xla/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
 ]
 
 cc_library(

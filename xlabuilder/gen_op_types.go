@@ -23,6 +23,7 @@ const (
 	ReduceOp
 	ConcatenateOp
 	SliceOp
+	ArgMinMaxOp
 	ReduceWindowOp
 	PadOp
 	GatherOp
@@ -34,7 +35,6 @@ const (
 	BatchNormInferenceOp
 	BatchNormGradOp
 	DotGeneralOp
-	ArgMinMaxOp
 	FftOp
 	AbsOp
 	NegOp

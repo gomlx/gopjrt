@@ -31,6 +31,7 @@ Call:special
 Reduce:special
 Concatenate:special
 Slice:special
+ArgMinMax:special
 
 ReduceWindow:special
 Pad:special
@@ -43,7 +44,6 @@ BatchNormTraining:special
 BatchNormInference:special
 BatchNormGrad:special
 DotGeneral:special
-ArgMinMax:special
 Fft:special
 
 // One-argument ops:

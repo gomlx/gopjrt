@@ -21,10 +21,10 @@ const (
 	TransposeOp
 	CallOp
 	ReduceOp
+	ReduceWindowOp
 	ConcatenateOp
 	SliceOp
 	ArgMinMaxOp
-	ReduceWindowOp
 	PadOp
 	GatherOp
 	ScatterOp

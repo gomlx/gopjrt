@@ -8,15 +8,16 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ReduceSumType-0]
-	_ = x[ReduceProductType-1]
-	_ = x[ReduceMaxType-2]
-	_ = x[ReduceMinType-3]
+	_ = x[UndefinedReduceType-0]
+	_ = x[ReduceSumType-1]
+	_ = x[ReduceProductType-2]
+	_ = x[ReduceMaxType-3]
+	_ = x[ReduceMinType-4]
 }
 
-const _ReduceOpType_name = "ReduceSumTypeReduceProductTypeReduceMaxTypeReduceMinType"
+const _ReduceOpType_name = "UndefinedReduceTypeReduceSumTypeReduceProductTypeReduceMaxTypeReduceMinType"
 
-var _ReduceOpType_index = [...]uint8{0, 13, 30, 43, 56}
+var _ReduceOpType_index = [...]uint8{0, 19, 32, 49, 62, 75}
 
 func (i ReduceOpType) String() string {
 	if i < 0 || i >= ReduceOpType(len(_ReduceOpType_index)-1) {

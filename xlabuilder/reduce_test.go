@@ -56,3 +56,28 @@ func TestReduce(t *testing.T) {
 		require.Equal(t, int64(5), got)
 	}
 }
+
+func TestReduceWindow(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	// Test with a 2x2 pooling of a 4x6 matrix with ReduceMax:
+	{
+		input := capture(Iota(builder, MakeShape(dtypes.Float32, 24), 0)).Test(t)
+		input = capture(Reshape(input, 4, 6)).Test(t)
+		output := capture(ReduceWindow(input, []int{2, 2}).Max().Done()).Test(t)
+
+		reduceType, _, _, windowDimensions, strides, baseDilations, windowDilations, paddings := DecodeReduceWindow(output)
+		require.Equal(t, ReduceMaxType, reduceType)
+		require.Equal(t, []int{2, 2}, windowDimensions)
+		require.Equal(t, []int{2, 2}, strides)
+		require.Equal(t, []int{1, 1}, baseDilations)
+		require.Equal(t, []int{1, 1}, windowDilations)
+		require.Equal(t, [][2]int{{0, 0}, {0, 0}}, paddings)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float32](t, client, exec)
+		require.Equal(t, []float32{7, 9, 11, 19, 21, 23}, got)
+		require.Equal(t, []int{2, 3}, dims)
+	}
+}

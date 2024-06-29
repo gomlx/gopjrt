@@ -325,21 +325,16 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   }
   case ReduceWindowOp: {
     // Decode parameters.
-    int64_t rank = decode();
-    int64_t len_base_dilations = decode();
-    int64_t len_window_dilations = decode();
-    int64_t len_paddings = decode();
+    int64_t rank = serialized_op->integer_array_size / 6;
     absl::Span<const int64_t> window_dimensions = decodeSpan(rank);
     absl::Span<const int64_t> window_strides = decodeSpan(rank);
-    absl::Span<const int64_t> base_dilations = decodeSpan(len_base_dilations);
-    absl::Span<const int64_t> window_dilations =
-        decodeSpan(len_window_dilations);
-    std::vector<std::pair<int64_t, int64_t>> paddings(len_paddings);
-    for (int ii = 0; ii < len_paddings; ii++) {
+    absl::Span<const int64_t> base_dilations = decodeSpan(rank);
+    absl::Span<const int64_t> window_dilations = decodeSpan(rank);
+    std::vector<std::pair<int64_t, int64_t>> paddings(rank);
+    for (int ii = 0; ii < rank; ii++) {
       paddings[ii].first = decode();
       paddings[ii].second = decode();
     }
-
     op = xla::ReduceWindowWithGeneralPadding(
         *inputs[0], *inputs[1], *(serialized_op->computation), window_dimensions, window_strides,
         base_dilations, window_dilations, paddings);

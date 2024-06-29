@@ -298,3 +298,30 @@ func TestArgMinMax(t *testing.T) {
 	require.Equal(t, []int8{0, 1, 0}, got)
 	require.Equal(t, []int{3}, dims)
 }
+
+func TestPad(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	x := capture(Iota(builder, MakeShape(dtypes.F64, 6), 0)).Test(t)
+	x = capture(Reshape(x, 2, 3)).Test(t)
+	fillValue := capture(Constant(builder, NewScalarLiteral(-1.0))).Test(t)
+	padRows := PadAxis{Start: 1, End: 2} // One row at the start, two rows at the end.
+	padColumns := PadAxis{Interior: 1}   // One value in between every column.
+	output := capture(Pad(x, fillValue, padRows, padColumns)).Test(t)
+
+	axesConfig := DecodePad(output)
+	require.Equal(t, padRows, axesConfig[0])
+	require.Equal(t, padColumns, axesConfig[1])
+
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	got, dims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []float64{
+		-1, -1, -1, -1, -1,
+		0, -1, 1, -1, 2,
+		3, -1, 4, -1, 5,
+		-1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1,
+	}, got)
+	require.Equal(t, []int{5, 5}, dims)
+}

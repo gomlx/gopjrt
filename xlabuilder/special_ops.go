@@ -436,3 +436,54 @@ func DecodeArgMinMax(op *Op) (axis int, outputDType dtypes.DType, isMin bool) {
 	outputDType = dtypes.FromPrimitiveType(proto.PrimitiveType(op.IntsArg[1]))
 	return
 }
+
+// PadAxis defines the amount of padding preceding one axis (Start), at the end of axis (End)
+// or in between the inputs (Interior).
+// This is used as a parameter for the Pad operation.
+type PadAxis struct {
+	Start, End, Interior int
+}
+
+// Pad injects padding on the start, end or interior (in between each element) of the given operand.
+// There must be at most `operand.Rank()` axesConfig values. Missing PadAxis are assumed to be zeros,
+// that is, no padding for those axes.
+func Pad(x, fillValue *Op, axesConfig ...PadAxis) (*Op, error) {
+	builder := x.builder
+	rank := x.Shape.Rank()
+	if rank == 0 {
+		return nil, errors.New("cannot use Pad() with scalar values")
+	}
+	if len(axesConfig) != rank {
+		return nil, errors.Errorf("Pad() requires one axis configuration per x axis: x rank is %d, and %d PadAxis configurations were given",
+			rank, len(axesConfig))
+	}
+	op := newOp(PadOp, x, fillValue)
+	op.IntsArg = make([]int, 0, 3*rank)
+	for axis := 0; axis < rank; axis++ {
+		var padding PadAxis
+		if axis < len(axesConfig) {
+			padding = axesConfig[axis]
+		}
+		op.IntsArg = append(op.IntsArg, padding.Start, padding.End, padding.Interior)
+	}
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodePad retrieves the arguments for a Pad op.
+func DecodePad(op *Op) (axesConfig []PadAxis) {
+	rank := op.OpInputs[0].Shape.Rank()
+	axesConfig = make([]PadAxis, rank)
+	for axisIdx := range axesConfig {
+		ii := 3 * axisIdx
+		axesConfig[axisIdx] = PadAxis{
+			Start:    op.IntsArg[ii],
+			End:      op.IntsArg[ii+1],
+			Interior: op.IntsArg[ii+2],
+		}
+	}
+	return
+}

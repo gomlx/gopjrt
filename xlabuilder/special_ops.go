@@ -5,6 +5,7 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/proto"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"slices"
 )
 
@@ -483,6 +484,105 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 			Start:    op.IntsArg[ii],
 			End:      op.IntsArg[ii+1],
 			Interior: op.IntsArg[ii+2],
+		}
+	}
+	return
+}
+
+// Gather is a powerful but cumbersome Gather operation offered by XLA.
+// Full details in https://www.tensorflow.org/xla/operation_semantics#gather.
+// (Warning: it's poorly described, with many undefined terms)
+//
+// Arguments:
+//   - startIndices: are the indices we want to gather. There will be one axis with which enumerates the indices
+//     in the operand array, typically the last one. All other axes are "batch dimensions" and they will have
+//     equivalent axes in the output.
+//   - indexVectorAxis: typically the last axis of startIndices, so startIndices.Shape.Rank()-1.
+//     Usually, one has the dimension of the indexVectorAxis equal to the full rank of the operand.
+//     That is: startIndices.Shape.Dimensions[indexVectorAxis] = operand.Shape.Rank()
+//     Lets call "one index vector" a value of startIndices formed by a slice across indexVectorAxis.
+//   - startIndexMap: for each "index vector" from startIndices, this maps each element of the vector goes to
+//     which axes of the operand. Typically, this is [0, 1, 2, ..., operand.Shape.Rank()-1], that is, each
+//     "index vector" fully defines an element on the operand. If one is gathering slices of the operand (as
+//     opposed to individual values), one can skip some of those axes from startIndexMap, and the index for those
+//     axis is considered 0, and set sliceSizes to take the slice one wants (typically the full slice).
+//   - sliceSizes: the "index vector" described above points to the data in the operand to be gathered. Then sliceSizes
+//     indicates how much data to gather. One value per axis of the operand must be set. For gathering individual
+//     values, set these all to 1.
+//   - collapsedSliceAxes: the slice gathered for each "index vector" (with sizes sliceSizes), often has dimension one
+//     for most (or all, in case of gathering individual items) axes. collapsedSliceAxes allows one to collapse those
+//     axes, so they don't show up in the output. Usually, collapse all axes that are size one.
+//     These are axes within the rank of operand (from 0 to operand.Shape.Rank()-1).
+//   - offsetAxes: for those gathered slices not collapsed (with collapsedSliceAxes), this maps them to a position in
+//     the output array. Typically, these will be consecutive numbers starting with indexVectorAxis. So, the output
+//     will have the same prefix shape (the "batch dimensions") as the startIndices array, and the suffix shape will
+//     be the gathered slices mapped to these `offsetAxes`. There must be one value per axis not collapsed with
+//     collapsedSliceAxes -- the value itself is an axis in the output shape.
+func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) (*Op, error) {
+	builder := operand.builder
+	rank := operand.Shape.Rank()
+	if rank == 0 {
+		return nil, errors.New("cannot use Gather() with scalar values")
+	}
+	op := newOp(GatherOp, operand, startIndices)
+
+	if klog.V(1).Enabled() {
+		klog.Infof("\tGather(operand=%s, start=%s, indexVectorAxis=%d, offsetAxes=%v, collapsedSliceAxes=%v, startIndexMap=%v, sliceSizes=%v\n",
+			operand.Shape, startIndices.Shape, indexVectorAxis, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes)
+	}
+
+	// Encoding of the values as follows. IMPORTANT: this code needs to be in sync with corresponding
+	// decoding code in c/gomlx/xlabuilder/xlabuilder.cpp, in function ComputationAddOp, under GatherOp case,
+	// and with DecodeGather below.
+	//
+	//  * 6 first elements store the various parameters and lengths:
+	op.IntsArg = make([]int, 6+len(offsetAxes)+len(collapsedSliceAxes)+len(startIndexMap)+len(sliceSizes))
+	op.IntsArg[0] = indexVectorAxis
+	op.IntsArg[1] = len(offsetAxes)
+	op.IntsArg[2] = len(collapsedSliceAxes)
+	op.IntsArg[3] = len(startIndexMap)
+	op.IntsArg[4] = len(sliceSizes)
+	op.IntsArg[5] = boolToInt(indicesAreSorted)
+
+	//  * Copy sequentially the contents of the 3 int arrays:
+	pos := 6
+	for _, slice := range [][]int{offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes} {
+		if len(slice) > 0 {
+			copy(op.IntsArg[pos:], slice)
+			pos += len(slice)
+		}
+	}
+
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeGather retrieves the arguments for a Gather op.
+func DecodeGather(op *Op) (indexVectorAxis int, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) {
+	indexVectorAxis = op.IntsArg[0]
+	if op.IntsArg[1] > 0 {
+		offsetAxes = make([]int, op.IntsArg[1])
+	}
+	if op.IntsArg[2] > 0 {
+		collapsedSliceAxes = make([]int, op.IntsArg[2])
+	}
+	if op.IntsArg[3] > 0 {
+		startIndexMap = make([]int, op.IntsArg[3])
+	}
+	if op.IntsArg[4] > 0 {
+		sliceSizes = make([]int, op.IntsArg[4])
+	}
+	indicesAreSorted = op.IntsArg[5] != 0
+
+	//  * Copy sequentially the contents of the 3 int arrays:
+	pos := 6
+	for _, slice := range [][]int{offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes} {
+		if len(slice) > 0 {
+			copy(slice, op.IntsArg[pos:])
+			pos += len(slice)
 		}
 	}
 	return

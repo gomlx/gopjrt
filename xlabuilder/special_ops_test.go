@@ -325,3 +325,64 @@ func TestPad(t *testing.T) {
 	}, got)
 	require.Equal(t, []int{5, 5}, dims)
 }
+
+func TestGather(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	{
+		shape := MakeShape(dtypes.Float64 /* batch */, 5, 3)
+		x := capture(Iota(builder, MakeShape(shape.DType, shape.Size()), 0)).Test(t)
+		x = capture(Reshape(x, shape.Dimensions...)).Test(t)
+		indices := capture(Constant(builder, NewArrayLiteral([]int32{2, 0}, 2, 1))).Test(t)
+		indexVectorAxis := 1
+		offsetAxes := []int{1}
+		collapsedSliceAxes := []int{0}
+		startIndexMap := []int{0}
+		sliceSizes := []int{1, 3}
+		indicesAreSorted := false
+		output := capture(Gather(x, indices, indexVectorAxis, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes, indicesAreSorted)).Test(t)
+
+		gotIndexVectorAxis, gotOffsetAxes, gotCollapsedSliceAxes, gotStartIndexMap, gotSliceSizes, gotIndicesAreSorted := DecodeGather(output)
+		require.Equal(t, indexVectorAxis, gotIndexVectorAxis)
+		require.Equal(t, offsetAxes, gotOffsetAxes)
+		require.Equal(t, collapsedSliceAxes, gotCollapsedSliceAxes)
+		require.Equal(t, startIndexMap, gotStartIndexMap)
+		require.Equal(t, sliceSizes, gotSliceSizes)
+		require.Equal(t, indicesAreSorted, gotIndicesAreSorted)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float64](t, client, exec)
+		require.Equal(t, []float64{6, 7, 8, 0, 1, 2}, got)
+		require.Equal(t, []int{2, 3}, dims)
+	}
+
+	{
+		shape := MakeShape(dtypes.Float32 /* batch */, 3, 2, 6)
+		x := capture(Iota(builder, MakeShape(shape.DType, shape.Size()), 0)).Test(t)
+		x = capture(Reshape(x, shape.Dimensions...)).Test(t)
+		indices := capture(Constant(builder, NewArrayLiteral([]int32{
+			0, 0, 0,
+			2, 1, 5}, 2, 3))).Test(t)
+		indexVectorAxis := 1
+		offsetAxes := []int{1}
+		collapsedSliceAxes := []int{0, 1}
+		startIndexMap := []int{0, 1, 2}
+		sliceSizes := []int{1, 1, 1}
+		indicesAreSorted := false
+		output := capture(Gather(x, indices, indexVectorAxis, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes, indicesAreSorted)).Test(t)
+
+		gotIndexVectorAxis, gotOffsetAxes, gotCollapsedAxes, gotStartIndexMap, gotSliceSizes, gotIndicesAreSorted := DecodeGather(output)
+		require.Equal(t, indexVectorAxis, gotIndexVectorAxis)
+		require.Equal(t, offsetAxes, gotOffsetAxes)
+		require.Equal(t, collapsedSliceAxes, gotCollapsedAxes)
+		require.Equal(t, startIndexMap, gotStartIndexMap)
+		require.Equal(t, sliceSizes, gotSliceSizes)
+		require.Equal(t, indicesAreSorted, gotIndicesAreSorted)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float32](t, client, exec)
+		require.Equal(t, []float32{0, 2*12 + 1*6 + 5}, got)
+		require.Equal(t, []int{2, 1}, dims)
+	}
+}

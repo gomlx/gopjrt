@@ -3,11 +3,11 @@
 <img align="right" src="https://github.com/gomlx/gopjrt/assets/7460115/0f2869be-f64e-48b8-b2fa-1f6cbe703204" alt="Under Construction" width="480"/>
 
 **`gopjrt`** leverages [OpenXLA](https://openxla.org/) to make it easy to compile, optimize and accelerate numeric 
-computations (with large data) from Go using various backends supported by OpenXLA: CPU, GPUs (NVidia, Intel*, AMD*) and TPU*. 
+computations (with large data) from Go using various backends supported by OpenXLA: CPU (special Metal* implementation), GPUs (NVidia, Intel*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
-(*) Not tested yet, but in theory should work is the plugin is available.
+(*) Not tested yet, if you have access to these hardware that I can use for a while, I would love to try to verify and make sure it works there.
 
 `gopjrt` aims to be minimalist and robust: provide a well maintained, extensible Go wrappers for
 [OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/client/xla_builder.h) libraries.
@@ -22,7 +22,7 @@ It provides 2 independent packages (often used together, but not necessarily):
 
 ## `github.com/gomlx/gopjrt/pjrt`
 
-This package loads _PJRT plugins_ -- implementations of PJRT for specific hardware (CPU, GPUs, TPUs, etc.) in the form
+This package loads [_PJRT plugins_](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html) -- implementations of PJRT for specific hardware (CPU, GPUs, TPUs, etc.) in the form
 of a dynamic linked library -- and provides an API to compile and execute "programs".
 
 "Programs" for PJRT are specified as "StableHLO serialized proto-buffers" (`HloModuleProto` more specifically). 
@@ -107,7 +107,7 @@ architecture), or GPU (XLA seems to have code to support ROCm, but I'm not sure 
 And it should work with binary plugins provided by other companies (Google Cloud will have a TPU PJRT 
 plugin in their cloud TPU boxes; I hear Intel also have binary plugins for their hardware).
 
-
+See plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
 
 ## `github.com/gomlx/gopjrt/xlabuilder`
 

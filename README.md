@@ -3,11 +3,12 @@
 <img align="right" src="https://github.com/gomlx/gopjrt/assets/7460115/0f2869be-f64e-48b8-b2fa-1f6cbe703204" alt="Under Construction" width="480"/>
 
 **`gopjrt`** leverages [OpenXLA](https://openxla.org/) to make it easy to compile, optimize and accelerate numeric 
-computations (with large data) from Go using various backends supported by OpenXLA: CPU (special Metal* implementation), GPUs (NVidia, Intel*) and TPU*. 
+computations (with large data) from Go using various backends supported by OpenXLA: CPU, GPUs (NVidia, Intel*, Apple Metal*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
-(*) Not tested yet, if you have access to these hardware that I can use for a while, I would love to try to verify and make sure it works there.
+(*) Not tested yet, pls let me know if it works for you, or if you can lend access to these hardware (a virtual machine)
+so that I can use (a virtual machine) for a while, I would love to try to verify and make sure it works there.
 
 `gopjrt` aims to be minimalist and robust: provide a well maintained, extensible Go wrappers for
 [OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/client/xla_builder.h) libraries.

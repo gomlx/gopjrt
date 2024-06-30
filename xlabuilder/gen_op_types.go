@@ -28,9 +28,9 @@ const (
 	PadOp
 	GatherOp
 	ScatterOp
+	SelectAndScatterOp
 	ConvGeneralDilatedOp
 	ReverseOp
-	SelectAndScatterOp
 	BatchNormTrainingOp
 	BatchNormInferenceOp
 	BatchNormGradOp

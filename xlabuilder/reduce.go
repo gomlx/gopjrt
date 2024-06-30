@@ -90,21 +90,21 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 
 	initialValue = b.cachedStandardConstants[reductionName]
 	if initialValue == nil {
-		var literal *Literal
 		switch reduction {
 		case ReduceSumType:
-			literal = NewScalarLiteralFromFloat64(0, dtype)
+			initialValue, err = ScalarZero(b, dtype)
 		case ReduceProductType:
-			literal = NewScalarLiteralFromFloat64(1, dtype)
+			initialValue, err = ScalarOne(b, dtype)
 		case ReduceMaxType:
-			literal = NewScalarLiteralFromAny(dtype.LowestValue())
+			literal := NewScalarLiteralFromAny(dtype.LowestValue())
+			initialValue, err = Constant(b, literal)
 		case ReduceMinType:
-			literal = NewScalarLiteralFromAny(dtype.HighestValue())
+			literal := NewScalarLiteralFromAny(dtype.HighestValue())
+			initialValue, err = Constant(b, literal)
 		default:
 			err = errors.Errorf("unknown reduce computation type: %s (%d)", reduction, reduction)
 			return
 		}
-		initialValue, err = Constant(b, literal)
 		if err != nil {
 			err = errors.WithMessagef(err, "while trying to create a reduce computation %s", reduction)
 			return
@@ -147,7 +147,12 @@ func simpleReduceImpl(reduceType ReduceOpType, x *Op, axes ...int) (*Op, error) 
 		return nil, errors.WithMessagef(err, "while creating %s sub-computation", ReduceMaxType)
 	}
 
-	return Reduce(x, comp, initialValue, axes...)
+	op, err := Reduce(x, comp, initialValue, axes...)
+	if err != nil {
+		return nil, err
+	}
+	op.ReduceType = reduceType
+	return op, nil
 }
 
 // ReduceMax is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the max value.
@@ -389,7 +394,7 @@ func (r *ReduceWindowConfig) Done() (*Op, error) {
 
 	op := newOp(ReduceWindowOp, r.x, r.initialValue)
 	op.ComputationArg = r.reduceComputation
-	op.IntArg = int(r.reduceType)
+	op.ReduceType = r.reduceType
 
 	// Encode parameters in ints. We need for each axis:
 	// - one value for windowDimensions;
@@ -432,7 +437,7 @@ func (r *ReduceWindowConfig) Done() (*Op, error) {
 // DecodeReduceWindow retrieves the arguments for a ReduceWindow op.
 func DecodeReduceWindow(op *Op) (reduceType ReduceOpType, reduceComputation *XlaComputation, initialValue *Op, windowDimensions, strides, baseDilations, windowDilations []int, paddings [][2]int) {
 	rank := op.OpInputs[0].Shape.Rank()
-	reduceType = ReduceOpType(op.IntArg)
+	reduceType = op.ReduceType
 	reduceComputation = op.ComputationArg
 	initialValue = op.OpInputs[1]
 	windowDimensions = op.IntsArg[0:rank]

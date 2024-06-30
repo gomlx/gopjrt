@@ -70,7 +70,7 @@ typedef struct {
   Shape *shape;
   char *string;
   float float_v;
-  XlaComputation *computation;
+  XlaComputation *computation, *second_computation;
 
   // Output: information about the new op created, filled in by XlaBuilderAddOp.
   // Space allocated in C, but ownership is transferred back to the caller (in Go).

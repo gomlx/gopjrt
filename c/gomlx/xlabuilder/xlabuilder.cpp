@@ -347,16 +347,8 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     auto &init_value = *inputs[2];
 
     // Create select and scatter comps.
-    auto shape_or = builder->GetShape(init_value);
-    if (!shape_or.ok()) {
-      return new xla::Status(shape_or.status());
-    }
-    xla::PrimitiveType primitive_type =
-        shape_or.value().element_type(); // They are both ints.
-    xla::XlaComputation scatter_comp(
-        CreateScalarAddComputation(primitive_type, builder));
-    xla::XlaComputation select_comp(
-        CreateScalarGeComputation(primitive_type, builder));
+    const xla::XlaComputation &select_comp = *serialized_op->computation;
+    const xla::XlaComputation &scatter_comp = *serialized_op->second_computation;
 
     // Decode parameters.
     int64_t rank = decode();

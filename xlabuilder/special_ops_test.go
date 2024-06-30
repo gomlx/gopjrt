@@ -5,6 +5,7 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 )
 
@@ -434,5 +435,33 @@ func TestScatter(t *testing.T) {
 			0, 0, 0,
 			0, 0, 9}, got)
 		require.Equal(t, []int{5, 3}, dims)
+	}
+}
+
+func TestSelectAndScatter(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	{
+		dtype := dtypes.Float64
+		operand := capture(Iota(builder, MakeShape(dtype, 1, 6, 1), 1)).Test(t)
+		source := capture(Iota(builder, MakeShape(dtype, 1, 2, 1), 1)).Test(t)
+		one := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
+		source = capture(Add(source, one)).Test(t)
+		windowDimensions := []int{1, 3, 1}
+		windowStrides := []int{1, 3, 1}
+		output := capture(SelectAndScatterMax(operand, source, windowDimensions, windowStrides, nil)).Test(t)
+
+		gotSelectComp, gotScatterComp, gotWindowDimensions, gotWindowStrides, gotPaddings := DecodeSelectAndScatter(output)
+		require.True(t, strings.HasPrefix(gotSelectComp.Name(), "#_select_ReduceMaxType_Float64"))
+		require.True(t, strings.HasPrefix(gotScatterComp.Name(), "#_scatter_Float64"))
+		require.Equal(t, windowDimensions, gotWindowDimensions)
+		require.Equal(t, windowStrides, gotWindowStrides)
+		require.Empty(t, gotPaddings)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float64](t, client, exec)
+		require.Equal(t, []float64{0, 0, 1, 0, 0, 2}, got)
+		require.Equal(t, []int{1, 6, 1}, dims)
 	}
 }

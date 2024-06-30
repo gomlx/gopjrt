@@ -34,6 +34,10 @@ type Op struct {
 	// them.
 	UserPayload any
 
+	// ReduceType is informative only. For some ops (ReduceMax, ScatterAdd, etc.) it informs what kind of
+	// standard computations were used (set in ComputationArg).
+	ReduceType ReduceOpType
+
 	// Arguments used for the various special ops:
 	// TODO: Re-write these into more readable arguments to the various operations.
 
@@ -41,13 +45,13 @@ type Op struct {
 	// Other inputs are "static", meaning they are independent of the values during the calculation.
 	OpInputs []*Op // Index to other nodes that are used as inputs.
 
-	LiteralArg     *Literal        // If a LiteralArg (constant) is involved in the operation.
-	IntArg         int             // Used for any static integer inputs.
-	StrArg         string          // Used for any static string argument.
-	IntsArg        []int           // List of integer numbers.
-	FloatArg       float32         // For a float parameter.
-	ShapeArg       Shape           // For Ops that require a shape parameter.
-	ComputationArg *XlaComputation // For Ops that require a sub-computation.
+	LiteralArg                           *Literal        // If a LiteralArg (constant) is involved in the operation.
+	IntArg                               int             // Used for any static integer inputs.
+	StrArg                               string          // Used for any static string argument.
+	IntsArg                              []int           // List of integer numbers.
+	FloatArg                             float32         // For a float parameter.
+	ShapeArg                             Shape           // For Ops that require a shape parameter.
+	ComputationArg, SecondComputationArg *XlaComputation // For Ops that require a sub-computation(s).
 }
 
 // newOp creates the Op of the given type with the given Op inputs and sets the correct finalizer.
@@ -103,12 +107,15 @@ func serializeToC(op *Op) *C.SerializedOp {
 	if op.ComputationArg != nil {
 		sOp.computation = unsafe.Pointer(op.ComputationArg.cXlaComputation)
 	}
+	if op.SecondComputationArg != nil {
+		sOp.second_computation = unsafe.Pointer(op.SecondComputationArg.cXlaComputation)
+	}
 	return sOp
 }
 
-// freeCSerializedOp frees the C allocated memory within cNode. Note that cNode itself is assumed to be
-// allocated in Go space, hence it is (and should be) automatically garbage collected.
-func freeCSerializedOp(cOp *C.SerializedOp) {
+// destroyCSerializedOp destroys cOp, freeing all contained C objects.
+// Note that cOp itself is assumed to be allocated in Go space, hence it is (and should be) automatically garbage collected.
+func destroyCSerializedOp(cOp *C.SerializedOp) {
 	if cOp.op_inputs != nil {
 		cFree(cOp.op_inputs)
 		cOp.op_inputs = nil

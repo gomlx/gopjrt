@@ -127,6 +127,42 @@ func Constant(builder *XlaBuilder, x *Literal) (*Op, error) {
 	return op, nil
 }
 
+// ScalarZero returns a zero constant for the given dtype.
+// It caches the constant, so it doesn't get defined multiple times.
+func ScalarZero(builder *XlaBuilder, dtype dtypes.DType) (*Op, error) {
+	cacheKey := fmt.Sprintf("#_zero_%s", dtype)
+	value := builder.cachedStandardConstants[cacheKey]
+	if value != nil {
+		return value, nil
+	}
+	literal := NewScalarLiteralFromFloat64(0, dtype)
+	var err error
+	value, err = Constant(builder, literal)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "while trying to create a %s zero constant", dtype)
+	}
+	builder.cachedStandardConstants[cacheKey] = value
+	return value, nil
+}
+
+// ScalarOne returns a one (1) constant for the given dtype.
+// It caches the constant, so it doesn't get defined multiple times.
+func ScalarOne(builder *XlaBuilder, dtype dtypes.DType) (*Op, error) {
+	cacheKey := fmt.Sprintf("#_one_%s", dtype)
+	value := builder.cachedStandardConstants[cacheKey]
+	if value != nil {
+		return value, nil
+	}
+	literal := NewScalarLiteralFromFloat64(1, dtype)
+	var err error
+	value, err = Constant(builder, literal)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "while trying to create a %s one constant", dtype)
+	}
+	builder.cachedStandardConstants[cacheKey] = value
+	return value, nil
+}
+
 // ConvertDType of x to dtype.
 func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
 	if x.builder.IsNil() {
@@ -602,8 +638,12 @@ func ScatterCustom(operand, scatterIndices, updates *Op,
 	if operand.Shape.Rank() == 0 {
 		return nil, errors.New("cannot use ScatterCustom() with scalar operand")
 	}
+	if operand.Shape.DType != updates.Shape.DType {
+		return nil, errors.Errorf("Scatter operand (dtype=%s) and updates (dtype=%s) have different dtypes",
+			operand.Shape.DType, updates.Shape.DType)
+	}
 
-	if klog.V(0).Enabled() {
+	if klog.V(2).Enabled() {
 		klog.Infof("\tScatterCustom: operand=%s, scatterIndices=%s, updates=%s, indexVectorAxis=%d, updateWindowAxes=%v, insertedWindowAxes=%v, scatterAxesToOperandAxes=%v, indicesAreSorted=%v, uniqueIndices=%v\n",
 			operand.Shape, scatterIndices.Shape, updates.Shape, indexVectorAxis, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
 	}
@@ -671,8 +711,13 @@ func scatterImpl(operand, scatterIndices, updates *Op,
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get update computation %s for scatter", reduceType)
 	}
-	return ScatterCustom(operand, scatterIndices, updates, reduceComputation, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
+	op, err := ScatterCustom(operand, scatterIndices, updates, reduceComputation, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+	if err != nil {
+		return nil, err
+	}
+	op.ReduceType = reduceType
+	return op, nil
 }
 
 // DecodeScatter retrieves the arguments for a Scatter (ScatterCustom or ScatterAdd) op.
@@ -699,6 +744,234 @@ func DecodeScatter(op *Op) (
 			copy(slice, op.IntsArg[pos:])
 			pos += len(slice)
 		}
+	}
+	return
+}
+
+// SelectAndScatterCustom runs windows (similar to ReduceWindow) over the operand, selects values (selectComputation) to updates the output (like Scatter)
+// using the scatterComputation with values from source. The output is initialized with defaultValue.
+// See details in https://openxla.org/xla/operation_semantics#selectandscatter
+func SelectAndScatterCustom(operand, source, defaultValue *Op, selectComputation, scatterComputation *XlaComputation,
+	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	builder := operand.builder
+	dtype := operand.Shape.DType
+	rank := operand.Shape.Rank()
+	if operand.Shape.Rank() == 0 {
+		return nil, errors.New("cannot use SelectAndScatterCustom() with scalar operand")
+	}
+	if source.Shape.DType != dtype || defaultValue.Shape.DType != dtype {
+		return nil, errors.Errorf("SelectAndScatter operand (dtype=%s), source (dtype=%s) and defaultValue (dtype=%s) must all have the same dtype",
+			operand.Shape.DType, source.Shape.DType, defaultValue.Shape.DType)
+	}
+	if len(windowDimensions) != rank {
+		return nil, errors.Errorf("SelectAndScatter windowSizes (length %d) must have same length as the rank of the operand (rank %d)",
+			len(windowDimensions), rank)
+	}
+	if len(windowStrides) != rank {
+		return nil, errors.Errorf("SelectAndScatter windowStrides (length %d) must have same length as the rank of the operand (rank %d)",
+			len(windowStrides), rank)
+	}
+	if len(paddings) > 0 && len(paddings) != rank {
+		return nil, errors.Errorf("SelectAndScatter paddings (length %d) must either be empty or have same length as the rank of the operand (rank %d)",
+			len(paddings), rank)
+	}
+
+	if klog.V(2).Enabled() {
+		klog.Infof("SelectAndScatterCustom(operand=%s, source=%s, defaultValue=%s, selectComputation=%s, scatterComputation=%s, "+
+			"windowDimensions=%v, windowStrides=%v, paddings=%v)",
+			operand.Shape, source.Shape, defaultValue.Shape,
+			selectComputation.Name(), scatterComputation.Name(),
+			windowDimensions, windowStrides, paddings)
+	}
+
+	op := newOp(SelectAndScatterOp, operand, source, defaultValue)
+	op.ComputationArg = selectComputation
+	op.SecondComputationArg = scatterComputation
+
+	op.IntsArg = make([]int, 0, 2+2*rank+2*len(paddings))
+	encode := func(values ...int) {
+		op.IntsArg = append(op.IntsArg, values...)
+	}
+	encode(rank, len(paddings))
+	encode(windowDimensions...)
+	encode(windowStrides...)
+	for _, pair := range paddings {
+		encode(pair[0], pair[1])
+	}
+
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// SelectAndScatterMax calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and an appropriate selectComputation
+// to implement a SelectAndScatter that updates the max value in the windows.
+// Details in SelectAndScatterCustom.
+func SelectAndScatterMax(operand, source *Op,
+	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	reduceType := ReduceMaxType
+	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
+}
+
+// SelectAndScatterMin calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and an appropriate selectComputation
+// to implement a SelectAndScatter that updates the max value in the windows.
+// Details in SelectAndScatterCustom.
+func SelectAndScatterMin(operand, source *Op,
+	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	reduceType := ReduceMinType
+	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
+}
+
+// SelectAndScatterSum calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and a selectComputation that always selects.
+// to implement a SelectAndScatter that updates the max value in the windows.
+// Details in SelectAndScatterCustom.
+func SelectAndScatterSum(operand, source *Op,
+	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	reduceType := ReduceSumType
+	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
+}
+
+// selectAndScatterImpl calls SelectAndScatterCustom with initialValue, selectComp and scatterComp specialized
+// for a reduceType (ReduceMaxType, ReduceMinType, ReduceAddType).
+func selectAndScatterImpl(operand, source *Op, reduceType ReduceOpType,
+	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	builder := operand.builder
+	dtype := operand.Shape.DType
+	selectComputation, scatterComputation, err := builder.GetSelectAndScatterComputation(reduceType, dtype)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to get select and scatter computations %s for SelectAnScatter operation", reduceType)
+	}
+	zero, err := ScalarZero(builder, dtype)
+	if err != nil {
+		return nil, err
+	}
+	op, err := SelectAndScatterCustom(operand, source, zero, selectComputation, scatterComputation,
+		windowDimensions, windowStrides, paddings)
+	if err != nil {
+		return nil, err
+	}
+	op.ReduceType = reduceType
+	return op, nil
+}
+
+// GetSelectAndScatterComputation builds or returns a cached computation that implements a select and scatter functions with one
+// of the standard ReduceOpType: sum, multiply, max or min.
+// This is used for SelectAndScatter family of operations.
+func (b *XlaBuilder) GetSelectAndScatterComputation(reduction ReduceOpType, dtype dtypes.DType) (selectComputation, scatterComputation *XlaComputation, err error) {
+	if b.IsNil() {
+		err = errors.New("trying to access XlaBuilder that is nil or already destroyed")
+		return
+	}
+	if dtype == dtypes.InvalidDType {
+		err = errors.Errorf("invalid dtype (%s) for select operation", dtype)
+		return
+	}
+
+	selectName := fmt.Sprintf("#_select_%s_%s", reduction, dtype)
+	scatterName := fmt.Sprintf("#_scatter_%s", dtype)
+	selectComputation = b.cachedStandardComputations[selectName]
+	scatterComputation = b.cachedStandardComputations[scatterName]
+	if selectComputation != nil && scatterComputation != nil {
+		return
+	}
+
+	if selectComputation == nil {
+		// Generate new computation for selection.
+		subBuilder := b.CreateSubBuilder(selectName)
+		// lhs -> left-hand-side, rhs -> right-hand-side
+		var lhs, rhs *Op
+		lhs, err = Parameter(subBuilder, "lhs", 0, MakeShape(dtype))
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			return
+		}
+		rhs, err = Parameter(subBuilder, "rhs", 1, MakeShape(dtype))
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			return
+		}
+		var output *Op
+		switch reduction {
+		case ReduceSumType, ReduceProductType:
+			// All values are selected, since they all affect the result.
+			output, err = Constant(b, NewScalarLiteral(true))
+		case ReduceMaxType:
+			output, err = GreaterOrEqual(lhs, rhs)
+		case ReduceMinType:
+			output, err = LessOrEqual(lhs, rhs)
+		default:
+			err = errors.Errorf("unknown select computation type: %s (%d)", reduction, reduction)
+			return
+		}
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			return
+		}
+		selectComputation, err = subBuilder.Build(output)
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			return
+		}
+		subBuilder.Destroy()
+		b.cachedStandardComputations[selectName] = selectComputation
+	}
+
+	if scatterComputation == nil {
+		// Generate new computation for scatter function.
+		subBuilder := b.CreateSubBuilder(scatterName)
+		// lhs -> left-hand-side, rhs -> right-hand-side
+		var lhs, rhs *Op
+		lhs, err = Parameter(subBuilder, "lhs", 0, MakeShape(dtype))
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a scatter computation %s", reduction)
+			return
+		}
+		rhs, err = Parameter(subBuilder, "rhs", 1, MakeShape(dtype))
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a scatter computation %s", reduction)
+			return
+		}
+		var output *Op
+		output, err = Add(lhs, rhs)
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a scatter computation %s", reduction)
+			return
+		}
+		scatterComputation, err = subBuilder.Build(output)
+		if err != nil {
+			err = errors.WithMessagef(err, "while trying to create a scatter computation %s", reduction)
+			return
+		}
+		subBuilder.Destroy()
+		b.cachedStandardComputations[scatterName] = scatterComputation
+	}
+	return
+}
+
+// DecodeSelectAndScatter retrieves the arguments for a SelectAndScatter (ScatterAndScatterCustom or ScatterAndScatterMax) op.
+func DecodeSelectAndScatter(op *Op) (
+	selectComputation, scatterComputation *XlaComputation,
+	windowDimensions, windowStrides []int, paddings [][2]int) {
+	selectComputation = op.ComputationArg
+	scatterComputation = op.SecondComputationArg
+
+	rank := op.IntsArg[0]
+	if op.IntsArg[1] > 0 {
+		paddings = make([][2]int, op.IntsArg[1])
+	}
+	windowDimensions = make([]int, rank)
+	windowStrides = make([]int, rank)
+	pos := 2
+	for _, slice := range [][]int{windowDimensions, windowStrides} {
+		copy(slice, op.IntsArg[pos:])
+		pos += len(slice)
+	}
+	for ii := range paddings {
+		paddings[ii][0] = op.IntsArg[pos]
+		paddings[ii][1] = op.IntsArg[pos+1]
+		pos += 2
 	}
 	return
 }

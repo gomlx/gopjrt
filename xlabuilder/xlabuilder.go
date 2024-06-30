@@ -118,13 +118,19 @@ func (b *XlaBuilder) addOp(op *Op) error {
 		return nil
 	}
 	serializedOp := serializeToC(op)
+
+	var pinner runtime.Pinner
+	defer pinner.Unpin()
+	pinner.Pin(b)
+	pinner.Pin(serializedOp)
+
 	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cXlaBuilder), serializedOp))
 	if err != nil {
 		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
 	}
 	op.cOp = (*C.XlaOp)(serializedOp.new_op)
 	op.Shape = shapeFromCShape(serializedOp.new_shape)
-	freeCSerializedOp(serializedOp)
+	destroyCSerializedOp(serializedOp)
 	return nil
 }
 

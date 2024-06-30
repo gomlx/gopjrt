@@ -386,3 +386,53 @@ func TestGather(t *testing.T) {
 		require.Equal(t, []int{2, 1}, dims)
 	}
 }
+
+func TestScatter(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	{
+		dtype := dtypes.Float64
+		shape := MakeShape(dtype /* batch */, 5, 3)
+		operand := capture(Constant(builder, NewLiteralFromShape(shape))).Test(t) // 5*3 zeros
+		indices := capture(Constant(builder, NewArrayLiteral([]int32{
+			// 5 scatter updates:
+			0, 1,
+			0, 2,
+			2, 1,
+			4, 2,
+			4, 2,
+		}, 5, 2))).Test(t)
+		updates := capture(Iota(builder, MakeShape(dtype, 5, 1), 0)).Test(t)
+		one := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
+		updates = capture(Add(updates, one)).Test(t)
+
+		indexVectorAxis := 1
+		updateWindowAxes := []int{1}
+		insertedWindowAxes := []int{0}
+		scatterAxesToOperandAxes := []int{0, 1}
+		indicesAreSorted := true
+		uniqueIndices := false // We scatter twice to index (4, 2)
+		output := capture(ScatterAdd(operand, indices, updates, indexVectorAxis, updateWindowAxes,
+			insertedWindowAxes, scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)).Test(t)
+
+		gotIndexVectorAxis, gotUpdateWindowAxes, gotInsertedWindowAxes, gotScatterAxesToOperandAxes, gotIndicesAreSorted, gotUniqueIndices := DecodeScatter(output)
+		require.Equal(t, indexVectorAxis, gotIndexVectorAxis)
+		require.Equal(t, updateWindowAxes, gotUpdateWindowAxes)
+		require.Equal(t, insertedWindowAxes, gotInsertedWindowAxes)
+		require.Equal(t, scatterAxesToOperandAxes, gotScatterAxesToOperandAxes)
+		require.Equal(t, indicesAreSorted, gotIndicesAreSorted)
+		require.Equal(t, uniqueIndices, gotUniqueIndices)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float64](t, client, exec)
+		require.Equal(t, []float64{
+			// Values with scattered: notice the index (4, 2), the last one, is scattered twice, and values are added.
+			0, 1, 2,
+			0, 0, 0,
+			0, 3, 0,
+			0, 0, 0,
+			0, 0, 9}, got)
+		require.Equal(t, []int{5, 3}, dims)
+	}
+}

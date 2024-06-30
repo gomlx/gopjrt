@@ -35,8 +35,8 @@ Slice:special
 ArgMinMax:special
 Pad:special
 Gather:special
-
 Scatter:special
+
 ConvGeneralDilated:special
 Reverse:special
 SelectAndScatter:special

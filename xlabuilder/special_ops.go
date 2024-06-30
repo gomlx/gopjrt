@@ -1,6 +1,7 @@
 package xlabuilder
 
 import (
+	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/proto"
@@ -526,13 +527,13 @@ func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapse
 	}
 	op := newOp(GatherOp, operand, startIndices)
 
-	if klog.V(1).Enabled() {
+	if klog.V(2).Enabled() {
 		klog.Infof("\tGather(operand=%s, start=%s, indexVectorAxis=%d, offsetAxes=%v, collapsedSliceAxes=%v, startIndexMap=%v, sliceSizes=%v\n",
 			operand.Shape, startIndices.Shape, indexVectorAxis, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes)
 	}
 
 	// Encoding of the values as follows. IMPORTANT: this code needs to be in sync with corresponding
-	// decoding code in c/gomlx/xlabuilder/xlabuilder.cpp, in function ComputationAddOp, under GatherOp case,
+	// decoding code in c/gomlx/xlabuilder/xlabuilder.cpp, in function XlaBuilderAddOp, under GatherOp case,
 	// and with DecodeGather below.
 	//
 	//  * 6 first elements store the various parameters and lengths:
@@ -580,6 +581,120 @@ func DecodeGather(op *Op) (indexVectorAxis int, offsetAxes, collapsedSliceAxes, 
 	//  * Copy sequentially the contents of the 3 int arrays:
 	pos := 6
 	for _, slice := range [][]int{offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes} {
+		if len(slice) > 0 {
+			copy(slice, op.IntsArg[pos:])
+			pos += len(slice)
+		}
+	}
+	return
+}
+
+// ScatterCustom is a powerful but cumbersome Scatter operation offered by XLA.
+// Full details in https://www.tensorflow.org/xla/operation_semantics#scatter.
+//
+// It takes a custom updateComputation used when scattering values.
+// See ScatterAdd for a version that adds the values when scattering.
+func ScatterCustom(operand, scatterIndices, updates *Op,
+	updateComputation *XlaComputation,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	builder := operand.builder
+	if operand.Shape.Rank() == 0 {
+		return nil, errors.New("cannot use ScatterCustom() with scalar operand")
+	}
+
+	if klog.V(0).Enabled() {
+		klog.Infof("\tScatterCustom: operand=%s, scatterIndices=%s, updates=%s, indexVectorAxis=%d, updateWindowAxes=%v, insertedWindowAxes=%v, scatterAxesToOperandAxes=%v, indicesAreSorted=%v, uniqueIndices=%v\n",
+			operand.Shape, scatterIndices.Shape, updates.Shape, indexVectorAxis, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+	}
+
+	op := newOp(ScatterOp, operand, scatterIndices, updates)
+	op.ComputationArg = updateComputation
+
+	// Encoding of the values as follows. IMPORTANT: this code needs to be in sync with corresponding
+	// decoding code in c/gomlx/xlabuilder/xlabuilder.cpp, in function XlaBuilderAddOp, under ScatterOp case.
+	// And with DecodeScatterCustom bellow.
+	//
+	//  * 6 first elements store the various parameters and lengths:
+	op.IntsArg = make([]int, 0, 6+len(updateWindowAxes)+len(insertedWindowAxes)+len(scatterAxesToOperandAxes))
+	op.IntsArg = append(op.IntsArg, indexVectorAxis)
+	op.IntsArg = append(op.IntsArg, boolToInt(indicesAreSorted))
+	op.IntsArg = append(op.IntsArg, boolToInt(uniqueIndices))
+	op.IntsArg = append(op.IntsArg, len(updateWindowAxes))
+	op.IntsArg = append(op.IntsArg, len(insertedWindowAxes))
+	op.IntsArg = append(op.IntsArg, len(scatterAxesToOperandAxes))
+	for _, slice := range [][]int{updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes} {
+		op.IntsArg = append(op.IntsArg, slice...)
+	}
+
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// ScatterAdd values from updates pointed by scatterIndices to operand.
+// Details in ScatterCustom, which is used with the updateComputation set to Sum.
+func ScatterAdd(operand, scatterIndices, updates *Op,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	return scatterImpl(operand, scatterIndices, updates, ReduceSumType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
+		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+}
+
+// ScatterMax scatter values from updates pointed by scatterIndices to operand, by taking the Max.
+// Details in ScatterCustom, which is used with the updateComputation set to Max.
+func ScatterMax(operand, scatterIndices, updates *Op,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	return scatterImpl(operand, scatterIndices, updates, ReduceMaxType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
+		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+}
+
+// ScatterMin scatter values from updates pointed by scatterIndices to operand, by taking the Min.
+// Details in ScatterCustom, which is used with the updateComputation set to Min.
+func ScatterMin(operand, scatterIndices, updates *Op,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	return scatterImpl(operand, scatterIndices, updates, ReduceMinType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
+		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+}
+
+// scatterImpl is a helper function for ScatterAdd, ScatterMax, ScatterMin.
+func scatterImpl(operand, scatterIndices, updates *Op,
+	reduceType ReduceOpType,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	builder := operand.builder
+	reduceComputation, _, err := builder.GetReduceComputationAndInitialValue(reduceType, operand.Shape.DType)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to get update computation %s for scatter", reduceType)
+	}
+	return ScatterCustom(operand, scatterIndices, updates, reduceComputation, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
+		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+}
+
+// DecodeScatter retrieves the arguments for a Scatter (ScatterCustom or ScatterAdd) op.
+func DecodeScatter(op *Op) (
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) {
+	indexVectorAxis = op.IntsArg[0]
+	indicesAreSorted = op.IntsArg[1] != 0
+	uniqueIndices = op.IntsArg[2] != 0
+	if op.IntsArg[3] > 0 {
+		updateWindowAxes = make([]int, op.IntsArg[3])
+	}
+	if op.IntsArg[4] > 0 {
+		insertedWindowAxes = make([]int, op.IntsArg[4])
+	}
+	if op.IntsArg[5] > 0 {
+		fmt.Printf("> len(scatterAxesToOperandAxes)=%d\n", op.IntsArg[5])
+		scatterAxesToOperandAxes = make([]int, op.IntsArg[5])
+	}
+	//  * Copy sequentially the contents of the 3 int arrays:
+	pos := 6
+	for _, slice := range [][]int{updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes} {
 		if len(slice) > 0 {
 			copy(slice, op.IntsArg[pos:])
 			pos += len(slice)

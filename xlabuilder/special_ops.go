@@ -1080,3 +1080,119 @@ func DecodeReverse(op *Op) (x *Op, axes []int) {
 	axes = op.IntsArg
 	return
 }
+
+// BatchNormInference implements Batch Norm for inference. See details in
+// https://www.tensorflow.org/xla/operation_semantics#batchnorminference.
+//
+// Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
+// Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
+func BatchNormInference(operand, scale, offset, mean, variance *Op, epsilon float32, axis int) (*Op, error) {
+	builder := operand.builder
+	op := newOp(BatchNormInferenceOp, operand, scale, offset, mean, variance)
+	op.IntArg = axis
+	op.FloatArg = epsilon
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBatchNormInference retrieves the arguments for the BatchNormInference op.
+func DecodeBatchNormInference(op *Op) (operand, scale, offset, mean, variance *Op, epsilon float32, axis int) {
+	operand = op.OpInputs[0]
+	scale = op.OpInputs[1]
+	offset = op.OpInputs[2]
+	mean = op.OpInputs[3]
+	variance = op.OpInputs[4]
+	epsilon = op.FloatArg
+	axis = op.IntArg
+	return
+}
+
+// BatchNormTraining implements Batch Norm for training. See details in
+// https://www.tensorflow.org/xla/operation_semantics#batchnormtraining.
+//
+// It returns the normalized tensor, the batchMean and the batchVariance as a tuple of 3 elements.
+//
+// Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
+// Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
+func BatchNormTraining(operand, scale, offset *Op, epsilon float32, axis int) (*Op, error) {
+	builder := operand.builder
+	op := newOp(BatchNormTrainingOp, operand, scale, offset)
+	op.IntArg = axis
+	op.FloatArg = epsilon
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBatchNormTraining retrieves the arguments for the BatchNormTraining op.
+func DecodeBatchNormTraining(op *Op) (operand, scale, offset *Op, epsilon float32, axis int) {
+	operand = op.OpInputs[0]
+	scale = op.OpInputs[1]
+	offset = op.OpInputs[2]
+	epsilon = op.FloatArg
+	axis = op.IntArg
+	return
+}
+
+// BatchNormGrad implements Batch Norm for training. See details in
+// https://www.tensorflow.org/xla/operation_semantics#batchnormtraining.
+//
+// The gradOutput is the adjoint gradient, that is, the gradient with respect to the output of the
+// batch normalization.
+//
+// It returns gradOperand, gradScale, gradOffset as a tuple with the 3 elements.
+//
+// Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
+// Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
+func BatchNormGrad(operand, scale, mean, variance, gradOutput *Op, epsilon float32, axis int) (*Op, error) {
+	builder := operand.builder
+	op := newOp(BatchNormGradOp, operand, scale, mean, variance, gradOutput)
+	op.IntArg = axis
+	op.FloatArg = epsilon
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBatchNormGrad retrieves the arguments for the BatchNormGrad op.
+func DecodeBatchNormGrad(op *Op) (operand, scale, mean, variance, gradOutput *Op, epsilon float32, axis int) {
+	operand = op.OpInputs[0]
+	scale = op.OpInputs[1]
+	mean = op.OpInputs[2]
+	variance = op.OpInputs[3]
+	gradOutput = op.OpInputs[4]
+	epsilon = op.FloatArg
+	axis = op.IntArg
+	return
+}
+
+// FFT calls the XLA FFT operation, which implements {Forward, Inverse} x {Complex, Real} versions.
+//
+// See documentation in https://www.tensorflow.org/xla/operation_semantics.
+// Underlying, CPU FFT is backed by Eigen's TensorFFT and GPU FFT uses cuFFT.
+func FFT(operand *Op, fftType proto.FftType, fftLength []int) (*Op, error) {
+	builder := operand.builder
+	op := newOp(FftOp, operand)
+	op.IntArg = int(fftType)
+	op.IntsArg = slices.Clone(fftLength)
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeFFT retrieves the arguments for the FFT op.
+func DecodeFFT(op *Op) (operand *Op, fftType proto.FftType, fftLength []int) {
+	operand = op.OpInputs[0]
+	fftType = proto.FftType(op.IntArg)
+	fftLength = op.IntsArg
+	return
+}

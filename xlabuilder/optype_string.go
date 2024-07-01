@@ -33,11 +33,11 @@ func _() {
 	_ = x[SelectAndScatterOp-22]
 	_ = x[ConvGeneralDilatedOp-23]
 	_ = x[ReverseOp-24]
-	_ = x[BatchNormTrainingOp-25]
-	_ = x[BatchNormInferenceOp-26]
-	_ = x[BatchNormGradOp-27]
-	_ = x[DotGeneralOp-28]
-	_ = x[FftOp-29]
+	_ = x[DotGeneralOp-25]
+	_ = x[FftOp-26]
+	_ = x[BatchNormTrainingOp-27]
+	_ = x[BatchNormInferenceOp-28]
+	_ = x[BatchNormGradOp-29]
 	_ = x[AbsOp-30]
 	_ = x[NegOp-31]
 	_ = x[ExpOp-32]
@@ -89,9 +89,9 @@ func _() {
 	_ = x[RngUniformOp-78]
 }
 
-const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpTransposeOpCallOpReduceOpReduceWindowOpConcatenateOpSliceOpArgMinMaxOpPadOpGatherOpScatterOpSelectAndScatterOpConvGeneralDilatedOpReverseOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpDotGeneralOpFftOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOpRngBitGeneratorOpRngNormalOpRngUniformOp"
+const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpTransposeOpCallOpReduceOpReduceWindowOpConcatenateOpSliceOpArgMinMaxOpPadOpGatherOpScatterOpSelectAndScatterOpConvGeneralDilatedOpReverseOpDotGeneralOpFftOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOpRngBitGeneratorOpRngNormalOpRngUniformOp"
 
-var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 144, 152, 166, 179, 186, 197, 202, 210, 219, 237, 257, 266, 285, 305, 320, 332, 337, 342, 347, 352, 359, 366, 372, 379, 384, 391, 403, 413, 419, 424, 429, 434, 440, 446, 453, 459, 465, 471, 476, 481, 486, 491, 496, 501, 505, 510, 515, 520, 525, 530, 539, 546, 556, 572, 585, 598, 608, 625, 645, 671, 694, 717, 737, 754, 765, 777}
+var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 144, 152, 166, 179, 186, 197, 202, 210, 219, 237, 257, 266, 278, 283, 302, 322, 337, 342, 347, 352, 359, 366, 372, 379, 384, 391, 403, 413, 419, 424, 429, 434, 440, 446, 453, 459, 465, 471, 476, 481, 486, 491, 496, 501, 505, 510, 515, 520, 525, 530, 539, 546, 556, 572, 585, 598, 608, 625, 645, 671, 694, 717, 737, 754, 765, 777}
 
 func (i OpType) String() string {
 	if i < 0 || i >= OpType(len(_OpType_index)-1) {

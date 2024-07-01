@@ -31,11 +31,11 @@ const (
 	SelectAndScatterOp
 	ConvGeneralDilatedOp
 	ReverseOp
+	DotGeneralOp
+	FftOp
 	BatchNormTrainingOp
 	BatchNormInferenceOp
 	BatchNormGradOp
-	DotGeneralOp
-	FftOp
 	AbsOp
 	NegOp
 	ExpOp

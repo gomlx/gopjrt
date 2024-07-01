@@ -39,14 +39,11 @@ Scatter:special
 SelectAndScatter:special
 ConvGeneralDilated:special
 Reverse:special
-
+DotGeneral:special
+Fft:special
 BatchNormTraining:special
 BatchNormInference:special
 BatchNormGrad:special
-
-DotGeneral:special
-
-Fft:special
 
 // One-argument ops:
 Abs:one

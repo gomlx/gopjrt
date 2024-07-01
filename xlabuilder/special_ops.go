@@ -975,3 +975,80 @@ func DecodeSelectAndScatter(op *Op) (
 	}
 	return
 }
+
+// DotGeneral takes as input lhs (left-hand-side) and rhs (right-hand-side) specifications
+// for a general vector product -- a generalized "Einsum". Each axis can be:
+//
+//   - Just aligned (batch axes), so the output has the same axes as the inputs. The dimensions
+//     must match in lhs and rhs.
+//   - Crossed (default), in which case the output is the combination (concatenation) of the
+//     dimensions.
+//   - Contracted (contracting axes), where the output does multiply the values and reduce sum
+//     those dimensions.
+//
+// It follows that the resulting dimension number starts with the batch dimension, then the 'lhs'
+// non-contracting/non-batch dimension, and finally the 'rhs' non-contracting/non-batch dimension.
+//
+// It provides the basic means of implementing Einsum.
+func DotGeneral(lhs *Op, lhsContractingAxes, lhsBatchAxes []int,
+	rhs *Op, rhsContractingAxes, rhsBatchAxes []int) (*Op, error) {
+	builder := lhs.builder
+	dtype := lhs.Shape.DType
+	if lhs.Shape.IsScalar() || rhs.Shape.IsScalar() {
+		return nil, errors.Errorf("cannot use DotGeneral() with scalar values (lhs.shape=%s, rhs.shape=%s)", lhs.Shape, rhs.Shape)
+	}
+	if rhs.Shape.DType != dtype {
+		return nil, errors.Errorf("DotGeneral lhs (dtype=%s) and rhs (dtype=%s) must match",
+			lhs.Shape.DType, rhs.Shape.DType)
+	}
+	if lhs.Shape.Rank() < len(lhsBatchAxes)+len(lhsContractingAxes) {
+		return nil, errors.Errorf("DotGeneral lhs (shape=%s) doesn't have enough axes to contract (%d) and batch (%d), something is wrong",
+			lhs.Shape, len(lhsContractingAxes), len(lhsBatchAxes))
+	}
+	if rhs.Shape.Rank() < len(rhsBatchAxes)+len(rhsContractingAxes) {
+		return nil, errors.Errorf("DotGeneral rhs (shape=%s) doesn't have enough axes to contract (%d) and batch (%d), something is wrong",
+			rhs.Shape, len(rhsContractingAxes), len(rhsBatchAxes))
+	}
+
+	if klog.V(2).Enabled() {
+		klog.Infof("DotGeneral(lhs=%s, lhsContractingAxes=%v, lhsBatchAxes=%v, rhs=%s, rhsContractingAxes=%v, rhsBatchAxes=%v",
+			lhs.Shape, lhsContractingAxes, lhsBatchAxes, rhs.Shape, rhsContractingAxes, rhsBatchAxes)
+	}
+
+	op := newOp(DotGeneralOp, lhs, rhs)
+	var lists = [][]int{lhsContractingAxes, lhsBatchAxes, rhsContractingAxes, rhsBatchAxes}
+	intsLen := len(lists) // One value
+	for _, list := range lists {
+		intsLen += len(list)
+	}
+	op.IntsArg = make([]int, 0, intsLen)
+	for _, list := range lists {
+		op.IntsArg = append(op.IntsArg, len(list))
+	}
+	for _, list := range lists {
+		op.IntsArg = append(op.IntsArg, list...)
+	}
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeDotGeneral retrieves the arguments for a DotGeneral op.
+func DecodeDotGeneral(op *Op) (lhs *Op, lhsContractingAxes, lhsBatchAxes []int,
+	rhs *Op, rhsContractingAxes, rhsBatchAxes []int) {
+	lhs = op.OpInputs[0]
+	rhs = op.OpInputs[1]
+	var lists = []*[]int{&lhsContractingAxes, &lhsBatchAxes, &rhsContractingAxes, &rhsBatchAxes}
+	pos := 0
+	for _, listRef := range lists {
+		*listRef = make([]int, op.IntsArg[pos])
+		pos++
+	}
+	for _, listRef := range lists {
+		copy(*listRef, op.IntsArg[pos:])
+		pos += len(*listRef)
+	}
+	return
+}

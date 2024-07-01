@@ -446,7 +446,7 @@ func TestSelectAndScatter(t *testing.T) {
 		dtype := dtypes.Float64
 		operand := capture(Iota(builder, MakeShape(dtype, 1, 6, 1), 1)).Test(t)
 		source := capture(Iota(builder, MakeShape(dtype, 1, 2, 1), 1)).Test(t)
-		one := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
+		one := capture(ScalarOne(builder, dtype)).Test(t)
 		source = capture(Add(source, one)).Test(t)
 		windowDimensions := []int{1, 3, 1}
 		windowStrides := []int{1, 3, 1}
@@ -464,4 +464,78 @@ func TestSelectAndScatter(t *testing.T) {
 		require.Equal(t, []float64{0, 0, 1, 0, 0, 2}, got)
 		require.Equal(t, []int{1, 6, 1}, dims)
 	}
+}
+
+func TestDotGeneral(t *testing.T) {
+	client := getPJRTClient(t)
+
+	{
+		builder := New(t.Name() + ": [3, 4] x [3, 4]")
+		dtype := dtypes.Float32
+		lhs := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
+		lhs = capture(Reshape(lhs, 3, 4)).Test(t)
+		one := capture(ScalarOne(builder, dtype)).Test(t)
+		lhs = capture(Add(lhs, one)).Test(t)
+		rhs := capture(Constant(builder, NewScalarLiteral(float32(0.1)))).Test(t)
+		rhs = capture(Broadcast(rhs, 3, 4)).Test(t)
+
+		lhsContractingAxes, lhsBatchAxes := []int{1}, []int{0}
+		rhsContractingAxes, rhsBatchAxes := []int{1}, []int{0}
+		output := capture(DotGeneral(
+			lhs, lhsContractingAxes, lhsBatchAxes,
+			rhs, rhsContractingAxes, rhsBatchAxes,
+		)).Test(t)
+		gotLhs, gotLhsContractingAxes, gotLhsBatchAxes, gotRhs, gotRhsContractingAxes, gotRhsBatchAxes := DecodeDotGeneral(output)
+		require.Same(t, lhs, gotLhs)
+		require.Equal(t, lhsContractingAxes, gotLhsContractingAxes)
+		require.Equal(t, lhsBatchAxes, gotLhsBatchAxes)
+		require.Same(t, rhs, gotRhs)
+		require.Equal(t, rhsContractingAxes, gotRhsContractingAxes)
+		require.Equal(t, rhsBatchAxes, gotRhsBatchAxes)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float32](t, client, exec)
+		require.Equal(t, []float32{1, 2.6, 4.2}, got)
+		require.Equal(t, []int{3}, dims)
+		builder.Destroy()
+	}
+
+	{
+		builder := New(t.Name() + ": [3, 2, 4] x [3, 5, 4] -> [3, 2, 5]")
+		dtype := dtypes.Float32
+		lhs := capture(Iota(builder, MakeShape(dtype, 3*2*4), 0)).Test(t)
+		lhs = capture(Reshape(lhs, 3, 2, 4)).Test(t)
+		one := capture(ScalarOne(builder, dtype)).Test(t)
+		lhs = capture(Add(lhs, one)).Test(t)
+		rhs := capture(Constant(builder, NewScalarLiteral(float32(0.1)))).Test(t)
+		rhs = capture(Broadcast(rhs, 3, 5, 4)).Test(t)
+
+		lhsContractingAxes, lhsBatchAxes := []int{2}, []int{0}
+		rhsContractingAxes, rhsBatchAxes := []int{2}, []int{0}
+		output := capture(DotGeneral(
+			lhs, lhsContractingAxes, lhsBatchAxes,
+			rhs, rhsContractingAxes, rhsBatchAxes,
+		)).Test(t)
+		gotLhs, gotLhsContractingAxes, gotLhsBatchAxes, gotRhs, gotRhsContractingAxes, gotRhsBatchAxes := DecodeDotGeneral(output)
+		require.Same(t, lhs, gotLhs)
+		require.Equal(t, lhsContractingAxes, gotLhsContractingAxes)
+		require.Equal(t, lhsBatchAxes, gotLhsBatchAxes)
+		require.Same(t, rhs, gotRhs)
+		require.Equal(t, rhsContractingAxes, gotRhsContractingAxes)
+		require.Equal(t, rhsBatchAxes, gotRhsBatchAxes)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float32](t, client, exec)
+		require.InDeltaSlice(t, []float32{
+			1, 1, 1, 1, 1,
+			2.6, 2.6, 2.6, 2.6, 2.6,
+			4.2, 4.2, 4.2, 4.2, 4.2,
+			5.8, 5.8, 5.8, 5.8, 5.8,
+			7.4, 7.4, 7.4, 7.4, 7.4,
+			9, 9, 9, 9, 9,
+			1, 2.6, 4.2,
+		}, got, 0.001)
+		require.Equal(t, []int{3, 2, 5}, dims)
+	}
+
 }

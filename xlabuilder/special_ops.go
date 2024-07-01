@@ -70,6 +70,23 @@ func DecodeGetTupleElement(op *Op) (elementIdx int) {
 	return op.IntArg
 }
 
+// SplitTuple is a convenience wrapper around GetTupleElement, it will return an array with all the nodes.
+func SplitTuple(tuple *Op) ([]*Op, error) {
+	numElements := tuple.Shape.TupleSize()
+	if numElements == 0 {
+		return nil, errors.Errorf("value passed to SplitTuple is not a tuple, shape=%s", tuple.Shape)
+	}
+	split := make([]*Op, numElements)
+	var err error
+	for ii := 0; ii < numElements; ii++ {
+		split[ii], err = GetTupleElement(tuple, ii)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return split, nil
+}
+
 // Iota creates a constant of the given shape with increasing numbers (starting from 0)
 // on the given axis. So Iota([2,2], 1) returns [[0 1][0 1]], while Iota([2,2], 0)
 // returns [[0 0][1 1]].
@@ -1113,20 +1130,31 @@ func DecodeBatchNormInference(op *Op) (operand, scale, offset, mean, variance *O
 // BatchNormTraining implements Batch Norm for training. See details in
 // https://www.tensorflow.org/xla/operation_semantics#batchnormtraining.
 //
-// It returns the normalized tensor, the batchMean and the batchVariance as a tuple of 3 elements.
+// It returns the normalized tensor, the batchMean and the batchVariance.
 //
 // Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
 // Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
-func BatchNormTraining(operand, scale, offset *Op, epsilon float32, axis int) (*Op, error) {
+func BatchNormTraining(operand, scale, offset *Op, epsilon float32, axis int) (normalized, batchMean, batchVariance *Op, err error) {
 	builder := operand.builder
 	op := newOp(BatchNormTrainingOp, operand, scale, offset)
 	op.IntArg = axis
 	op.FloatArg = epsilon
-	err := builder.addOp(op)
+	err = builder.addOp(op)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return op, nil
+	var parts []*Op
+	parts, err = SplitTuple(op)
+	if err != nil {
+		err = errors.WithMessage(err, "failed to split results of BatchNormTraining")
+		return
+	}
+	if len(parts) != 3 {
+		err = errors.Errorf("BatchNormTraining should have returned a tuple with 3 parts, got %s instead", op.Shape)
+		return
+	}
+	normalized, batchMean, batchVariance = parts[0], parts[1], parts[2]
+	return
 }
 
 // DecodeBatchNormTraining retrieves the arguments for the BatchNormTraining op.
@@ -1145,20 +1173,31 @@ func DecodeBatchNormTraining(op *Op) (operand, scale, offset *Op, epsilon float3
 // The gradOutput is the adjoint gradient, that is, the gradient with respect to the output of the
 // batch normalization.
 //
-// It returns gradOperand, gradScale, gradOffset as a tuple with the 3 elements.
+// It returns  as a tuple with the 3 elements.
 //
 // Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
 // Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
-func BatchNormGrad(operand, scale, mean, variance, gradOutput *Op, epsilon float32, axis int) (*Op, error) {
+func BatchNormGrad(operand, scale, mean, variance, gradOutput *Op, epsilon float32, axis int) (gradOperand, gradScale, gradOffset *Op, err error) {
 	builder := operand.builder
 	op := newOp(BatchNormGradOp, operand, scale, mean, variance, gradOutput)
 	op.IntArg = axis
 	op.FloatArg = epsilon
-	err := builder.addOp(op)
+	err = builder.addOp(op)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return op, nil
+	var parts []*Op
+	parts, err = SplitTuple(op)
+	if err != nil {
+		err = errors.WithMessage(err, "failed to split results of BatchNormGrad")
+		return
+	}
+	if len(parts) != 3 {
+		err = errors.Errorf("BatchNormGrad should have returned a tuple with 3 parts, got %s instead", op.Shape)
+		return
+	}
+	gradOperand, gradScale, gradOffset = parts[0], parts[1], parts[2]
+	return
 }
 
 // DecodeBatchNormGrad retrieves the arguments for the BatchNormGrad op.
@@ -1194,5 +1233,39 @@ func DecodeFFT(op *Op) (operand *Op, fftType proto.FftType, fftLength []int) {
 	operand = op.OpInputs[0]
 	fftType = proto.FftType(op.IntArg)
 	fftLength = op.IntsArg
+	return
+}
+
+// RngBitGenerator generates the given shape filled with random bits.
+// It takes as input the current random number generator (RNG) state, see RngState or RngStateFromSeed.
+// The algorithm is hard-coded to use Philox algorithm for now.
+//
+// It returns the new state of the RNG and the generated values (with random bits) with the given shape.
+func RngBitGenerator(state *Op, shape Shape) (newState, values *Op, err error) {
+	builder := state.builder
+	op := newOp(RngBitGeneratorOp, state)
+	op.ShapeArg = shape
+	err = builder.addOp(op)
+	if err != nil {
+		return
+	}
+	var parts []*Op
+	parts, err = SplitTuple(op)
+	if err != nil {
+		err = errors.WithMessage(err, "failed to split results of RngBitGenerator")
+		return
+	}
+	if len(parts) != 2 {
+		err = errors.Errorf("RngBitGenerator should have returned a tuple with 2 parts, got %s instead", op.Shape)
+		return
+	}
+	newState, values = parts[0], parts[1]
+	return
+}
+
+// DecodeRngBitGenerator retrieves the arguments for the FFT op.
+func DecodeRngBitGenerator(op *Op) (state *Op, shape Shape) {
+	state = op.OpInputs[0]
+	shape = op.ShapeArg
 	return
 }

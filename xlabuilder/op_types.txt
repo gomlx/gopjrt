@@ -44,6 +44,7 @@ Fft:special
 BatchNormTraining:special
 BatchNormInference:special
 BatchNormGrad:special
+RngBitGenerator:special
 
 // One-argument ops:
 Abs:one
@@ -98,7 +99,3 @@ GreaterThanTotalOrder:two_cmp
 LessOrEqualTotalOrder:two_cmp
 LessThanTotalOrder:two_cmp
 
-// Ops with variable sets of arguments.
-RngBitGenerator:sets
-RngNormal:sets
-RngUniform:sets

@@ -426,6 +426,17 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
                          preferred_element_type);
     break;
   }
+  case RngBitGeneratorOp: {
+      xla::RandomAlgorithm algo =
+          static_cast<xla::RandomAlgorithm>(serialized_op->integer);
+      op = xla::RngBitGenerator(algo, *inputs[0], shape);
+      break;
+  }
+  case FftOp: {
+    xla::FftType fft_type = static_cast<xla::FftType>(serialized_op->integer);
+    op = xla::Fft(*inputs[0], fft_type, list_of_ints);
+    break;
+  }
 
   // One-argument ops:
   case AbsOp:
@@ -533,25 +544,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = xla::Complex(*inputs[0], *inputs[1]);
     break;
 
-  // Nodes with variable sets of arguments.
-  case RngNormalOp:
-    op = xla::RngNormal(*inputs[0], *inputs[1], shape);
-    break;
-  case RngUniformOp:
-    op = xla::RngUniform(*inputs[0], *inputs[1], shape);
-    break;
-  case RngBitGeneratorOp: {
-    xla::RandomAlgorithm algo =
-        static_cast<xla::RandomAlgorithm>(serialized_op->integer);
-    op = xla::RngBitGenerator(algo, *inputs[0], shape);
-    break;
-  }
-  case FftOp: {
-    xla::FftType fft_type = static_cast<xla::FftType>(serialized_op->integer);
-    op = xla::Fft(*inputs[0], fft_type, list_of_ints);
-    break;
-  }
-
+  // Logical operations.
   case EqualOp:
     op = xla::Eq(*inputs[0], *inputs[1]);
     break;

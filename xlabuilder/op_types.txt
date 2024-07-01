@@ -37,13 +37,15 @@ Pad:special
 Gather:special
 Scatter:special
 SelectAndScatter:special
-
 ConvGeneralDilated:special
 Reverse:special
+
 BatchNormTraining:special
 BatchNormInference:special
 BatchNormGrad:special
+
 DotGeneral:special
+
 Fft:special
 
 // One-argument ops:

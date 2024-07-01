@@ -952,8 +952,12 @@ func (b *XlaBuilder) GetSelectAndScatterComputation(reduction ReduceOpType, dtyp
 
 // DecodeSelectAndScatter retrieves the arguments for a SelectAndScatter (ScatterAndScatterCustom or ScatterAndScatterMax) op.
 func DecodeSelectAndScatter(op *Op) (
+	operand, source, defaultValue *Op,
 	selectComputation, scatterComputation *XlaComputation,
 	windowDimensions, windowStrides []int, paddings [][2]int) {
+	operand = op.OpInputs[0]
+	source = op.OpInputs[1]
+	defaultValue = op.OpInputs[2]
 	selectComputation = op.ComputationArg
 	scatterComputation = op.SecondComputationArg
 
@@ -1050,5 +1054,29 @@ func DecodeDotGeneral(op *Op) (lhs *Op, lhsContractingAxes, lhsBatchAxes []int,
 		copy(*listRef, op.IntsArg[pos:])
 		pos += len(*listRef)
 	}
+	return
+}
+
+// Reverse returns x with the values for the given dimensions reversed, that is,
+// the value indexed at `i` will be swapped with the value at indexed `(dimension_size - 1 - i)`.
+// The shape remains the same.
+func Reverse(x *Op, axes ...int) (*Op, error) {
+	builder := x.builder
+	if x.Shape.IsScalar() {
+		return nil, errors.Errorf("cannot use Reverse() with scalar value (x.shape=%s)", x.Shape)
+	}
+	op := newOp(ReverseOp, x)
+	op.IntsArg = axes
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeReverse retrieves the arguments for the Reverse op.
+func DecodeReverse(op *Op) (x *Op, axes []int) {
+	x = op.OpInputs[0]
+	axes = op.IntsArg
 	return
 }

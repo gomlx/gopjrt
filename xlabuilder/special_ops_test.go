@@ -452,7 +452,9 @@ func TestSelectAndScatter(t *testing.T) {
 		windowStrides := []int{1, 3, 1}
 		output := capture(SelectAndScatterMax(operand, source, windowDimensions, windowStrides, nil)).Test(t)
 
-		gotSelectComp, gotScatterComp, gotWindowDimensions, gotWindowStrides, gotPaddings := DecodeSelectAndScatter(output)
+		gotOperand, gotSource, _, gotSelectComp, gotScatterComp, gotWindowDimensions, gotWindowStrides, gotPaddings := DecodeSelectAndScatter(output)
+		require.Same(t, operand, gotOperand)
+		require.Same(t, source, gotSource)
 		require.True(t, strings.HasPrefix(gotSelectComp.Name(), "#_select_ReduceMaxType_Float64"))
 		require.True(t, strings.HasPrefix(gotScatterComp.Name(), "#_scatter_Float64"))
 		require.Equal(t, windowDimensions, gotWindowDimensions)
@@ -537,5 +539,27 @@ func TestDotGeneral(t *testing.T) {
 		}, got, 0.001)
 		require.Equal(t, []int{3, 2, 5}, dims)
 	}
+}
 
+func TestReverse(t *testing.T) {
+	client := getPJRTClient(t)
+
+	{
+		builder := New(t.Name() + ": [3, 4]")
+		dtype := dtypes.Float32
+		x := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
+		x = capture(Reshape(x, 3, 4)).Test(t)
+		axes := []int{0}
+		output := capture(Reverse(x, axes...)).Test(t)
+
+		gotX, gotAxes := DecodeReverse(output)
+		require.Same(t, x, gotX)
+		require.Equal(t, axes, gotAxes)
+
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[float32](t, client, exec)
+		require.Equal(t, []float32{8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3}, got)
+		require.Equal(t, []int{3, 4}, dims)
+		builder.Destroy()
+	}
 }

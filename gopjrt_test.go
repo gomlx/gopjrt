@@ -54,7 +54,7 @@ func TestEndToEnd(t *testing.T) {
 		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
 
 		// Execute: it returns the output on-device buffer(s).
-		outputBuffers, err := loadedExec.Execute(inputBuffer)
+		outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
 		require.NoErrorf(t, err, "Failed to execute on input %d", input)
 
 		// Transfer output on-device buffer to a "host" value (in Go).

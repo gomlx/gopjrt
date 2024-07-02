@@ -39,6 +39,7 @@ enum OpType {
   BatchNormTrainingOp,
   BatchNormInferenceOp,
   BatchNormGradOp,
+  RngBitGeneratorOp,
   AbsOp,
   NegOp,
   ExpOp,
@@ -85,9 +86,6 @@ enum OpType {
   GreaterThanTotalOrderOp,
   LessOrEqualTotalOrderOp,
   LessThanTotalOrderOp,
-  RngBitGeneratorOp,
-  RngNormalOp,
-  RngUniformOp,
 };
 
 #ifdef __cplusplus

@@ -36,6 +36,7 @@ const (
 	BatchNormTrainingOp
 	BatchNormInferenceOp
 	BatchNormGradOp
+	RngBitGeneratorOp
 	AbsOp
 	NegOp
 	ExpOp
@@ -82,7 +83,4 @@ const (
 	GreaterThanTotalOrderOp
 	LessOrEqualTotalOrderOp
 	LessThanTotalOrderOp
-	RngBitGeneratorOp
-	RngNormalOp
-	RngUniformOp
 )

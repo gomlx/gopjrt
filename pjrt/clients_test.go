@@ -82,7 +82,7 @@ func TestCompileAndExecute(t *testing.T) {
 			buffer, err := client.BufferFromHost().FromRawData(ScalarToRaw(input)).Done()
 			require.NoErrorf(t, err, "Failed to transfer scalar %v", input)
 			want := programTest.wantOutputs[ii]
-			outputs, err := loadedExec.Execute(buffer)
+			outputs, err := loadedExec.Execute(buffer).Done()
 			require.NoErrorf(t, err, "Failed to execute for %v", input)
 			require.Len(t, outputs, len(want))
 			if len(outputs) == 1 {

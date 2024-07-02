@@ -62,7 +62,7 @@ func execWithScalars[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 	require.NoErrorf(t, err, "Failed to create on-device buffer for input %v", input)
 	defer func() { require.NoError(t, inputBuffer.Destroy()) }()
 
-	outputBuffers, err := exec.Execute(inputBuffer)
+	outputBuffers, err := exec.Execute(inputBuffer).Done()
 	require.NoErrorf(t, err, "Failed to execute on input %v", input)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
@@ -79,7 +79,7 @@ func execWithSlices[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec 
 	require.NoErrorf(t, err, "Failed to create on-device buffer for input %v", input)
 	defer func() { require.NoError(t, inputBuffer.Destroy()) }()
 
-	outputBuffers, err := exec.Execute(inputBuffer)
+	outputBuffers, err := exec.Execute(inputBuffer).Done()
 	require.NoErrorf(t, err, "Failed to execute on input %v", input)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
@@ -92,7 +92,7 @@ func execWithSlices[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec 
 }
 
 func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable) (flat []T, dims []int) {
-	outputBuffers := capture(exec.Execute()).Test(t)
+	outputBuffers := capture(exec.Execute().Done()).Test(t)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
 
@@ -107,7 +107,7 @@ func execArrayOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec
 
 // execScalarOutput executes the LoadedExecutable with no inputs, and a scalar output of the given type.
 func execScalarOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable) (value T) {
-	outputBuffers := capture(exec.Execute()).Test(t)
+	outputBuffers := capture(exec.Execute().Done()).Test(t)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
 

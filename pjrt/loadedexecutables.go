@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
+	"slices"
 	"unsafe"
 )
 
@@ -105,44 +106,126 @@ func (e *LoadedExecutable) getExecutable() (*Executable, error) {
 	return newExecutable(e.plugin, args.executable), nil
 }
 
-// Execute the compile program using the most standard options:
+// Execute the compiled computation. It returns an ExecutionConfig for further configuration.
+// Call ExecutionConfig.Done and the computation is executed.
+//
+// It provides good defaults, so in the common case nothing else is needed:
 //
 // - Using the first addressable device.
 // - All input buffers marked as not-donated (see discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation) input buffers.
-// -
-func (e *LoadedExecutable) Execute(inputs ...*Buffer) ([]*Buffer, error) {
+//
+// See ExecutionConfig for more details and options.
+//
+// Example:
+//
+//	outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
+func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
+	c := &ExecutionConfig{
+		executable: e,
+		inputs:     inputs,
+	}
+	c.NotDonatable()
+	return c
+}
+
+// ExecutionConfig holds the configuration for executing a LoadedExecutable.
+// It is created with LoadedExecutable.Execute.
+//
+// After configuring it, call Done to actually trigger the execution.
+//
+// TODO: add support for multi-device execution, with some inputs shared accross devices, and some per-device specific.
+type ExecutionConfig struct {
+	executable         *LoadedExecutable
+	devices            []*Device
+	inputs             []*Buffer
+	nonDonatableInputs []int
+
+	// err saves an error during the configuration.
+	err error
+}
+
+// DonateAll marks all inputs to be "donated".
+//
+// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
+// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+func (c *ExecutionConfig) DonateAll() *ExecutionConfig {
+	c.nonDonatableInputs = nil
+	return c
+}
+
+// NotDonatable makes all inputs to be marked as non-donatable. This is the default.
+//
+// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
+// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+func (c *ExecutionConfig) NotDonatable() *ExecutionConfig {
+	c.nonDonatableInputs = make([]int, len(c.inputs))
+	for ii := range c.inputs {
+		c.nonDonatableInputs[ii] = ii
+	}
+	return c
+}
+
+// Donate marks the inputs (referred to its indices) to be donated.
+//
+// This can be called more than once for different inputsIndices.
+//
+// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
+// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
+	c.nonDonatableInputs = slices.DeleteFunc(c.nonDonatableInputs, func(i int) bool {
+		return slices.Index(inputsIndices, i) != -1
+	})
+	return c
+}
+
+func (c *ExecutionConfig) Done() ([]*Buffer, error) {
+	e := c.executable
 	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 
 	// Find device:
-	devices, err := e.client.AddressableDevices()
-	if err != nil {
-		return nil, errors.WithMessage(err, "LoadedExecutable.Execute failed while finding addressable device to execute")
-	}
-	if len(devices) == 0 {
-		return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
+	if len(c.devices) == 0 {
+		var err error
+		c.devices, err = e.client.AddressableDevices()
+		if err != nil {
+			return nil, errors.WithMessage(err, "LoadedExecutable.Execute failed while finding addressable device to execute")
+		}
+		if len(c.devices) == 0 {
+			return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
+		}
 	}
 
+	// Create arguments structures for call to Execute.
 	args := C.new_PJRT_LoadedExecutable_Execute_Args()
 	defer cFree(args)
+	args.executable = e.cLoadedExecutable
 	options := C.new_PJRT_ExecuteOptions() // Like more args that for some reason(?) go on a separate struct.
 	defer cFree(options)
-	args.executable = e.cLoadedExecutable
 	args.options = options
+
+	// Configure (non-)donatable inputs.
+	if len(c.nonDonatableInputs) > 0 {
+		options.num_non_donatable_input_indices = C.size_t(len(c.nonDonatableInputs))
+		options.non_donatable_input_indices = cMallocArrayAndSet[C.int64_t](len(c.nonDonatableInputs), func(ii int) C.int64_t {
+			return C.int64_t(c.nonDonatableInputs[ii])
+		})
+		defer cFree(options.non_donatable_input_indices)
+	}
+
 	numDevices := 1
 	args.num_devices = C.size_t(numDevices)
-	args.execute_device = devices[0].cDevice
-	args.num_args = C.size_t(len(inputs))
-	args.argument_lists = allocatePerDeviceBufferList(numDevices, inputs)
+	args.execute_device = c.devices[0].cDevice
+	args.num_args = C.size_t(len(c.inputs))
+	args.argument_lists = allocatePerDeviceBufferList(numDevices, c.inputs)
 	defer freePerDeviceBufferList(args.argument_lists, numDevices)
 	args.output_lists = allocatePerDeviceBufferList(numDevices, make([]*Buffer, e.NumOutputs))
 	defer freePerDeviceBufferList(args.output_lists, numDevices)
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
 	//defer cFree(args.device_complete_events)
 
-	err = toError(e.plugin, C.call_PJRT_LoadedExecutable_Execute(e.plugin.api, args))
+	err := toError(e.plugin, C.call_PJRT_LoadedExecutable_Execute(e.plugin.api, args))
 	if err != nil {
 		return nil, err
 	}

@@ -18,24 +18,15 @@ genrule(
     """,
 )
 
-# This genrule remaps libxla_extension.so and libtcmalloc.a to lib/libxla_extension.so
 genrule(
     name = "gomlx_xlabuilder_lib",
     srcs = [
         "//gomlx/xlabuilder:libgomlx_xlabuilder.so",
-        "@gperftools//:libtcmalloc.a",
     ],
     outs = ["lib/libgomlx_xlabuilder.so"],
     cmd = """
     mkdir -p "$(@D)"
     ln $(location //gomlx/xlabuilder:libgomlx_xlabuilder.so) "$@"
-
-    mkdir -p "$(@D)/gomlx/xlabuilder"
-    GPERFTOOLS_LIB="$$(pwd)/$$(dirname $(location @gperftools//:libtcmalloc.a))"
-    if [ -d "$$GPERFTOOLS_LIB"/lib ]; then
-      GPERFTOOLS_LIB="$$GPERFTOOLS_LIB"/lib
-    fi
-    ln -f "$$GPERFTOOLS_LIB"/lib* "$(@D)/gomlx/xlabuilder"
     """,
 )
 

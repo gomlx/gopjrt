@@ -19,8 +19,6 @@
 #include <string.h>
 
 #include "absl/log/initialize.h"
-#include "gperftools/heap-checker.h"
-#include "gperftools/malloc_extension.h"
 #include "xla/statusor.h"
 
 const char *TF_LOG_LEVEL_ENV = "TF_CPP_MIN_LOG_LEVEL";
@@ -72,25 +70,6 @@ VectorPointers *c_vector_str(const std::vector<std::string> &v) {
   }
   return vp;
 }
-
-char *memory_stats() {
-  const size_t kBufferSize = 10 * 1024 * 1024;
-  char *buf = (char *)malloc(kBufferSize);
-  MallocExtension::instance()->GetStats(buf, kBufferSize);
-  return buf;
-}
-
-size_t memory_usage() {
-  const char *kCurrentAllocatedBytes = "generic.current_allocated_bytes";
-  size_t res;
-  if (MallocExtension::instance()->GetNumericProperty(kCurrentAllocatedBytes,
-                                                      &res)) {
-    return res;
-  }
-  return 0;
-}
-
-bool heap_checker_no_global_leaks() { return HeapLeakChecker::NoGlobalLeaks(); }
 
 char *number_to_string(int n) { return c_str(std::to_string(n)); }
 

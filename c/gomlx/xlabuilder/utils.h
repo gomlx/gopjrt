@@ -147,11 +147,6 @@ extern "C" {
 // Returns C++ version of the XLA wrapper.
 extern int xla_wrapper_version();
 
-// Memory profiling/introspection, using MallocExtension::GetStats()
-extern char *memory_stats();
-extern size_t memory_usage();
-extern bool heap_checker_no_global_leaks();
-
 // NumberToString converts a number to a string. Used for testing.
 extern char *number_to_string(int n);
 

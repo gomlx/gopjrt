@@ -60,7 +60,7 @@ Usage:
 		return nil
 	})
 	if err != nil {
-		klog.Fatal("Error: %+v", err)
+		klog.Fatalf("Error: %+v", err)
 	}
 }
 

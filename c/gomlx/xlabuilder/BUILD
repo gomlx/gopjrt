@@ -30,9 +30,7 @@ cc_library(
     # lead to spurious logging by XLA library at startup up.
     # defines = ["SKIP_ABSL_INITIALIZE_LOG"],
     linkopts = ["-shared"],
-    deps = gomlx_xlabuilder_deps + [
-        "@gperftools",
-    ],
+    deps = gomlx_xlabuilder_deps,
     alwayslink = True,
 )
 
@@ -40,7 +38,6 @@ cc_binary(
     name = "libgomlx_xlabuilder.so",
     linkopts = [
         "-shared",
-        "-ltcmalloc",
     ],
     # Setting linkshared=1 and linkstatic=1 should try to link everything (except system libraries) statically
     # but generate a dynamically linked library -- needed to link it to other languages, Go in this case.

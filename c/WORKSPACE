@@ -40,21 +40,6 @@ http_archive(
     ],
 )
 
-# gperftools with tcmalloc.
-# GPERFTOOLS_VERSION = "2.10"
-GPERFTOOLS_VERSION = "2.15"
-
-http_archive(
-    name = "gperftools",
-    build_file = "//deps:gperftools.BUILD",
-    # sha256 = "83e3bfdd28b8bcf53222c3798d4d395d52dadbbae59e8730c4a6d31a9c3732d8",  # 2.10
-    sha256 = "c69fef855628c81ef56f12e3c58f2b7ce1f326c0a1fe783e5cae0b88cbbe9a80",  # 2.15
-    strip_prefix = "gperftools-{version}".format(version = GPERFTOOLS_VERSION),
-    urls = [
-        "https://github.com/gperftools/gperftools/releases/download/gperftools-{version}/gperftools-{version}.tar.gz".format(version = GPERFTOOLS_VERSION),
-    ],
-)
-
 # Create @tsl repository.
 load("@xla//third_party:repo.bzl", "tf_vendored")
 

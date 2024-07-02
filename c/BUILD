@@ -48,14 +48,16 @@ genrule(
         ":gomlx_xlabuilder_lib",
     ],
     outs = ["gomlx_xlabuilder.tar.gz"],
-    cmd = """
+    cmd_bash = """
     tt="$$(mktemp -d)"
-    files=""
-    for ii in $(SRCS) ; do
-        ln -sf "$$(pwd)/$${ii}" "$${tt}"
-        files="$${files} $$(basename $${ii})"
+    echo "tt=$${tt}"
+    build_dir="$$(pwd)/$(@D)"
+    echo "build_dir=$${build_dir}"
+    files="lib include"
+    for ii in $${files} ; do
+        ln -sf "$${build_dir}/$${ii}" "$${tt}"
     done
-    echo "$${files}"
+    echo "files=$${files}"
     TAR=tar
     if [[ "$$OSTYPE" == "darwin"* ]]; then
         if ! command -v gtar &> /dev/null; then

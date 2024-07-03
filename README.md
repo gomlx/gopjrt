@@ -39,7 +39,7 @@ It includes the following main concepts:
 * `Buffer`: Represents a buffer with the input/output data for the computations in the accelerators. There are 
   methods to transfer it to/from the host memory. They are the inputs and outputs of `LoadedExecutable.Execute`.
 
-**[Simple example](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):**
+### [Example 1: Create function with XlaBuilder and execute it](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):**
 
 * **Note**: this is a trivial example. XLA/PJRT really shines when doing large number crunching tasks.
 
@@ -99,7 +99,7 @@ It includes the following main concepts:
 	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
 ```
 
-While it uses CGO to dynamically load the plugin and call its C API, it doesn't require anything other than the plugin 
+While it uses CGO to dynamically load the plugin and call its C API, `pjrt` doesn't require anything other than the plugin 
 to be installed.
 
 The project releases includes 2 plugins, one for CPU (linux-x86) compiled from XLA source code, and one for GPUs
@@ -109,6 +109,51 @@ And it should work with binary plugins provided by other companies (Google Cloud
 plugin in their cloud TPU boxes; I hear Intel also have binary plugins for their hardware).
 
 See plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
+
+### Example 2: Execute Jax function in Go with `pjrt`:
+
+First we create the HLO program in Jax/Python (see [Jax documentation](https://jax.readthedocs.io/en/latest/_autosummary/jax.xla_computation.html#jax.xla_computation))
+
+_(You can do this with [Google's Colab](colab.resarch.google.com) without having to install anything)_
+
+```python
+import os
+import jax
+
+def f(x): 
+  return x*x+1
+
+comp = jax.xla_computation(f)(3.)
+print(comp.as_hlo_text())
+hlo_proto = comp.as_hlo_module()
+
+with open('hlo.pb', 'wb') as file:
+  file.write(hlo_proto.as_serialized_hlo_module_proto())
+```
+
+Then download the `hlo.pb` file and do:
+
+_(The package [`must`](github.com/janpfeifer/must) simply converts errors to panics)_
+
+```go
+	hloBlob := must.M1(os.ReadFile("hlo.pb"))
+
+	// PJRT plugin and create a client.
+	plugin := must.M1(pjrt.GetPlugin(*flagPluginName))
+	fmt.Printf("Loaded %s\n", plugin)
+	client := must.M1(plugin.NewClient(nil))
+	loadedExec := must.M1(client.Compile().WithHLO(hloBlob).Done())
+
+	// Test values:
+	inputs := []float32{0.1, 1, 3, 4, 5}
+	fmt.Printf("f(x) = x^2 + 1:\n")
+	for _, input := range inputs {
+		inputBuffer := must.M1(pjrt.ScalarToBuffer(client, input))
+		outputBuffers := must.M1(loadedExec.Execute(inputBuffer).Done())
+		output := must.M1(pjrt.BufferToScalar[float32](outputBuffers[0]))
+		fmt.Printf("\tf(x=%g) = %g\n", input, output)
+	}
+```
 
 ## `github.com/gomlx/gopjrt/xlabuilder`
 

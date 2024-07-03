@@ -59,6 +59,15 @@ jobs:
         sudo cp release/lib/libgomlx_xlabuilder.so /usr/lib/x86_64-linux-gnu
         export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
         sudo cp -r release/include/gomlx /usr/include
+        curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
+          | grep "pjrt_c_api_cpu_plugin.so.gz" | grep "download_url" \
+          | sed 's/.*"\(https.*\)"/\1/' \
+          > /tmp/gopjrt_latest_release_cpu_plugin_url.txt
+        cat /tmp/gopjrt_latest_release_cpu_plugin_url.txt
+        wget --quiet --output-document=- $(cat /tmp/gopjrt_latest_release_cpu_plugin_url.txt) \
+          > release/pjrt_c_api_cpu_plugin.so.gz
+        gzip -d release/pjrt_c_api_cpu_plugin.so.gz
+        sudo mv release/pjrt_c_api_cpu_plugin.so /usr/lib/x86_64-linux-gnu/
 
     - name: PreTest
       run: |

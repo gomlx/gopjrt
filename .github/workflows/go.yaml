@@ -1,0 +1,92 @@
+# Tests only run with --short, since the full tests involve downloading datasets
+# and would be too costly for a Github actions.
+# Locally in the development box it works because the datasets are cached.
+name: "Tests" # The name of the workflow that will appear on Github
+permissions:
+  # read|write|none
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  # id-token: read    --> doesn't work
+  issues: read
+  discussions: read
+  packages: read
+  pages: read
+  pull-requests: write
+  repository-projects: read
+  security-events: read
+  statuses: read
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install apt packages
+      shell: bash
+      run: |
+        sudo apt-get install -y --no-install-recommends \
+          "wget" "gcc" "libunwind8" "libunwind-dev" "liblzma5" "libgoogle-perftools-dev" "hdf5-tools"
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.22.x"
+
+    - name: Install GoMLX shared libraries
+      shell: bash
+      run: |
+        curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
+          | grep "gomlx_xlabuilder-linux-amd64.tar.gz" | grep "download_url" \
+          | sed 's/.*"\(https.*\)"/\1/' \
+          > /tmp/gopjrt_latest_release_url.txt
+        cat /tmp/gopjrt_latest_release_url.txt
+        wget --quiet --output-document=- $(cat /tmp/gopjrt_latest_release_url.txt) \
+          | (mkdir release ; cd release ; sudo tar -xvz)
+        echo "Untar-ed files:"
+        find release/
+        sudo cp release/lib/libgomlx_xlabuilder.so /usr/lib/x86_64-linux-gnu
+        export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+        sudo cp -r release/include/gomlx /usr/include
+
+    - name: PreTest
+      run: |
+        go test ./xla -test.v
+
+    - name: Test
+      run: |
+        go test ./...
+
+    - name: Go Coverage Badge
+      uses: tj-actions/coverage-badge-go@v2
+      with:
+        green: 80
+        filename: docs/coverage.out
+
+    - name: Commit README.md changes
+      run: |
+        if git diff --quiet -- 'README.md' ; then
+          echo "README.md not modified."
+        else
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: Updated coverage badge."
+        fi
+
+    - name: Push Changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ github.token }}
+        branch: ${{ github.ref }}

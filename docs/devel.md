@@ -35,3 +35,14 @@ and the user won't need to do anything.
 
 * A prebuilt CUDA (GPU) plugin is  [distributed with Jax (pypi wheel)](https://pypi.org/project/jax-cuda12-pjrt/) (albeit with a [non-standard naming](https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit#heading=h.l9ksu371j9wz))
 * The CPU plugin can be built from the XLA sources: after running `configure.py`, build `bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so`.
+
+## Updating `coverage.out` file
+
+This is not done as a github actions because it would take too long to download the datasets, etc.
+Instead, we do it manually with:
+
+```shell
+PACKAGE_COVERAGE="./pjrt ./xlabuilder"
+go test -v -cover -coverprofile docs/coverage.out -coverpkg "${PACKAGE_COVERAGE}" 
+go tool cover -func docs/coverage.out -o docs/coverage.out
+```

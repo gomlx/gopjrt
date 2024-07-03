@@ -6,7 +6,7 @@
 // 	protoc        v5.27.2
 // source: tsl/protobuf/dnn.proto
 
-package proto
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

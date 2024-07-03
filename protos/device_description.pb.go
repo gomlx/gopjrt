@@ -19,7 +19,7 @@
 // 	protoc        v5.27.2
 // source: xla/stream_executor/device_description.proto
 
-package proto
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

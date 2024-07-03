@@ -10,7 +10,7 @@
 // 	protoc        v5.27.2
 // source: xla/autotuning.proto
 
-package proto
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

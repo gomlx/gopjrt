@@ -32,7 +32,7 @@
 // 	protoc        v5.27.2
 // source: xla/service/hlo.proto
 
-package proto
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

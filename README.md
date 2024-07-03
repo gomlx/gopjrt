@@ -6,10 +6,14 @@
 [![TestStatus](https://github.com/gomlx/gopjrt/actions/workflows/go.yaml/badge.svg)](https://github.com/gomlx/gojrt/actions/workflows/go.yaml)
 ![Coverage](https://img.shields.io/badge/Coverage-00.0%25-yellow)
 
-**`gopjrt`** leverages [OpenXLA](https://openxla.org/) to make it easy to compile, optimize and accelerate numeric 
+**`gopjrt`** leverages [OpenXLA](https://openxla.org/) to compile, optimize and accelerate numeric 
 computations (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, Intel*, Apple Metal*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
+
+And because Jax, TensorFlow and [optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA,
+it is possible to run Jax functions in Go with `gopjrt`, and probably TensorFlow and PyTorch as well.
+See example 2 below.
 
 (*) Not tested yet, pls let me know if it works for you, or if you can lend access to these hardware (a virtual machine)
 so that I can use (a virtual machine) for a while, I would love to try to verify and make sure it works there.
@@ -21,8 +25,8 @@ It is not very ergonomic (error handling everywhere), and the expectation is tha
 friendlier API on top of `gopjrt` -- the same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API
 on top of XLA/PJRT.
 
-One such friendlier API is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx), but `gopjrt` may be used as a standalone, for lower level access to XLA, 
-and other accelerator use cases -- like running Jax functions in Go (see example 2 below).
+One such friendlier API is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx), but `gopjrt` may be used as a standalone, 
+for lower level access to XLA and other accelerator use cases -- like running Jax functions in Go.
 
 It provides 2 independent packages (often used together, but not necessarily):
 
@@ -263,20 +267,24 @@ Or that your system library paths in `/etc/ld.so.conf` include `/usr/local/lib`.
 * **Why is [GoMLX](github.com/gomlx/gomlx) is not using `gopjrt` ?**
   Not yet, soon.
 * **When is feature X from PJRT or XlaBuilder going to be supported ?**
-  Yes, `gopjrt` doesn't wrap everything -- the simple ops and structs are auto-generated. But many require hand-writing.
+  Yes, `gopjrt` doesn't wrap everything -- although it does cover the most common operations. 
+  The simple ops and structs are auto-generated. But many require hand-writing.
   Please if it is useful to your project, create an issue, I'm happy to add it. I focused on the needs of GoMLX, 
-  but the idea is that it can server other purposes, and I'm happy to support it.
+  but the idea is that it can serve other purposes, and I'm happy to support it.
 * **Why not split in smaller packages ?**
   Because of https://github.com/golang/go/issues/13467 : C API's cannot be exported across packages, even within the same repo.
   Even a function as simple as `func Add(a, b C.int) C.int` in one package cannot be called from another. 
   So we need to wrap everything, and more than that, one cannot create separate sub-packages to handle separate concerns.
   THis is also the reason the library `chelper.go` is copied in both `pjrt` and `xlabuilder` packages.
 * **Why does PJRT spits out so much logging ? Can we disable it ?**
-  This is a great question ... imagine if every library we use decided they also want to clutter our stderr...
-  Not sure why OpenXLA does that. They use [Abseil Logging](https://abseil.io/docs/python/guides/logging) which also has this other issue
+  This is a great question ... imagine if every library we use decided they also want to clutter our stderr?
+  I have [an open question in Abseil about it](https://github.com/abseil/abseil-cpp/discussions/1700).
+  It may be some issue with [Abseil Logging](https://abseil.io/docs/python/guides/logging) which also has this other issue
   of not allowing two different linked programs/libraries to call its initialization (see [Issue #1656](https://github.com/abseil/abseil-cpp/issues/1656)).
-  The only workaround I can think of is duplicating fd 2 and assign to Go's `os.Stderr`, and then close fd 2, so PJRT plugins won't have where to log --
-  but I haven't tried, and this would impact other libraries that have legitimate use of `stderr`.
+  A hacky work around is duplicating fd 2 and assign to Go's `os.Stderr`, and then close fd 2, so PJRT plugins
+  won't have where to log. This hack is encoded in the function `pjrt.SuppressAbseilLoggingHack()`: just call it
+  before calling `pjrt.GetPlugin`. But it may have unintended consequences, if some other library is depending
+  on the fd 2 to work, or if a real exceptional situation needs to be reported and is not.
 
 ## Links to documentation
 

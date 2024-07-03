@@ -68,14 +68,14 @@ jobs:
           > release/pjrt_c_api_cpu_plugin.so.gz
         gzip -d release/pjrt_c_api_cpu_plugin.so.gz
         sudo mv release/pjrt_c_api_cpu_plugin.so /usr/lib/x86_64-linux-gnu/
-
+        ls -lh /usr/lib/x86_64-linux-gnu/
     - name: PreTest
       run: |
-        go test ./xla -test.v
+        go test . -test.v
 
     - name: Test
       run: |
-        go test ./...
+        go test ./xlabuilder/... ./pjrt/...
 
     - name: Go Coverage Badge
       uses: tj-actions/coverage-badge-go@v2

@@ -2,7 +2,7 @@ package pjrt
 
 import (
 	"fmt"
-	pjrt_proto "github.com/gomlx/gopjrt/proto"
+	pjrt_proto "github.com/gomlx/gopjrt/protos"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"os"

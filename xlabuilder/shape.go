@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/proto"
+	"github.com/gomlx/gopjrt/protos"
 	"slices"
 	"strings"
 	"unsafe"
@@ -112,7 +112,7 @@ func shapeFromCShape(cShape *C.Shape) (shape Shape) {
 	if cShape == nil {
 		return
 	}
-	shape.DType = dtypes.FromPrimitiveType(proto.PrimitiveType(cShape.dtype))
+	shape.DType = dtypes.FromPrimitiveType(protos.PrimitiveType(cShape.dtype))
 	rank := int(cShape.rank)
 	if rank > 0 {
 		shape.Dimensions = make([]int, cShape.rank)

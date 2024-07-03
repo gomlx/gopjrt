@@ -25,12 +25,12 @@ protos=(
 # shellcheck disable=SC2168
 go_opts=()
 for p in "${protos[@]}" ; do
-  go_opts+=("--go_opt=M${p}=github.com/gomlx/gopjrt/proto")
+  go_opts+=("--go_opt=M${p}=github.com/gomlx/gopjrt/protos")
 done
 
 set -x
 protoc --go_out=. -I="${XLA_SRC}" -I="${XLA_SRC}/third_party/tsl" \
-  "--go_opt=module=github.com/gomlx/gopjrt/proto" \
+  "--go_opt=module=github.com/gomlx/gopjrt/protos" \
   "${go_opts[@]}" \
   "${protos[@]}"
 

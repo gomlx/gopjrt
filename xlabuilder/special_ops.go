@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/proto"
+	"github.com/gomlx/gopjrt/protos"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"slices"
@@ -488,7 +488,7 @@ func ArgMinMax(x *Op, axis int, outputDType dtypes.DType, isMin bool) (*Op, erro
 func DecodeArgMinMax(op *Op) (axis int, outputDType dtypes.DType, isMin bool) {
 	axis = op.IntArg
 	isMin = op.IntsArg[0] != 0
-	outputDType = dtypes.FromPrimitiveType(proto.PrimitiveType(op.IntsArg[1]))
+	outputDType = dtypes.FromPrimitiveType(protos.PrimitiveType(op.IntsArg[1]))
 	return
 }
 
@@ -1216,7 +1216,7 @@ func DecodeBatchNormGrad(op *Op) (operand, scale, mean, variance, gradOutput *Op
 //
 // See documentation in https://www.tensorflow.org/xla/operation_semantics.
 // Underlying, CPU FFT is backed by Eigen's TensorFFT and GPU FFT uses cuFFT.
-func FFT(operand *Op, fftType proto.FftType, fftLength []int) (*Op, error) {
+func FFT(operand *Op, fftType protos.FftType, fftLength []int) (*Op, error) {
 	builder := operand.builder
 	op := newOp(FftOp, operand)
 	op.IntArg = int(fftType)
@@ -1229,9 +1229,9 @@ func FFT(operand *Op, fftType proto.FftType, fftLength []int) (*Op, error) {
 }
 
 // DecodeFFT retrieves the arguments for the FFT op.
-func DecodeFFT(op *Op) (operand *Op, fftType proto.FftType, fftLength []int) {
+func DecodeFFT(op *Op) (operand *Op, fftType protos.FftType, fftLength []int) {
 	operand = op.OpInputs[0]
-	fftType = proto.FftType(op.IntArg)
+	fftType = protos.FftType(op.IntArg)
 	fftLength = op.IntsArg
 	return
 }

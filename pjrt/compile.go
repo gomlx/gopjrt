@@ -3,7 +3,7 @@ package pjrt
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/cbuffer"
-	pjrt_proto "github.com/gomlx/gopjrt/proto"
+	pjrt_proto "github.com/gomlx/gopjrt/protos"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"

@@ -1,7 +1,5 @@
 # gopjrt
 
-<img align="right" src="https://github.com/gomlx/gopjrt/assets/7460115/0f2869be-f64e-48b8-b2fa-1f6cbe703204" alt="Under Construction" width="480"/>
-
 **`gopjrt`** leverages [OpenXLA](https://openxla.org/) to make it easy to compile, optimize and accelerate numeric 
 computations (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, Intel*, Apple Metal*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
@@ -10,14 +8,15 @@ computation, game AIs, etc.
 (*) Not tested yet, pls let me know if it works for you, or if you can lend access to these hardware (a virtual machine)
 so that I can use (a virtual machine) for a while, I would love to try to verify and make sure it works there.
 
-`gopjrt` aims to be minimalist and robust: provide a well maintained, extensible Go wrappers for
+`gopjrt` aims to be minimalist and robust: it provides well maintained, extensible Go wrappers for
 [OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/client/xla_builder.h) libraries.
+
 It is not very ergonomic (error handling everywhere), and the expectation is that others will create a 
 friendlier API on top of `gopjrt` -- the same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API
 on top of XLA/PJRT.
 
 One such friendlier API is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx), but `gopjrt` may be used as a standalone, for lower level access to XLA, 
-and other accelerator use cases.
+and other accelerator use cases -- like running Jax functions in Go (see example 2 below).
 
 It provides 2 independent packages (often used together, but not necessarily):
 
@@ -27,8 +26,8 @@ This package loads [_PJRT plugins_](https://opensource.googleblog.com/2024/03/pj
 of a dynamic linked library -- and provides an API to compile and execute "programs".
 
 "Programs" for PJRT are specified as "StableHLO serialized proto-buffers" (`HloModuleProto` more specifically). 
-This is an intermediary (not usually written directly by humans) representation (IR) that can be output by, 
-for instance, a Jax/PyTorch/Tensorflow program, or using the `xlabuilder` package, the library that follows.
+This is an intermediary representation (IR) not usually written directly by humans that can be output by, 
+for instance, a Jax/PyTorch/Tensorflow program, or using the `xlabuilder` package described below.
 
 It includes the following main concepts:
 
@@ -38,6 +37,50 @@ It includes the following main concepts:
   code ready to run.
 * `Buffer`: Represents a buffer with the input/output data for the computations in the accelerators. There are 
   methods to transfer it to/from the host memory. They are the inputs and outputs of `LoadedExecutable.Execute`.
+
+While it uses CGO to dynamically load the plugin and call its C API, `pjrt` doesn't require anything other than the plugin 
+to be installed.
+
+The project release includes 2 plugins, one for CPU (linux-x86) compiled from XLA source code, and one for GPUs
+provided in the Jax distributed binaries -- both for linux/x86-64 architecture (help with Mac wanted!).
+But there are instructions to build your own CPU plugin (e.g.: for a different
+architecture), or GPU (XLA seems to have code to support ROCm, but I'm not sure of the status). 
+And it should work with binary plugins provided by others -- see plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
+
+
+## `github.com/gomlx/gopjrt/xlabuilder`
+
+This provides a Go API for build accelerated computation using the [XLA Operations](https://openxla.org/xla/operation_semantics).
+The output of building the computation using `xlabuilder` is an [_StableHLO(-ish)_](https://openxla.org/stablehlo)
+program that can be directly used with PJRT (and the `pjrt` package above).
+
+Again it aims to be minimalist, robust and well maintained, albeit not very ergonomic necessarily.
+
+Main concepts:
+
+* `XlaBuilder`: builder object, used to keep track of the operations being added.
+* `XlaComputation`: created with `XlaBuilder.Build(...)` and represents the finished program, ready to be used by 
+  PJRT (or saved to disk). It is also used to represent sub-routines/functions -- see `XlaBuilder.CreateSubBuilder` and
+  `Call` method.
+* `Literal`: represents constants in the program. Some similarities with a `pjrt.Buffer`, but `Literal` is only used
+  during the creation of the program. Usually, better to avoid large constants in a program, rather feed them
+  as `pjrt.Buffer`, as inputs to the program during its execution.
+
+See examples below.
+
+The `xlabuilder` package includes a separate C project that generates a `libgomlx_xlabuilder.so` dynamic library 
+(~13Mb for linux/x86-64) and associated `*.h` files, that need to be installed. A `tar.gz` is included in the release
+for linux/x86-64 architecture (help for Macs wanted!). 
+But one can also build it from scratch for different platforms -- it uses [Bazel](https://bazel.build/) due to its dependencies to OpenXLA/XLA.
+
+Notice that there are alternatives to using `XlaBuilder`:
+
+* JAX/TensorFlow can output the HLO of JIT compiled functions, that can be fed directly to PJRT (see example 2).
+* Use [GoMLX](github.com/gomlx/gomlx).
+* One can use `XlaBuilder` during development, and then save the output (see `XlaComputation.SerializedHLO`). And then
+  during production only use the `pjrt` package to execute it.
+
+## Examples
 
 ### [Example 1: Create function with XlaBuilder and execute it](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):**
 
@@ -98,18 +141,6 @@ It includes the following main concepts:
 	err = client.Destroy()
 	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
 ```
-
-While it uses CGO to dynamically load the plugin and call its C API, `pjrt` doesn't require anything other than the plugin 
-to be installed.
-
-The project releases includes 2 plugins, one for CPU (linux-x86) compiled from XLA source code, and one for GPUs
-provided in the Jax distributed binaries. But there are instructions to build your own CPU plugin (e.g.: for a different
-architecture), or GPU (XLA seems to have code to support ROCm, but I'm not sure of the status). 
-And it should work with binary plugins provided by other companies (Google Cloud will have a TPU PJRT 
-plugin in their cloud TPU boxes; I hear Intel also have binary plugins for their hardware).
-
-See plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
-
 ### Example 2: Execute Jax function in Go with `pjrt`:
 
 First we create the HLO program in Jax/Python (see [Jax documentation](https://jax.readthedocs.io/en/latest/_autosummary/jax.xla_computation.html#jax.xla_computation))
@@ -155,40 +186,9 @@ _(The package [`must`](github.com/janpfeifer/must) simply converts errors to pan
 	}
 ```
 
-## `github.com/gomlx/gopjrt/xlabuilder`
+## Installing
 
-This provides a Go API for build accelerated computation using the [XLA Operations](https://openxla.org/xla/operation_semantics).
-The output of building the computation using `xlabuilder` is an [_StableHLO(-ish)_](https://openxla.org/stablehlo)
-program that can be directly used with PJRT (and the `pjrt` package above).
 
-It aims to be minimalist and robust: provide a well maintained, extensible Go wrappers. 
-But it is not very ergonomic (error handling everywhere), and the expectation is that others will create a
-friendlier API on top of `gopjrt` -- the same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API
-on top of XLA/PJRT. See [GoMLX](github.com/gomlx/gomlx) for such a friendlier interface.
-
-Main concepts:
-
-* `XlaBuilder`: builder object, used to keep track of the operations being added.
-* `XlaComputation`: created with `XlaBuilder.Build(...)` and represents the finished program, ready to be used by 
-  PJRT (or saved to disk). It is also used to represent sub-routines/functions -- see `XlaBuilder.CreateSubBuilder` and
-  `Call` method.
-* `Literal`: represents constants in the program. Some similarities with a `pjrt.Buffer`, but `Literal` is only used
-  during the creation of the program. Usually, better to avoid large constants in a program, rather feed them
-  as `pjrt.Buffer`, as inputs to the program during its execution.
-
-**See example above, or check the tests, they provide good examples.**
-
-The `xlabuilder` package includes a separate C project that generates a `libgomlx_xlabuilder.so` dynamic library 
-(~13Mb for linux/x86-64) and associated `*.h` files, that need to be included/available. The binary of the library
-is included, but one can also build it from scratch for different platforms -- it uses [Bazel](https://bazel.build/)
-due to its dependencies to OpenXLA/XLA.
-
-Notice that there are alternatives to using `XlaBuilder`:
-
-* JAX/TensorFlow can output the HLO of JIT compiled functions, that can be fed directly to PJRT (TODO: write a small example/tutorial).
-* Use [GoMLX](github.com/gomlx/gomlx).
-* One can use `XlaBuilder` during development, and then save the output (see `XlaComputation.SerializedHLO`). And then
-  during production only use the `pjrt` package to execute it.
 
 ## FAQ
 

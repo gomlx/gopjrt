@@ -82,9 +82,9 @@ Notice that there are alternatives to using `XlaBuilder`:
 
 ## Examples
 
-### [Example 1: Create function with XlaBuilder and execute it](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):**
+### [Example 1: Create function with XlaBuilder and execute it](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):
 
-* **Note**: this is a trivial example. XLA/PJRT really shines when doing large number crunching tasks.
+- This is a trivial example. XLA/PJRT really shines when doing large number crunching tasks.
 
 ```go
 	builder := xlabuilder.New("x*x+1")
@@ -164,7 +164,7 @@ with open('hlo.pb', 'wb') as file:
 
 Then download the `hlo.pb` file and do:
 
-_(The package [`must`](github.com/janpfeifer/must) simply converts errors to panics)_
+- _(The package [`github.com/janpfeifer/must`](github.com/janpfeifer/must) simply converts errors to panics)_
 
 ```go
 	hloBlob := must.M1(os.ReadFile("hlo.pb"))
@@ -186,9 +186,14 @@ _(The package [`must`](github.com/janpfeifer/must) simply converts errors to pan
 	}
 ```
 
+### Example 3: [Mandelbrot Set Notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb)
+
+The notebook includes both the "regular" Go implementation and the corresponding implementation using `XlaBuilder` 
+and execution with `PJRT` for comparison, with some benchmarks.
+
+
+
 ## Installing
-
-
 
 ## FAQ
 

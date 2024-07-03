@@ -133,7 +133,7 @@ func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
 //
 // After configuring it, call Done to actually trigger the execution.
 //
-// TODO: add support for multi-device execution, with some inputs shared accross devices, and some per-device specific.
+// TODO: add support for multi-device execution, with some inputs shared across devices, and some per-device specific.
 type ExecutionConfig struct {
 	executable         *LoadedExecutable
 	devices            []*Device

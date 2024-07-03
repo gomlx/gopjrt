@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-// TestLoadNamedPlugin loads teh *flagPluginName plugin, which defaults to "cpu", that should be made available.
+// TestLoadNamedPlugin loads the *flagPluginName plugin, which defaults to "cpu", that should be made available.
 func TestLoadNamedPlugin(t *testing.T) {
 	plugin, err := loadNamedPlugin(*flagPluginName)
 	require.NoError(t, err)

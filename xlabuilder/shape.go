@@ -18,7 +18,7 @@ import (
 // It is used to describe the output of an Op, or as an input for operations that change the Shape of another Op,
 // or part of a Literal value.
 //
-// It is defined as a DType (the underlying data type, e.g.: Float32, Int64, etc.) and the dimenions on each axis
+// It is defined as a DType (the underlying data type, e.g.: Float32, Int64, etc.) and the dimensions on each axis
 // of the tensor. If len(Dimensions) is 0, it represents a scalar.
 //
 // Alternatively, in XLA, a value can represent a "tuple" of sub-values.

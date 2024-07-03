@@ -33,6 +33,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 // This file holds common definitions for the different implementations of dynamiclib (linux, windows, mac?).
@@ -224,4 +225,22 @@ func cudaPluginChecks(name string) {
 		"and link its nvidia directories (`ln -s \"<python_virtual_environment_path>/lib/python3.12/site-packages/nvidia\" %q`). "+
 		"If you have things correctly set up, and you want to disable this warning, just set the environment variable `export GOPJR_CUDA_CHECKS=0`.",
 		plugin.Path(), nvidiaPath, plugin.Path(), nvidiaPath)
+}
+
+// SuppressAbseilLoggingHack prevents some irrelevant logging from PJRT plugins, by duplicating the file descriptor (fd) 2,
+// reassigning the new fd to Go's os.Stderr, and then closing fd 2, so PJRT plugins won't be able to write anything.
+//
+// It's an overkill, because this may prevent valid logging, in some truly exceptional situation, but it's the only
+// solution for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
+func SuppressAbseilLoggingHack() {
+	// Silence absl::logging hack.
+	newStderrFd, err := syscall.Dup(2)
+	if err != nil {
+		klog.Errorf("Failed to duplicate file descriptor 2 (stderr) in order to silence abseil logging: %v", err)
+	}
+	err = syscall.Close(2)
+	if err != nil {
+		klog.Errorf("Failed to close syscall 2: %v", err)
+	}
+	os.Stderr = os.NewFile(uintptr(newStderrFd), "stderr")
 }

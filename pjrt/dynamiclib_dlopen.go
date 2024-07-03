@@ -59,7 +59,7 @@ var (
 )
 
 // osDefaultLibraryPaths is called during initialization to set the default search paths.
-// It always includes the default "/usr/local/lib/gomlx" for linux.
+// It always includes the default "/usr/local/lib/gomlx/pjrt" for linux.
 func osDefaultLibraryPaths() []string {
 	paths := []string{"/usr/local/lib/gomlx/pjrt"}
 

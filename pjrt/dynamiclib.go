@@ -50,7 +50,7 @@ var (
 	// pluginSearchPaths is set during initialization by the per-architecture implementations (dynamiclib_<arch>.go files).
 	//
 	// Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
-	// If it is not set it will search in `/usr/local/lib/gomlx` and the standard libraries directories of the
+	// If it is not set it will search in "/usr/local/lib/gomlx/pjrt" and the standard libraries directories of the
 	// system (in linux in LD_LIBRARY_CONFIG and /etc/ld.so.conf file).
 	pluginSearchPaths []string
 
@@ -144,7 +144,7 @@ func pathToPluginName(pPath string) string {
 // AvailablePlugins searches for available plugins in the standard directories and returns a map from their name to their paths.
 //
 // Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
-// If it is not set it will search in `/usr/local/lib/gomlx` and the standard libraries directories of the
+// If it is not set it will search in "/usr/local/lib/gomlx/pjrt" and the standard libraries directories of the
 // system (in linux in LD_LIBRARY_PATH and /etc/ld.so.conf file) in that order.
 //
 // If there are plugins with the same name but different versions in different directories, it respects the order of the directories given by

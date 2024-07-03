@@ -91,61 +91,40 @@ Notice that there are alternatives to using `XlaBuilder`:
 ### [Example 1: Create function with XlaBuilder and execute it](https://github.com/gomlx/gopjrt/blob/main/gopjrt_test.go):
 
 - This is a trivial example. XLA/PJRT really shines when doing large number crunching tasks.
+- The package [`github.com/janpfeifer/must`](github.com/janpfeifer/must) simply converts errors to panics.
 
 ```go
-	builder := xlabuilder.New("x*x+1")
-	x, err := xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32)) // Scalar float32.
-	require.NoError(t, err, "Failed to create Parameter")
-	fX, err := xlabuilder.Mul(x, x)
-	require.NoError(t, err, "Failed operation Mul")
-	one, err := xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(1)))
-	require.NoError(t, err, "Failed to create constant of 1")
-	fX, err = xlabuilder.Add(fX, one)
-	require.NoError(t, err, "Failed operation Add")
+  builder := xlabuilder.New("x*x+1")
+  x := must.M1(xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32))) // Scalar float32.
+  fX := must.M1(xlabuilder.Mul(x, x))
+  one := must.M1(xlabuilder.ScalarOne(builder, dtypes.Float32))
+  fX = must.M1(xlabuilder.Add(fX, one))
 
-	// Get computation created.
-	comp, err := builder.Build(fX)
-	require.NoError(t, err, "Failed to build XlaComputation from ops.")
-	//fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+  // Get computation created.
+  comp := must.M1(builder.Build(fX))
+  //fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
 
-	// PJRT plugin and create a client.
-	plugin, err := pjrt.GetPlugin(*flagPluginName)
-	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
-	fmt.Printf("Loaded %s\n", plugin)
-	client, err := plugin.NewClient(nil)
-	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
-	fmt.Printf("	client: %s\n", client)
+  // PJRT plugin and create a client.
+  plugin := must.M1(pjrt.GetPlugin(*flagPluginName))
+  fmt.Printf("Loaded %s\n", plugin)
+  client := must.M1(plugin.NewClient(nil))
 
-	// Compile program.
-	loadedExec, err := client.Compile().WithComputation(comp).Done()
-	require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
-	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
+  // Compile program.
+  loadedExec := must.M1(client.Compile().WithComputation(comp).Done())
+  fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
+	
+  // Test values:
+  inputs := []float32{0.1, 1, 3, 4, 5}
+  fmt.Printf("f(x) = x^2 + 1:\n")
+  for _, input := range inputs {
+    inputBuffer := must.M1(pjrt.ScalarToBuffer(client, input))
+    outputBuffers := must.M1(loadedExec.Execute(inputBuffer).Done())
+    output := must.M1(pjrt.BufferToScalar[float32](outputBuffers[0]))
+    fmt.Printf("\tf(x=%g) = %g\n", input, output)
+  }
 
-	// Test values:
-	inputs := []float32{0.1, 1, 3, 4, 5}
-	wants := []float32{1.01, 2, 10, 17, 26}
-	fmt.Printf("f(x) = x^2 + 1:\n")
-	for ii, input := range inputs {
-		// Transfer input to a on-device buffer.
-		inputBuffer, err := pjrt.ScalarToBuffer(client, input)
-		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
-
-		// Execute: it returns the output on-device buffer(s).
-		outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
-		require.NoErrorf(t, err, "Failed to execute on input %d", input)
-
-		// Transfer output on-device buffer to a "host" value (in Go).
-		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
-		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
-
-		// Print an check value is what we wanted.
-		fmt.Printf("\tf(x=%g) = %g\n", input, output)
-		require.InDelta(t, output, wants[ii], 0.001)
-	}
-
-	// Destroy the client and leave.
-	err = client.Destroy()
-	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
+  // Destroy the client and leave.
+  must.M1(client.Destroy())
 ```
 ### Example 2: Execute Jax function in Go with `pjrt`:
 
@@ -173,23 +152,23 @@ Then download the `hlo.pb` file and do:
 - _(The package [`github.com/janpfeifer/must`](github.com/janpfeifer/must) simply converts errors to panics)_
 
 ```go
-	hloBlob := must.M1(os.ReadFile("hlo.pb"))
+  hloBlob := must.M1(os.ReadFile("hlo.pb"))
 
-	// PJRT plugin and create a client.
-	plugin := must.M1(pjrt.GetPlugin(*flagPluginName))
-	fmt.Printf("Loaded %s\n", plugin)
-	client := must.M1(plugin.NewClient(nil))
-	loadedExec := must.M1(client.Compile().WithHLO(hloBlob).Done())
+  // PJRT plugin and create a client.
+  plugin := must.M1(pjrt.GetPlugin(*flagPluginName))
+  fmt.Printf("Loaded %s\n", plugin)
+  client := must.M1(plugin.NewClient(nil))
+  loadedExec := must.M1(client.Compile().WithHLO(hloBlob).Done())
 
-	// Test values:
-	inputs := []float32{0.1, 1, 3, 4, 5}
-	fmt.Printf("f(x) = x^2 + 1:\n")
-	for _, input := range inputs {
-		inputBuffer := must.M1(pjrt.ScalarToBuffer(client, input))
-		outputBuffers := must.M1(loadedExec.Execute(inputBuffer).Done())
-		output := must.M1(pjrt.BufferToScalar[float32](outputBuffers[0]))
-		fmt.Printf("\tf(x=%g) = %g\n", input, output)
-	}
+  // Test values:
+  inputs := []float32{0.1, 1, 3, 4, 5}
+  fmt.Printf("f(x) = x^2 + 1:\n")
+  for _, input := range inputs {
+    inputBuffer := must.M1(pjrt.ScalarToBuffer(client, input))
+    outputBuffers := must.M1(loadedExec.Execute(inputBuffer).Done())
+    output := must.M1(pjrt.BufferToScalar[float32](outputBuffers[0]))
+    fmt.Printf("\tf(x=%g) = %g\n", input, output)
+  }
 ```
 
 ### Example 3: [Mandelbrot Set Notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb)
@@ -202,6 +181,82 @@ and execution with `PJRT` for comparison, with some benchmarks.
 </a>
 
 ## Installing
+
+There are two parts that needs installing:
+
+### Installing PJRT plugins
+
+The recommended location for plugins is `/usr/local/lib/gomlx/pjrt`, but the `pjrt` package
+will automatically search in all standard library locations (configured in `/etc/ld.so.conf`).
+Alternatively, one can set the directory(ies) to search for plugins setting the environment variable
+`PJRT_PLUGIN_LIBRARY_PATH`.
+
+#### CPU for Linux
+
+The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform. The file is called
+`pjrt_c_api_cpu_plugin.so.gz`. Please, uncompress the file and move it to your plugin directory -- e.g.:
+`/usr/local/lib/gomlx/pjrt`.
+
+#### NVidia's CUDA for Linux
+
+NVidia licenses are complicated (I don't understand), so ... I hesitate to provide a prebuilt plugin and dependencies.
+But there is a simple way to achieve it, by linking the files from a Jax installation.
+
+Create and activate a [virtual environment (venv) for Python](https://docs.python.org/3/library/venv.html).
+Probably a [Conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 
+would also work.
+
+Then install Jax for Cuda and its dependencies:
+
+```shell
+pip install -U "jax[cuda12]"
+```
+
+Now we want to link 2 things: (1) the cuda PJRT plugin; (2) the various NVidia drivers. 
+Assuming the virtual environment (Python's `venv`) is set, the `$VIRTUAL_ENV` should be pointing
+to its installation. Check that is the case with `$VIRTUAL_ENV`.
+
+And then do (change the target directories to your preference):
+
+```shell
+sudo mkdir -p /usr/local/lib/gomlx/pjrt
+sudo ln -sf ${VIRTUAL_ENV}/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so \
+  /usr/local/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so
+sudo ln -sf ${VIRTUAL_ENV}/lib/python3.12/site-packages/nvidia \
+  /usr/local/lib/gomlx/nvidia
+
+```
+
+#### Metal Mac
+
+Should be doable, in a similar way as but I don't own a Mac. Contributions would be most welcome.
+
+#### Plugins for other devices or platforms.
+
+See [docs/devel.md](https://github.com/gomlx/gopjrt/blob/main/docs/devel.md#pjrt-plugins) on hints on how to compile a plugin 
+from OpenXLA/XLA sources.
+
+Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html) with the link and references to the Intel and Apple hardware plugins. 
+
+
+### Installing XlaBuilder C/C++ library (for Linux only for now)
+
+This is only required is the XlaBuilder library (`xlabuilder` package) is used.
+
+The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform. The file is called
+`gomlx_xlabuilder-linux-amd64.tar.gz` and it includes two subdirectories `lib/` and `include/` with the files
+required to compile Go's `xlabuilder` package.
+
+The suggest location is to "untar" (decompress and unpackage) this file to `/usr/local`.
+Change the path to the file on the command below:
+
+```shell
+cd /usr/local
+sudo tar xzvf gomlx_xlabuilder-linux-amd64.tar.gz
+```
+
+Finally, you want to make sure that your environment variable `LD_LIBRARY_PATH` includes `/usr/local/lib`.
+Or that your system library paths in `/etc/ld.so.conf` include `/usr/local/lib`. 
 
 ## FAQ
 

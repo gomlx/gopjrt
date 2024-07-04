@@ -10,6 +10,10 @@
 // - Any empty lines or lines starting with // or # are comments.
 // - Any line with a node type should not have anything else (no comments after the node type name)
 // - Order matter
+//
+// **IMPORTANT** Change in the order of this file will make binary releases among different versions incompatible.
+// For backward (or forward, depending on the reference point) compatibility, pls only add new ops in the end,
+// even if things look out of order.
 
 // Invalid should always be the first one.
 Invalid:invalid

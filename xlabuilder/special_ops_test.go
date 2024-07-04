@@ -563,3 +563,57 @@ func TestReverse(t *testing.T) {
 		builder.Destroy()
 	}
 }
+
+func TestWhile(t *testing.T) {
+	client := getPJRTClient(t)
+
+	builder := New(t.Name())
+	dtype := dtypes.Int64
+	x := capture(Parameter(builder, "x", 0, MakeShape(dtype))).Test(t)
+	value := capture(ScalarOne(builder, dtype)).Test(t)
+
+	// Calcualte factorial using a While loop.
+	// While loop:
+	// - initialState: (x, 1)
+	initialState := capture(Tuple(x, value)).Test(t)
+	var cond, body *XlaComputation
+	// - condition: x > 0
+	{
+		condBuilder := builder.CreateSubBuilder(t.Name() + "_condition")
+		tuple := capture(Parameter(condBuilder, "tuple", 0, initialState.Shape.Clone())).Test(t)
+		loopX := capture(GetTupleElement(tuple, 0)).Test(t)
+		zero := capture(ScalarZero(condBuilder, dtype)).Test(t)
+		output := capture(GreaterThan(loopX, zero)).Test(t)
+		cond = capture(condBuilder.Build(output)).Test(t)
+	}
+	// - body: value = value * x; x = x-1;
+	{
+		bodyBuilder := builder.CreateSubBuilder(t.Name() + "_body")
+		tuple := capture(Parameter(bodyBuilder, "tuple", 0, initialState.Shape.Clone())).Test(t)
+		loopX := capture(GetTupleElement(tuple, 0)).Test(t)
+		loopValue := capture(GetTupleElement(tuple, 1)).Test(t)
+		loopValue = capture(Mul(loopValue, loopX)).Test(t)
+		one := capture(ScalarOne(bodyBuilder, dtype)).Test(t)
+		loopX = capture(Sub(loopX, one)).Test(t)
+		output := capture(Tuple(loopX, loopValue)).Test(t)
+		body = capture(bodyBuilder.Build(output)).Test(t)
+	}
+	state := capture(While(initialState, cond, body)).Test(t)
+
+	gotInitialState, gotCond, gotBody := DecodeWhile(state)
+	require.Same(t, initialState, gotInitialState)
+	require.Same(t, cond, gotCond)
+	require.Same(t, body, gotBody)
+
+	output := capture(GetTupleElement(state, 1)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+
+	// 5! = 120
+	got := int(execWithScalars(t, client, exec, int64(5)))
+	require.Equal(t, 120, got)
+
+	// 7! = 5040
+	got = int(execWithScalars(t, client, exec, int64(7)))
+	require.Equal(t, 5040, got)
+	builder.Destroy()
+}

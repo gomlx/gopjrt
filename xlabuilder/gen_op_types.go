@@ -37,6 +37,7 @@ const (
 	BatchNormInferenceOp
 	BatchNormGradOp
 	RngBitGeneratorOp
+	WhileOp
 	AbsOp
 	NegOp
 	ExpOp

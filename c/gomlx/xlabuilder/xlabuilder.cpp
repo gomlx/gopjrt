@@ -437,6 +437,13 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = xla::Fft(*inputs[0], fft_type, list_of_ints);
     break;
   }
+  case WhileOp: {
+    // Create select and scatter comps.
+    const xla::XlaComputation &condition_comp = *serialized_op->computation;
+    const xla::XlaComputation &body_comp = *serialized_op->second_computation;
+    op = xla::While(condition_comp, body_comp, *inputs[0]);
+    break;
+  }
 
   // One-argument ops:
   case AbsOp:

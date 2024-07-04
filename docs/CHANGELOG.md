@@ -1,6 +1,6 @@
 
 
-# Next
+# v0.1.1 New While op
 
 * Added `While` op.
 * Improved Mandelbrot example.

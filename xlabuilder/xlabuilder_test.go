@@ -145,3 +145,19 @@ func TestXlaBuilder(t *testing.T) {
 		require.NoError(t, f.Close(), "Failed to close StableHLO proto output file %q", *flagStableHLOOutput)
 	}
 }
+
+func TestMismatches(t *testing.T) {
+	// Dtype mismatches:
+	builder := New(t.Name() + ":1")
+	lhs := capture(Parameter(builder, "lhs", 0, MakeShape(dtypes.Float32))).Test(t)
+	rhs := capture(Parameter(builder, "rhs", 1, MakeShape(dtypes.Int32))).Test(t)
+	_, err := Add(lhs, rhs)
+	fmt.Printf("Expected error when comparing Float32 > Int32: %v\n", err)
+	require.Error(t, err)
+
+	builder2 := New(t.Name() + ":2")
+	rhs2 := capture(Parameter(builder2, "rhs2", 1, MakeShape(dtypes.Float32))).Test(t)
+	_, err = LessThan(lhs, rhs2)
+	fmt.Printf("Expected error when comparing ops from different builders: %v\n", err)
+	require.Error(t, err)
+}

@@ -227,23 +227,46 @@ func cudaPluginChecks(name string) {
 		plugin.Path(), nvidiaPath, plugin.Path(), nvidiaPath)
 }
 
-var suppressAbseilOnce sync.Once
-
 // SuppressAbseilLoggingHack prevents some irrelevant logging from PJRT plugins, by duplicating the file descriptor (fd) 2,
 // reassigning the new fd to Go's os.Stderr, and then closing fd 2, so PJRT plugins won't be able to write anything.
 //
+// Usually this is only needed during creation of the Client of the CPU plugin. So you can just wrap that part.
+//
+// Now since many things rely on fd 2 being stderr, it only does that, executes fn given and reverts the change.
+//
+// The issue of doing this permanently is that Go's default panic handler outputs the stack tracke the the fd 2,
+// and this would suppress that as well.
+//
 // It's an overkill, because this may prevent valid logging, in some truly exceptional situation, but it's the only
-// solution for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
-func SuppressAbseilLoggingHack() {
-	suppressAbseilOnce.Do(func() {
-		newStderrFd, err := syscall.Dup(2)
-		if err != nil {
-			klog.Errorf("Failed to duplicate file descriptor 2 (stderr) in order to silence abseil logging: %v", err)
-		}
-		err = syscall.Close(2)
-		if err != nil {
-			klog.Errorf("Failed to close syscall 2: %v", err)
-		}
-		os.Stderr = os.NewFile(uintptr(newStderrFd), "stderr")
-	})
+// solution I can think of for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
+func SuppressAbseilLoggingHack(fn func()) {
+	newFd, err := suppressLogging()
+	if err != nil {
+		klog.Errorf("Failed to temporarily suppress absl::logging: %+v", err)
+	} else {
+		defer func() {
+			// Revert suppression: revert back newFd to 2
+			err := syscall.Dup2(newFd, 2)
+			if err != nil {
+				klog.Errorf("Failed sycall.Dup2 while reverting suppression of logging: %v", err)
+			}
+		}()
+	}
+
+	fn()
+}
+
+func suppressLogging() (newFd int, err error) {
+	newFd, err = syscall.Dup(2)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to duplicate file descriptor 2 (stderr) in order to silence abseil logging")
+		return
+	}
+	err = syscall.Close(2)
+	if err != nil {
+		klog.Errorf("failed to syscall.Close(2): %v", err)
+		err = nil // Report, but continue.
+	}
+	os.Stderr = os.NewFile(uintptr(newFd), "stderr")
+	return
 }

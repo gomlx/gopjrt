@@ -3,6 +3,7 @@ module github.com/gomlx/gopjrt
 go 1.22
 
 require (
+	github.com/chewxy/math32 v1.10.1
 	github.com/gomlx/exceptions v0.0.3
 	github.com/janpfeifer/must v0.0.2
 	github.com/pkg/errors v0.9.1

@@ -61,6 +61,21 @@ func (s Shape) Size() int {
 	return size
 }
 
+// Clone makes a deep copy (including dimensions and tuples) of the given shape.
+func (s Shape) Clone() (newS Shape) {
+	newS.DType = s.DType
+	if len(s.Dimensions) > 0 {
+		newS.Dimensions = slices.Clone(s.Dimensions)
+	}
+	if len(s.TupleShapes) > 0 {
+		newS.TupleShapes = make([]Shape, len(s.TupleShapes))
+		for ii, subS := range s.TupleShapes {
+			newS.TupleShapes[ii] = subS.Clone()
+		}
+	}
+	return newS
+}
+
 // TupleSize is an alias to len(Shape.TupleShapes).
 func (s Shape) TupleSize() int {
 	return len(s.TupleShapes)

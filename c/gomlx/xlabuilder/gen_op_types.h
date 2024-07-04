@@ -40,6 +40,7 @@ enum OpType {
   BatchNormInferenceOp,
   BatchNormGradOp,
   RngBitGeneratorOp,
+  WhileOp,
   AbsOp,
   NegOp,
   ExpOp,

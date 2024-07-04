@@ -1269,3 +1269,34 @@ func DecodeRngBitGenerator(op *Op) (state *Op, shape Shape) {
 	shape = op.ShapeArg
 	return
 }
+
+// While executes a loop in the computation.
+//
+// It takes as input:
+//
+//   - initialState: usually a tuple, that includes all variables used by condition and body.
+//   - condition: a sub-computation (see XlaBuilder.CreateSubBuilder) takes the current state as input and outputs
+//     a bool (dtypes.PRED) whether the loop should keep iterating.
+//   - body: a sub-computation (see XlaBuilder.CreateSubBuilder) takes the current state as input and outputs
+//     an updated state.
+//
+// See details in https://openxla.org/xla/operation_semantics#while
+func While(initialState *Op, condition, body *XlaComputation) (*Op, error) {
+	builder := initialState.builder
+	op := newOp(WhileOp, initialState)
+	op.ComputationArg = condition
+	op.SecondComputationArg = body
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeWhile retrieves the arguments for the While op.
+func DecodeWhile(op *Op) (initialState *Op, condition, body *XlaComputation) {
+	initialState = op.OpInputs[0]
+	condition = op.ComputationArg
+	body = op.SecondComputationArg
+	return
+}

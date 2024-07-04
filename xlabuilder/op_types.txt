@@ -45,6 +45,7 @@ BatchNormTraining:special
 BatchNormInference:special
 BatchNormGrad:special
 RngBitGenerator:special
+While:special
 
 // One-argument ops:
 Abs:one

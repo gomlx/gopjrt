@@ -1,4 +1,4 @@
-# Next
+# v0.1.2 SuppressAbseilLoggingHack
 
 * Improved SuppressAbseilLoggingHack to supress only during the execution of a function.
 

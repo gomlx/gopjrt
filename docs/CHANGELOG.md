@@ -1,4 +1,6 @@
+# Next
 
+* Improved SuppressAbseilLoggingHack to supress only during the execution of a function.
 
 # v0.1.1 New While op
 

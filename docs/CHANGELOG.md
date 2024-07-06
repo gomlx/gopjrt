@@ -1,3 +1,7 @@
+# Next
+
+* Moved some `dtypes` support functionality from GoMLX to Gopjrt. 
+
 # v0.1.2 SuppressAbseilLoggingHack
 
 * Improved SuppressAbseilLoggingHack to supress only during the execution of a function.

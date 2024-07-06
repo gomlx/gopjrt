@@ -2,6 +2,7 @@
 
 * Moved some `dtypes` support functionality from GoMLX to Gopjrt. 
 * Added BFloat16 alias.
+* Renamed `FromGoType` to `FromGenericsType` and `FromType` to `FromGoType`, to maintain naming consistency.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

@@ -12,8 +12,8 @@ import (
 // Generate automatic C-to-Go boilerplate code for pjrt_c_api.h.
 //go:generate go run ../cmd/dtypes_codegen
 
-// FromGoType returns the DType enum for the given type that this package knows about.
-func FromGoType[T Supported]() DType {
+// FromGenericsType returns the DType enum for the given type that this package knows about.
+func FromGenericsType[T Supported]() DType {
 	var t T
 	switch (any(t)).(type) {
 	case float64:
@@ -57,9 +57,9 @@ func FromGoType[T Supported]() DType {
 	return InvalidDType
 }
 
-// FromType returns the DType for the given [reflect.Type].
+// FromGoType returns the DType for the given [reflect.Type].
 // It panics for unknown DType values.
-func FromType(t reflect.Type) DType {
+func FromGoType(t reflect.Type) DType {
 	if t == float16Type {
 		return Float16
 	}
@@ -112,7 +112,7 @@ func FromType(t reflect.Type) DType {
 // FromAny introspects the underlying type of any and return the corresponding DType.
 // Non-scalar types, or not supported types returns a InvalidType.
 func FromAny(value any) DType {
-	return FromType(reflect.TypeOf(value))
+	return FromGoType(reflect.TypeOf(value))
 }
 
 // Size returns the number of bytes for the given DType.

@@ -39,7 +39,7 @@ func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
 	if len(dimensions) == 0 {
 		dimensions = []int{len(flat)}
 	}
-	shape := MakeShape(dtypes.FromGoType[T](), dimensions...)
+	shape := MakeShape(dtypes.FromGenericsType[T](), dimensions...)
 	if shape.Size() != len(flat) {
 		exceptions.Panicf("NewArrayLiteral got a slice of length %d, but the shape %s given has %d elements",
 			len(flat), shape, shape.Size())
@@ -52,7 +52,7 @@ func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) *Literal {
 
 // NewScalarLiteral creates a scalar Literal initialized with the given value.
 func NewScalarLiteral[T dtypes.Supported](value T) *Literal {
-	shape := MakeShape(dtypes.FromGoType[T]())
+	shape := MakeShape(dtypes.FromGenericsType[T]())
 	l := NewLiteralFromShape(shape)
 	*(*T)(unsafe.Pointer(l.cLiteral.data)) = value
 	return l
@@ -88,7 +88,7 @@ func NewScalarLiteralFromFloat64(value float64, dtype dtypes.DType) *Literal {
 // It uses reflection to inspect the type.
 func NewScalarLiteralFromAny(value any) *Literal {
 	valueOf := reflect.ValueOf(value)
-	dtype := dtypes.FromType(valueOf.Type())
+	dtype := dtypes.FromGoType(valueOf.Type())
 	l := NewLiteralFromShape(MakeShape(dtype))
 	lValueOf := reflect.NewAt(dtype.GoType(), unsafe.Pointer(l.cLiteral.data)).Elem()
 	lValueOf.Set(valueOf)

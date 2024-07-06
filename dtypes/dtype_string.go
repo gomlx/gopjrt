@@ -21,7 +21,7 @@ func _() {
 	_ = x[Float16-10]
 	_ = x[Float32-11]
 	_ = x[Float64-12]
-	_ = x[BF16-13]
+	_ = x[BFloat16-13]
 	_ = x[Complex64-14]
 	_ = x[Complex128-15]
 	_ = x[F8E5M2-16]
@@ -36,9 +36,9 @@ func _() {
 	_ = x[U2-25]
 }
 
-const _DType_name = "InvalidDTypeBoolInt8Int16Int32Int64Uint8Uint16Uint32Uint64Float16Float32Float64BF16Complex64Complex128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2"
+const _DType_name = "InvalidDTypeBoolInt8Int16Int32Int64Uint8Uint16Uint32Uint64Float16Float32Float64BFloat16Complex64Complex128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2"
 
-var _DType_index = [...]uint8{0, 12, 16, 20, 25, 30, 35, 40, 46, 52, 58, 65, 72, 79, 83, 92, 102, 108, 116, 129, 139, 149, 151, 153, 158, 160, 162}
+var _DType_index = [...]uint8{0, 12, 16, 20, 25, 30, 35, 40, 46, 52, 58, 65, 72, 79, 87, 96, 106, 112, 120, 133, 143, 153, 155, 157, 162, 164, 166}
 
 func (i DType) String() string {
 	if i < 0 || i >= DType(len(_DType_index)-1) {

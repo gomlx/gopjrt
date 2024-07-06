@@ -61,11 +61,11 @@ const (
 	// Float64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F64).
 	Float64 DType = 12
 
-	// BF16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_BF16).
+	// BFloat16 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_BF16).
 	// Truncated 16 bit floating-point format. This is similar to IEEE's 16 bit
 	// floating-point format, but uses 1 bit for the sign, 8 bits for the exponent
 	// and 7 bits for the mantissa.
-	BF16 DType = 13
+	BFloat16 DType = 13
 
 	// Complex64 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_C64).
 	// Complex values of fixed width.
@@ -152,6 +152,9 @@ const (
 	// F64 (or PJRT_Buffer_Type_F64) is the C enum name for Float64.
 	F64 = Float64
 
+	// BF16 (or PJRT_Buffer_Type_BF16) is the C enum name for BFloat16.
+	BF16 = BFloat16
+
 	// C64 (or PJRT_Buffer_Type_C64) is the C enum name for Complex64.
 	C64 = Complex64
 
@@ -192,7 +195,7 @@ func (dtype DType) PrimitiveType() protos.PrimitiveType {
 		return protos.PrimitiveType_F32
 	case Float64:
 		return protos.PrimitiveType_F64
-	case BF16:
+	case BFloat16:
 		return protos.PrimitiveType_BF16
 	case Complex64:
 		return protos.PrimitiveType_C64
@@ -257,7 +260,7 @@ func FromPrimitiveType(primitiveType protos.PrimitiveType) DType {
 	case protos.PrimitiveType_F64:
 		return Float64
 	case protos.PrimitiveType_BF16:
-		return BF16
+		return BFloat16
 	case protos.PrimitiveType_C64:
 		return Complex64
 	case protos.PrimitiveType_C128:

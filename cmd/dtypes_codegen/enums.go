@@ -29,6 +29,7 @@ var aliases = map[string]string{
 	"U32":     "Uint32",
 	"U64":     "Uint64",
 	"F16":     "Float16",
+	"BF16":    "BFloat16",
 	"F32":     "Float32",
 	"F64":     "Float64",
 	"C64":     "Complex64",

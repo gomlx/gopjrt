@@ -1,6 +1,7 @@
 # Next
 
 * Moved some `dtypes` support functionality from GoMLX to Gopjrt. 
+* Added BFloat16 alias.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

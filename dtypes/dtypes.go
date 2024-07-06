@@ -120,6 +120,12 @@ func (dtype DType) Size() int {
 	return int(dtype.GoType().Size())
 }
 
+// Memory returns the number of bytes for the given DType.
+// It's an alias to Size, converted to uintptr.
+func (dtype DType) Memory() uintptr {
+	return uintptr(dtype.Size())
+}
+
 // Pre-generate constant reflect.TypeOf for convenience.
 var (
 	float32Type = reflect.TypeOf(float32(0))

@@ -345,7 +345,7 @@ func (dtype DType) IsSupported() bool {
 // Notice Go's `int` type is not portable, since it may translate to dtypes Int32 or Int64 depending
 // on the platform.
 type Supported interface {
-	bool | float32 | float64 | float16.Float16 | int | int32 | int64 | uint8 | uint32 | uint64 | complex64 | complex128
+	bool | float32 | float64 | float16.Float16 | int | int8 | int16 | int32 | int64 | uint8 | uint32 | uint64 | complex64 | complex128
 }
 
 // Number represents the Go numeric types that are supported by graph package.

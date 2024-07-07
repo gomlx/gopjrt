@@ -144,6 +144,66 @@ type ExecutionConfig struct {
 	err error
 }
 
+// OnDevices selects which devices to execute.
+// Usually only 1, but more than one can be configured.
+//
+// The default is to use the first addressable device.
+// See also OnDevicesByNum.
+func (c *ExecutionConfig) OnDevices(devices ...*Device) *ExecutionConfig {
+	if c.err != nil {
+		return c
+	}
+	if len(devices) == 0 {
+		// Trivial case.
+		c.devices = nil
+		return c
+	}
+	c.devices = make([]*Device, len(devices))
+	for ii, device := range devices {
+		if device == nil {
+			c.err = errors.New("LoadedExecutable.Execute().OnDevices() given a nil device")
+			return c
+		}
+		addressable, err := device.IsAddressable()
+		if err != nil {
+			c.err = errors.WithMessagef(err, "LoadedExecutable.Execute().OnDevices() failed to check whether device is addressable")
+			return c
+		}
+		if !addressable {
+			c.err = errors.New("LoadedExecutable.Execute().OnDevices() given a non addressable device")
+			return c
+		}
+		c.devices[ii] = device
+	}
+	return c
+}
+
+// OnDevicesByNum selects which devices to execute.
+// The devicesNum point to the device in the list returned by Client.AddressableDevices.
+// Usually only 1, but more than one can be configured.
+//
+// The default is to use the first addressable device.
+// See also OnDevices.
+func (c *ExecutionConfig) OnDevicesByNum(devicesNum ...int) *ExecutionConfig {
+	if c.err != nil {
+		return c
+	}
+	if len(devicesNum) == 0 {
+		c.devices = nil
+		return c
+	}
+	addressableDevices := c.executable.client.addressableDevices
+	devices := make([]*Device, len(devicesNum))
+	for ii, deviceNum := range devicesNum {
+		if deviceNum < 0 || deviceNum >= len(addressableDevices) {
+			c.err = errors.Errorf("LoadedExecutable.Execute().OnDevices() invalid deviceNum=%d, only %d addressable devices available", deviceNum, len(addressableDevices))
+			return c
+		}
+		devices[ii] = addressableDevices[deviceNum]
+	}
+	return c.OnDevices(devices...)
+}
+
 // DonateAll marks all inputs to be "donated".
 //
 // Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
@@ -179,6 +239,9 @@ func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 }
 
 func (c *ExecutionConfig) Done() ([]*Buffer, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
 	e := c.executable
 	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")

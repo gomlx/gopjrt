@@ -113,11 +113,18 @@ type BufferFromHostConfig struct {
 	device     *Device
 
 	hostBufferSemantics PJRT_HostBufferSemantics
+
+	// err stores the first error that happened during configuration.
+	// If it is not nil, it is immediately returned by the Done call.
+	err error
 }
 
 // FromRawData configures the data from host to copy: a pointer to bytes that must be kept alive (and constant)
 // during the call. The parameters dtype and dimensions provide the shape of the array.
 func (b *BufferFromHostConfig) FromRawData(data []byte, dtype dtypes.DType, dimensions []int) *BufferFromHostConfig {
+	if b.err != nil {
+		return b
+	}
 	b.data = data
 	b.dtype = dtype
 	b.dimensions = dimensions
@@ -125,15 +132,55 @@ func (b *BufferFromHostConfig) FromRawData(data []byte, dtype dtypes.DType, dime
 }
 
 // ToDevice configures which device to copy the host data to.
+//
 // If left un-configured, it will pick the first device returned by Client.AddressableDevices.
+//
+// You can also provide a device by their index in Client.AddressableDevices.
 func (b *BufferFromHostConfig) ToDevice(device *Device) *BufferFromHostConfig {
+	if b.err != nil {
+		return b
+	}
+	if device == nil {
+		b.err = errors.New("BufferFromHost().ToDevice() given a nil device")
+		return b
+	}
+	addressable, err := device.IsAddressable()
+	if err != nil {
+		b.err = errors.WithMessagef(err, "BufferFromHost().ToDevice() failed to check whether device is addressable")
+		return b
+	}
+	if !addressable {
+		b.err = errors.New("BufferFromHost().ToDevice() given a non addressable device")
+		return b
+	}
 	b.device = device
 	return b
+}
+
+// ToDeviceNum configures which device to copy the host data to, given a deviceNum pointing to the device in the
+// list returned by Client.AddressableDevices.
+//
+// If left un-configured, it will pick the first device returned by Client.AddressableDevices.
+//
+// You can also provide a device by their index in Client.AddressableDevices.
+func (b *BufferFromHostConfig) ToDeviceNum(deviceNum int) *BufferFromHostConfig {
+	if b.err != nil {
+		return b
+	}
+	if deviceNum < 0 || deviceNum >= len(b.client.addressableDevices) {
+		b.err = errors.Errorf("BufferFromHost().ToDeviceNum() invalid deviceNum=%d, only %d addressable devices available", deviceNum, len(b.client.addressableDevices))
+		return b
+	}
+	return b.ToDevice(b.client.addressableDevices[deviceNum])
 }
 
 // Done will use the configuration to start the transfer from host to device.
 // It's synchronous: it awaits the transfer to finish and then returns.
 func (b *BufferFromHostConfig) Done() (*Buffer, error) {
+	if b.err != nil {
+		// Return first error saved during configuration.
+		return nil, b.err
+	}
 	if len(b.data) == 0 {
 		return nil, errors.New("BufferFromHost requires one to configure the host data to transfer, none was configured.")
 	}
@@ -311,6 +358,21 @@ func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err
 	dtype := dtypes.FromGenericsType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
+}
+
+// ScalarToBufferOnDeviceNum transfers the scalar value to a Buffer on the given device.
+//
+// It is a shortcut to Client.BufferFromHost call with default parameters.
+// If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
+func ScalarToBufferOnDeviceNum[T dtypes.Supported](client *Client, deviceNum int, value T) (b *Buffer, err error) {
+	var pinner runtime.Pinner
+	pinner.Pin(client)
+	pinner.Pin(&value)
+	defer pinner.Unpin()
+
+	dtype := dtypes.FromGenericsType[T]()
+	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
+	return client.BufferFromHost().FromRawData(src, dtype, nil).ToDeviceNum(deviceNum).Done()
 }
 
 // ArrayToBuffer transfer a slice to a Buffer on the default device.

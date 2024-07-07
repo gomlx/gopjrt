@@ -44,26 +44,49 @@ func TestEndToEnd(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
 	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
+	// List devices.
+	addressableDevices := client.AddressableDevices()
+	fmt.Println("Addressable devices:")
+	for deviceNum, device := range addressableDevices {
+		hardwareId := device.LocalHardwareId()
+		addressable, err := device.IsAddressable()
+		require.NoError(t, err)
+		desc, err := device.GetDescription()
+		require.NoError(t, err)
+		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
+	}
+	fmt.Println()
+
 	// Test values:
 	inputs := []float32{0.1, 1, 3, 4, 5}
 	wants := []float32{1.01, 2, 10, 17, 26}
 	fmt.Printf("f(x) = x^2 + 1:\n")
 	for ii, input := range inputs {
-		// Transfer input to a on-device buffer.
-		inputBuffer, err := pjrt.ScalarToBuffer(client, input)
-		require.NoErrorf(t, err, "Failed to create on-device buffer for input %d", input)
+		for deviceNum := range addressableDevices {
+			// Transfer input to a on-device buffer.
+			inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
+			require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
 
-		// Execute: it returns the output on-device buffer(s).
-		outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
-		require.NoErrorf(t, err, "Failed to execute on input %d", input)
+			// Execute: it returns the output on-device buffer(s).
+			outputBuffers, err := loadedExec.Execute(inputBuffer).OnDevicesByNum(deviceNum).Done()
+			require.NoErrorf(t, err, "Failed to execute on input %d, deviceNum=%d", input, deviceNum)
 
-		// Transfer output on-device buffer to a "host" value (in Go).
-		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
-		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+			// Transfer output on-device buffer to a "host" value (in Go).
+			output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
+			require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
 
-		// Print an check value is what we wanted.
-		fmt.Printf("\tf(x=%g) = %g\n", input, output)
-		require.InDelta(t, output, wants[ii], 0.001)
+			// Print and check value is what we wanted.
+			fmt.Printf("\t[device#%d] f(x=%g) = %g\n", deviceNum, input, output)
+			require.InDelta(t, output, wants[ii], 0.001)
+
+			// Release inputBuffer -- and don't wait for the GC.
+			require.NoError(t, inputBuffer.Destroy())
+
+			if *flagPluginName == "cpu" {
+				fmt.Println("\t*** Skipping other device numbers: XLA's \"cpu\" plugin only work on first device number, despite what it advertises")
+				break
+			}
+		}
 	}
 
 	// Destroy the client and leave.

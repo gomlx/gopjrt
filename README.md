@@ -201,7 +201,7 @@ The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform
 `pjrt_c_api_cpu_plugin.so.gz`. Please, uncompress the file and move it to your plugin directory -- e.g.:
 `/usr/local/lib/gomlx/pjrt`.
 
-#### NVidia's CUDA for Linux
+#### Nvidia's CUDA for Linux
 
 NVidia licenses are complicated (I don't understand), so ... I hesitate to provide a prebuilt plugin and dependencies.
 But there is a simple way to achieve it, by linking the files from a Jax installation.

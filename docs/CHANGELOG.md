@@ -4,6 +4,10 @@
 * Added BFloat16 alias.
 * Renamed `FromGoType` to `FromGenericsType` and `FromType` to `FromGoType`, to maintain naming consistency.
 * Added DType.Memory as an alias to DType.Size.
+* Client creation immediately caches addressable devices.
+* `Client.AddressableDevices` returns cached value, no errors returned.
+* Added `BufferFromHost.ToDeviceNum` to allow specification of the device by device number in the addressable devices list. 
+* Added `LoadedExecutable.Execute.OnDeviceNum` to allow  specification of the device by device number in the addressable devices list.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

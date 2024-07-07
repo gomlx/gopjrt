@@ -149,10 +149,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 
 	// Set default device.
 	if b.device == nil {
-		devices, err := b.client.AddressableDevices()
-		if err != nil {
-			return nil, errors.WithMessage(err, "BufferFromHost can't find addressable device to transfer to")
-		}
+		devices := b.client.AddressableDevices()
 		if len(devices) == 0 {
 			return nil, errors.New("BufferFromHost can't find addressable device to transfer to")
 		}
@@ -163,6 +160,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	// Start the call.
 	args := C.new_PJRT_Client_BufferFromHostBuffer_Args()
 	defer cFree(args)
+	pinner.Pin(b.client)
 	args.client = b.client.client
 	args.data = unsafe.Pointer(dataPtr)
 	args._type = C.PJRT_Buffer_Type(b.dtype)
@@ -177,6 +175,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	}
 	args.host_buffer_semantics = C.PJRT_HostBufferSemantics(b.hostBufferSemantics)
 	args.device = b.device.cDevice
+	pinner.Pin(b.client.plugin)
 	err := toError(b.client.plugin, C.call_PJRT_Client_BufferFromHostBuffer(b.client.plugin.api, args))
 	if err != nil {
 		return nil, err

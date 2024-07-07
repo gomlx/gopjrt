@@ -8,22 +8,11 @@ package pjrt
 import "C"
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
 )
-
-func pjrtClientCreate(plugin *Plugin, options NamedValuesMap) (*Client, error) {
-	args := C.new_PJRT_Client_Create_Args()
-	defer cFree(args)
-	args.create_options, args.num_options = options.mallocArrayPJRT_NamedValue()
-	// No callback support yet, so we leave the various PJRT_KeyValue... fields empty.
-	err := toError(plugin, C.call_PJRT_Client_Create(plugin.api, args))
-	if err != nil {
-		return nil, err
-	}
-	return newClient(plugin, args.client), nil
-}
 
 func pjrtClientPlatformName(plugin *Plugin, client *Client) (string, error) {
 	args := C.new_PJRT_Client_PlatformName_Args()
@@ -125,31 +114,56 @@ type Client struct {
 	client                    *C.PJRT_Client
 	platform, platformVersion string
 	processIndex              int
+	addressableDevices        []*Device
 }
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
-func newClient(plugin *Plugin, client *C.PJRT_Client) *Client {
-	c := &Client{plugin: plugin, client: client}
-	var err error
+func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
+	// Create C.PJRT_Client object.
+	args := C.new_PJRT_Client_Create_Args()
+	defer cFree(args)
+	args.create_options, args.num_options = options.mallocArrayPJRT_NamedValue()
+	// No callback support yet, so we leave the various PJRT_KeyValue... fields empty.
+	err := toError(plugin, C.call_PJRT_Client_Create(plugin.api, args))
+	if err != nil {
+		return nil, err
+	}
+
+	// Prepare Client object: not all initialization is fatal to the construction of the client.
+	c := &Client{plugin: plugin, client: args.client}
 	c.platform, err = pjrtClientPlatformName(plugin, c)
 	if err != nil {
+		// Non-fatal
 		klog.Errorf("Failed to retrieve client platform name (plugin %s): %v", plugin, err)
 	}
 	c.platformVersion, err = pjrtClientPlatformVersion(plugin, c)
 	if err != nil {
+		// Non-fatal
 		klog.Errorf("Failed to retrieve client platform version (plugin %s): %v", plugin, err)
 	}
 	c.processIndex, err = pjrtClientProcessIndex(plugin, c)
 	if err != nil {
+		// Non-fatal
 		klog.Errorf("Failed to retrieve client process index (plugin %s): %v", plugin, err)
 	}
-	runtime.SetFinalizer(c, func(c *Client) {
-		err := c.Destroy()
-		if err != nil {
-			klog.Errorf("Client.Destroy failed: %v", err)
-		}
-	})
-	return c
+	c.addressableDevices, err = pjrtClientAddressableDevices(plugin, c)
+	if err != nil {
+		// Fatal
+		err = errors.WithMessagef(err, "failed to retrieve addressable devices for new client (plugin %s) -- can't use client with no addressable device", plugin)
+		finalizeClient(c)
+		return nil, err
+	}
+
+	// Register finalizer.
+	runtime.SetFinalizer(c, finalizeClient)
+	return c, nil
+}
+
+func finalizeClient(c *Client) {
+	err := c.Destroy()
+	if err != nil {
+		klog.Errorf("Client.Destroy failed: %v", err)
+	}
 }
 
 // Destroy the client, release resources, and Client is no longer valid.
@@ -210,8 +224,10 @@ func (c *Client) Devices() ([]*Device, error) {
 // AddressableDevices returns a list of devices addressable to the client.
 // Addressable devices are those that the client can issue commands to.
 // All devices are addressable in a single-process environment (Client.ProcessIndex() == 0).
-func (c *Client) AddressableDevices() ([]*Device, error) {
-	return pjrtClientAddressableDevices(c.plugin, c)
+//
+// The returned slice and the Devices are owned by the Client, don't change it.
+func (c *Client) AddressableDevices() []*Device {
+	return c.addressableDevices
 }
 
 // Compile turn a StableHLO program into a "LoadedExecutable" that is the executable runner.

@@ -185,16 +185,13 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	}
 	defer runtime.KeepAlive(e)
 
-	// Find device:
+	// If no devices were given, use the first addressable one.
 	if len(c.devices) == 0 {
-		var err error
-		c.devices, err = e.client.AddressableDevices()
-		if err != nil {
-			return nil, errors.WithMessage(err, "LoadedExecutable.Execute failed while finding addressable device to execute")
-		}
-		if len(c.devices) == 0 {
+		devices := e.client.AddressableDevices()
+		if len(devices) == 0 {
 			return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
 		}
+		c.devices = []*Device{devices[0]}
 	}
 
 	// Create arguments structures for call to Execute.

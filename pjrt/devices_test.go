@@ -17,8 +17,7 @@ func TestClient_Devices(t *testing.T) {
 	devices, err := client.Devices()
 	require.NoError(t, err, "Failed to list devices for %s", client)
 
-	addressableDevices, err := client.AddressableDevices()
-	require.NoError(t, err, "Failed to list addressable devices for %s", client)
+	addressableDevices := client.AddressableDevices()
 	fmt.Printf("\t%d devices, %d addressable\n", len(devices), len(addressableDevices))
 
 	if client.ProcessIndex() == 0 {

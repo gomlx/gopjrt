@@ -102,5 +102,5 @@ func (p *Plugin) String() string {
 // NewClient creates a new Client object to manage available devices.
 // The options (it can be left nil) are plugin specific, and should (but often aren't) documented by the plugins.
 func (p *Plugin) NewClient(options NamedValuesMap) (*Client, error) {
-	return pjrtClientCreate(p, options)
+	return newClient(p, options)
 }

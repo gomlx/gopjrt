@@ -42,8 +42,7 @@ func TestPlugin_NewClient(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
 	fmt.Printf("%s\n", client)
 
-	devices, err := client.AddressableDevices()
-	require.NoErrorf(t, err, "Failed to fetch AddressableDevices() from client on %s", plugin)
+	devices := client.AddressableDevices()
 	require.NotEmptyf(t, devices, "No addressable devices for client on %s", plugin)
 
 	err = client.Destroy()
@@ -59,8 +58,7 @@ func TestCompileAndExecute(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
 	fmt.Printf("%s\n", client)
 
-	devices, err := client.AddressableDevices()
-	require.NoErrorf(t, err, "Failed to fetch AddressableDevices() from client on %s", plugin)
+	devices := client.AddressableDevices()
 	require.NotEmptyf(t, devices, "No addressable devices for client on %s", plugin)
 
 	for _, programTest := range testHLOPrograms {

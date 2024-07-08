@@ -9,6 +9,7 @@
 * Added `BufferFromHost.ToDeviceNum` to allow specification of the device by device number in the addressable devices list. 
 * Added `LoadedExecutable.Execute.OnDeviceNum` to allow  specification of the device by device number in the addressable devices list.
 * Removed the awkward `pjrt.FlatDataToRawWithDimensions` and added the more ergonomic `Client.BufferFromHost.FromFlatDataWithDimensions`.
+* Added `Buffer.ToFlatDataAndDimensions`
 
 # v0.1.2 SuppressAbseilLoggingHack
 

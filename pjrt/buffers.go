@@ -429,7 +429,7 @@ func ArrayToBuffer[T dtypes.Supported](client *Client, flatValues []T, dimension
 	return client.BufferFromHost().FromFlatDataWithDimensions(flatValues, dimensions).Done()
 }
 
-// BufferToArray transfers the buffer to an array defined by a slice with its flat values, and its underlying dimensions.
+// BufferToArray transfers the buffer to an array defined by a slice with its flat values, and returns also its underlying dimensions.
 func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensions []int, err error) {
 	var dtype dtypes.DType
 	dtype, err = buffer.DType()
@@ -467,5 +467,44 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 		unsafe.Pointer(flatValuesPtr)),
 		totalSize*int(unsafe.Sizeof(flatValues[0])))
 	err = buffer.ToHost(dst)
+	return
+}
+
+// ToFlatDataAndDimensions transfers the buffer to a flat slice and returns also its underlying dimensions.
+//
+// Similar to the generic BufferToArray[T], but this returns an anonymous typed (`any`) flat slice instead of using generics.
+func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err error) {
+	var dtype dtypes.DType
+	dtype, err = b.DType()
+	if err != nil {
+		return
+	}
+
+	dimensions, err = b.Dimensions()
+	if err != nil {
+		return
+	}
+	totalSize := 1
+	for _, dim := range dimensions {
+		totalSize *= dim
+	}
+	if totalSize <= 0 {
+		// Odd empty b (likely one of the dimensions was 0), we return nil for the flat, the reported dimensions
+		// and no error.
+		return
+	}
+	goType := dtype.GoType()
+	flatV := reflect.MakeSlice(reflect.SliceOf(goType), totalSize, totalSize)
+	element0 := flatV.Index(0)
+	flatValuesPtr := element0.Addr().UnsafePointer()
+	sizeBytes := uintptr(flatV.Len()) * element0.Type().Size()
+
+	var pinner runtime.Pinner
+	pinner.Pin(b)
+	pinner.Pin(flatValuesPtr)
+	defer pinner.Unpin()
+	dst := unsafe.Slice((*byte)(flatValuesPtr), sizeBytes)
+	err = b.ToHost(dst)
+	flat = flatV.Interface()
 	return
 }

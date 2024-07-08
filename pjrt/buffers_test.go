@@ -30,6 +30,11 @@ func testTransfersImpl[T interface {
 	require.Equal(t, input, output)
 	require.Equal(t, []int{3, 1}, outputDims)
 
+	flat, outputDims, err := buffer.ToFlatDataAndDimensions()
+	require.NoError(t, err)
+	require.Equal(t, input, flat)
+	require.Equal(t, []int{3, 1}, outputDims)
+
 	// Try an invalid transfer: it should complain about the invalid dtype.
 	_, _, err = BufferToArray[complex128](buffer)
 	fmt.Printf("\t> expected wrong dtype error: %v\n", err)

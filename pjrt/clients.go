@@ -58,7 +58,7 @@ func pjrtClientDevices(plugin *Plugin, client *Client) ([]*Device, error) {
 	cDevices := cDataToSlice[*C.PJRT_Device](unsafe.Pointer(args.devices), int(args.num_devices))
 	devices := make([]*Device, len(cDevices))
 	for ii, d := range cDevices {
-		devices[ii] = newDevice(plugin, client, d)
+		devices[ii] = newDevice(client, d)
 	}
 	return devices, nil
 }
@@ -74,7 +74,7 @@ func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, er
 	cDevices := cDataToSlice[*C.PJRT_Device](unsafe.Pointer(args.addressable_devices), int(args.num_addressable_devices))
 	devices := make([]*Device, len(cDevices))
 	for ii, d := range cDevices {
-		devices[ii] = newDevice(plugin, client, d)
+		devices[ii] = newDevice(client, d)
 	}
 	return devices, nil
 }
@@ -228,6 +228,19 @@ func (c *Client) Devices() ([]*Device, error) {
 // The returned slice and the Devices are owned by the Client, don't change it.
 func (c *Client) AddressableDevices() []*Device {
 	return c.addressableDevices
+}
+
+// NumForDevice returns the "deviceNum" for the given device.
+// The value deviceNum is an index to Client.AddressableDevices, and can be used in several other methods.
+//
+// It returns -1 if device not found in Client.AddressableDevices.
+func (c *Client) NumForDevice(device *Device) int {
+	for deviceNum, otherDevice := range c.addressableDevices {
+		if device.localHardwareId == otherDevice.localHardwareId {
+			return deviceNum
+		}
+	}
+	return -1
 }
 
 // Compile turn a StableHLO program into a "LoadedExecutable" that is the executable runner.

@@ -20,13 +20,13 @@ import (
 // Buffer is a reference to an array storage (buffer) on device.
 type Buffer struct {
 	cBuffer *C.PJRT_Buffer
-	plugin  *Plugin
+	client  *Client
 }
 
 // newBuffer creates Buffer and registers it for freeing.
-func newBuffer(plugin *Plugin, cBuffer *C.PJRT_Buffer) *Buffer {
+func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 	b := &Buffer{
-		plugin:  plugin,
+		client:  client,
 		cBuffer: cBuffer,
 	}
 	runtime.SetFinalizer(b, func(b *Buffer) {
@@ -41,7 +41,7 @@ func newBuffer(plugin *Plugin, cBuffer *C.PJRT_Buffer) *Buffer {
 // Destroy the Buffer, release resources, and Buffer is no longer valid.
 // This is automatically called if Buffer is garbage collected.
 func (b *Buffer) Destroy() error {
-	if b == nil || b.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed, no-op.
 		return nil
 	}
@@ -49,15 +49,15 @@ func (b *Buffer) Destroy() error {
 	args := C.new_PJRT_Buffer_Destroy_Args()
 	defer cFree(args)
 	args.buffer = b.cBuffer
-	err := toError(b.plugin, C.call_PJRT_Buffer_Destroy(b.plugin.api, args))
-	b.plugin = nil
+	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
+	b.client = nil
 	b.cBuffer = nil
 	return err
 }
 
 // Dimensions of the Buffer.
 func (b *Buffer) Dimensions() (dims []int, err error) {
-	if b == nil || b.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
@@ -66,7 +66,7 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	args := C.new_PJRT_Buffer_Dimensions_Args()
 	defer cFree(args)
 	args.buffer = b.cBuffer
-	err = toError(b.plugin, C.call_PJRT_Buffer_Dimensions(b.plugin.api, args))
+	err = toError(b.client.plugin, C.call_PJRT_Buffer_Dimensions(b.client.plugin.api, args))
 	if err != nil {
 		return
 	}
@@ -80,7 +80,7 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 // DType of the Buffer (PJRT_Buffer_ElementType).
 func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	dtype = dtypes.InvalidDType
-	if b == nil || b.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
@@ -89,12 +89,36 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	args := C.new_PJRT_Buffer_ElementType_Args()
 	defer cFree(args)
 	args.buffer = b.cBuffer
-	err = toError(b.plugin, C.call_PJRT_Buffer_ElementType(b.plugin.api, args))
+	err = toError(b.client.plugin, C.call_PJRT_Buffer_ElementType(b.client.plugin.api, args))
 	if err != nil {
 		return
 	}
 	dtype = dtypes.DType(args._type)
 	return
+}
+
+// Device returns the device the buffer is stored.
+func (b *Buffer) Device() (device *Device, err error) {
+	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
+		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+		return
+	}
+	defer runtime.KeepAlive(b)
+
+	args := C.new_PJRT_Buffer_Device_Args()
+	defer cFree(args)
+	args.buffer = b.cBuffer
+	err = toError(b.client.plugin, C.call_PJRT_Buffer_Device(b.client.plugin.api, args))
+	if err != nil {
+		return
+	}
+	device = newDevice(b.client, args.device)
+	return
+}
+
+// Client returns the client that created this Buffer.
+func (b *Buffer) Client() *Client {
+	return b.client
 }
 
 // BufferFromHostConfig is used to configure the transfer from a buffer from host memory to on-device memory, it is
@@ -230,7 +254,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	}
 
 	// We get a PJRT_Buffer even before it's fully transferred.
-	buffer := newBuffer(b.client.plugin, args.buffer)
+	buffer := newBuffer(b.client, args.buffer)
 
 	// Await for transfer to finish.
 	doneEvent := newEvent(b.client.plugin, args.done_with_host_buffer)
@@ -328,7 +352,7 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 
 // Size returns the size in bytes if required for the buffer to be transferred with ToHost.
 func (b *Buffer) Size() (int, error) {
-	if b == nil || b.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed ?
 		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
@@ -337,7 +361,7 @@ func (b *Buffer) Size() (int, error) {
 	defer cFree(args)
 	args.src = b.cBuffer
 	args.dst = nil // Don't transfer, only inquire about size.
-	err := toError(b.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.plugin.api, args))
+	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
 	if err != nil {
 		return 0, errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer for inquiring size of the buffer")
 	}
@@ -347,7 +371,7 @@ func (b *Buffer) Size() (int, error) {
 // ToHost transfers the contents of buffer stored on device to the host.
 // The space in dst has to hold enough space (see Buffer.Size) to hold the required data, or an error is returned.
 func (b *Buffer) ToHost(dst []byte) error {
-	if b == nil || b.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed ?
 		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
@@ -363,13 +387,13 @@ func (b *Buffer) ToHost(dst []byte) error {
 	args.src = b.cBuffer
 	args.dst = unsafe.Pointer(unsafe.SliceData(dst))
 	args.dst_size = C.size_t(len(dst))
-	err := toError(b.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.plugin.api, args))
+	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
 	if err != nil {
 		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
 	}
 
 	// Await for transfer to finish.
-	doneEvent := newEvent(b.plugin, args.event)
+	doneEvent := newEvent(b.client.plugin, args.event)
 	defer func() { _ = doneEvent.Destroy() }()
 	err = doneEvent.Await()
 	if err != nil {

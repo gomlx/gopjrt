@@ -290,7 +290,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		return nil, err
 	}
 
-	perDevice := gatherPerDeviceBufferList(e.plugin, args.output_lists, numDevices, e.NumOutputs)
+	perDevice := gatherPerDeviceBufferList(e.client, args.output_lists, numDevices, e.NumOutputs)
 	return perDevice[0], nil
 }
 
@@ -324,14 +324,14 @@ func freePerDeviceBufferList(data ***C.PJRT_Buffer, numDevices int) {
 }
 
 // gatherPerDeviceBufferList returns a [numDevices][numBuffers]*Buffer given the C 2D array.
-func gatherPerDeviceBufferList(plugin *Plugin, data ***C.PJRT_Buffer, numDevices, numBuffers int) [][]*Buffer {
+func gatherPerDeviceBufferList(client *Client, data ***C.PJRT_Buffer, numDevices, numBuffers int) [][]*Buffer {
 	perDevice := make([][]*Buffer, numDevices)
 	cPerDevice := cDataToSlice[**C.PJRT_Buffer](unsafe.Pointer(data), numDevices)
 	for ii, cBufferListPtr := range cPerDevice {
 		perDevice[ii] = make([]*Buffer, numBuffers)
 		cBuffers := cDataToSlice[*C.PJRT_Buffer](unsafe.Pointer(cBufferListPtr), numBuffers)
 		for jj, cBuffer := range cBuffers {
-			perDevice[ii][jj] = newBuffer(plugin, cBuffer)
+			perDevice[ii][jj] = newBuffer(client, cBuffer)
 		}
 	}
 	return perDevice

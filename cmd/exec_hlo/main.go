@@ -56,11 +56,15 @@ Usage:
 	input := float32(must.M1(strconv.ParseFloat(numStr, 32)))
 
 	// PJRT plugin and create a client.
-	if *flagSuppressAbslLogging {
-		pjrt.SuppressAbseilLoggingHack()
-	}
 	plugin := must.M1(pjrt.GetPlugin(*flagPluginName))
-	client := must.M1(plugin.NewClient(nil))
+	var client *pjrt.Client
+	if *flagSuppressAbslLogging {
+		pjrt.SuppressAbseilLoggingHack(func() {
+			client = must.M1(plugin.NewClient(nil))
+		})
+	} else {
+		client = must.M1(plugin.NewClient(nil))
+	}
 	loadedExec := must.M1(client.Compile().WithHLO(hloBlob).Done())
 
 	// Test values:

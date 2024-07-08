@@ -59,8 +59,8 @@ type Device struct {
 }
 
 // newDevice create a new Device reference.
-func newDevice(plugin *Plugin, client *Client, device *C.PJRT_Device) *Device {
-	d := &Device{plugin: plugin, client: client, cDevice: device}
+func newDevice(client *Client, device *C.PJRT_Device) *Device {
+	d := &Device{plugin: client.plugin, client: client, cDevice: device}
 	var err error
 	d.localHardwareId, err = pjrtDeviceLocalHardwareId(d)
 	if err != nil {

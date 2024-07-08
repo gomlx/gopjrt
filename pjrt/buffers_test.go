@@ -35,6 +35,12 @@ func testTransfersImpl[T interface {
 	require.Equal(t, input, flat)
 	require.Equal(t, []int{3, 1}, outputDims)
 
+	gotDevice, err := buffer.Device()
+	require.NoError(t, err)
+	wantDevice := client.AddressableDevices()[0]
+	require.Equal(t, wantDevice.LocalHardwareId(), gotDevice.LocalHardwareId())
+	require.Equal(t, 0, client.NumForDevice(gotDevice))
+
 	// Try an invalid transfer: it should complain about the invalid dtype.
 	_, _, err = BufferToArray[complex128](buffer)
 	fmt.Printf("\t> expected wrong dtype error: %v\n", err)

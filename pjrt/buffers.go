@@ -11,6 +11,7 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"reflect"
 	"runtime"
 	"slices"
 	"unsafe"
@@ -245,10 +246,54 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	return buffer, nil
 }
 
+// FromFlatDataWithDimensions configures the data to come from a flat slice of the desired data type, and the underlying
+// dimensions.
+// The flat slice size must match the product of the dimension.
+// If no dimensions are given, it is assumed to be a scalar, and flat should have length 1.
+func (b *BufferFromHostConfig) FromFlatDataWithDimensions(flat any, dimensions []int) *BufferFromHostConfig {
+	if b.err != nil {
+		return b
+	}
+	// Checks dimensions.
+	expectedSize := 1
+	for _, dim := range dimensions {
+		if dim <= 0 {
+			b.err = errors.Errorf("FromFlatDataWithDimensions cannot be given zero or negative dimensions, got %v", dimensions)
+			return b
+		}
+		expectedSize *= dim
+	}
+
+	// Check the flat slice has the right shape.
+	flatV := reflect.ValueOf(flat)
+	if flatV.Kind() != reflect.Slice {
+		b.err = errors.Errorf("FromFlatDataWithDimensions was given a %s for flat, but it requires a slice", flatV.Kind())
+		return b
+	}
+	if flatV.Len() != expectedSize {
+		b.err = errors.Errorf("FromFlatDataWithDimensions(flat, dimensions=%v) needs %d values to match dimensions, but got len(flat)=%d", dimensions, expectedSize, flatV.Len())
+		return b
+	}
+
+	// Check validity of the slice elements type.
+	element0 := flatV.Index(0)
+	element0Type := element0.Type()
+	dtype := dtypes.FromGoType(element0Type)
+	if dtype == dtypes.InvalidDType {
+		b.err = errors.Errorf("FromFlatDataWithDimensions(flat, dimensions%v) got flat=[]%s, expected a slice of a Go tyep that can be converted to a valid DType", dimensions, element0Type)
+		return b
+	}
+
+	// Create slice of bytes and use b.FromRawData.
+	sizeBytes := uintptr(flatV.Len()) * element0Type.Size()
+	data := unsafe.Slice((*byte)(element0.Addr().UnsafePointer()), sizeBytes)
+	return b.FromRawData(data, dtype, dimensions)
+}
+
 // FlatDataToRawWithDimensions takes a flat slice of values and the target dimensions of the underlying array and convert
 // to the raw data, dtype and dimensions needed by BufferFromHostConfig.FromRawData.
 //
-// If len(flat) != Product(dimensions) or if any dimension is 0, it panics.
+// If len(flat) != Product(dimensions) it panics.
 //
 // Scalars can be defined with len(dimensions) == 0 and len(flat) == 1.
 func FlatDataToRawWithDimensions[T dtypes.Supported](flat []T, dimensions ...int) ([]byte, dtypes.DType, []int) {
@@ -381,7 +426,7 @@ func ScalarToBufferOnDeviceNum[T dtypes.Supported](client *Client, deviceNum int
 // It is a shortcut to Client.BufferFromHost call with default parameters.
 // If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
 func ArrayToBuffer[T dtypes.Supported](client *Client, flatValues []T, dimensions ...int) (b *Buffer, err error) {
-	return client.BufferFromHost().FromRawData(FlatDataToRawWithDimensions(flatValues, dimensions...)).Done()
+	return client.BufferFromHost().FromFlatDataWithDimensions(flatValues, dimensions).Done()
 }
 
 // BufferToArray transfers the buffer to an array defined by a slice with its flat values, and its underlying dimensions.

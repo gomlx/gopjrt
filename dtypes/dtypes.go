@@ -351,27 +351,31 @@ func (dtype DType) IsSupported() bool {
 // Notice Go's `int` type is not portable, since it may translate to dtypes Int32 or Int64 depending
 // on the platform.
 type Supported interface {
-	bool | float32 | float64 | float16.Float16 | int | int8 | int16 | int32 | int64 | uint8 | uint32 | uint64 | complex64 | complex128
+	bool | float16.Float16 |
+		float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
+		complex64 | complex128
 }
 
 // Number represents the Go numeric types that are supported by graph package.
 // Used as traits for generics.
 //
-// Notice that "int" becomes int64 in the implementation.
-// Since it needs a 1:1 mapping, it gets converted back to int64.
 // It includes complex numbers.
+// It doesn't include float16.Float16 (not a native number type).
 type Number interface {
 	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | complex64 | complex128
 }
 
 // NumberNotComplex represents the Go numeric types that are supported by graph package except the complex numbers.
 // Used as a Generics constraint.
-// See Number for details.
+//
+// It doesn't include float16.Float16 (not a native number type).
+// See also Number.
 type NumberNotComplex interface {
 	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64
 }
 
 // GoFloat represent a continuous Go numeric type, supported by GoMLX.
+// It doesn't include complex numbers.
 type GoFloat interface {
 	float32 | float64
 }

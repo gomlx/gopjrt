@@ -361,14 +361,14 @@ type Supported interface {
 // Since it needs a 1:1 mapping, it gets converted back to int64.
 // It includes complex numbers.
 type Number interface {
-	float32 | float64 | int | int32 | int64 | uint8 | uint32 | uint64 | complex64 | complex128
+	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | complex64 | complex128
 }
 
 // NumberNotComplex represents the Go numeric types that are supported by graph package except the complex numbers.
 // Used as a Generics constraint.
 // See Number for details.
 type NumberNotComplex interface {
-	float32 | float64 | int | int32 | int64 | uint8 | uint32 | uint64
+	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64
 }
 
 // GoFloat represent a continuous Go numeric type, supported by GoMLX.

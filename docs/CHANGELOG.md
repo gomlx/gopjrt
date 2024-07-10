@@ -12,6 +12,7 @@
 * Added `Buffer.ToFlatDataAndDimensions`
 * Store client link with Buffer. Added `Buffer.Client` method.
 * Added `Buffer.Device` and `Client.NumForDevice`.
+* Properly setting client options for `pjrt.NewClient`. Added test for reading/writing `C.PJRT_NamedValues`.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

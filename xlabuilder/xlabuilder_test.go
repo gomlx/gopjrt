@@ -42,6 +42,11 @@ func getPJRTClient(t *testing.T) *pjrt.Client {
 	fmt.Printf("Loaded PJRT plugin %s\n", plugin)
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	attributes := plugin.Attributes()
+	fmt.Printf("Loaded PJRT plugin %s with %d atributes:\n", plugin, len(attributes))
+	for key, value := range attributes {
+		fmt.Printf("\t%s: %+v\n", key, value)
+	}
 	return client
 }
 

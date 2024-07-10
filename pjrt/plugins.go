@@ -36,13 +36,16 @@ func pjrtPluginInitialize(plugin *Plugin) error {
 }
 
 // pjrtPluginAttributes calls C.PJRT_Plugin_Attributes and returns the plugin's attributes.
-func pjrtPluginAttributes(plugin *Plugin) NamedValuesMap {
+func pjrtPluginAttributes(plugin *Plugin) (NamedValuesMap, error) {
 	args := C.new_PJRT_Plugin_Attributes_Args()
 	defer cFree(args)
 	args.extension_start = nil
-	C.call_PJRT_Plugin_Attributes(plugin.api, args)
+	err := toError(plugin, C.call_PJRT_Plugin_Attributes(plugin.api, args))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to retrieve plugin attributes")
+	}
 	namedValues := cDataToSlice[C.PJRT_NamedValue](unsafe.Pointer(args.attributes), int(args.num_attributes))
-	return pjrtNamedValuesToMap(namedValues)
+	return pjrtNamedValuesToMap(namedValues), nil
 }
 
 // newPlugin creates a new plugin from the api pointer.
@@ -51,9 +54,12 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
 	plugin := &Plugin{name: name, path: pluginPath, api: api}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %s", name)
+		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)
 	}
-	plugin.attributes = pjrtPluginAttributes(plugin)
+	plugin.attributes, err = pjrtPluginAttributes(plugin)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)
+	}
 	return plugin, nil
 }
 

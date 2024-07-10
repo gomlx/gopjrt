@@ -122,9 +122,13 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 	// Create C.PJRT_Client object.
 	args := C.new_PJRT_Client_Create_Args()
 	defer cFree(args)
-	args.create_options, args.num_options = options.mallocArrayPJRT_NamedValue()
+	var err error
+	args.create_options, args.num_options, err = options.mallocArrayPJRT_NamedValue()
+	if err != nil {
+		return nil, errors.WithMessagef(err, "invalid options when creating a new pjrt.Client")
+	}
 	// No callback support yet, so we leave the various PJRT_KeyValue... fields empty.
-	err := toError(plugin, C.call_PJRT_Client_Create(plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Client_Create(plugin.api, args))
 	if err != nil {
 		return nil, err
 	}

@@ -37,6 +37,10 @@ typedef struct {
 // De-union the value of a PRJT_NamedValue, to allow Go access to it.
 extern PJRT_NamedValueUnion Extract_PJRT_NamedValue_Union(PJRT_NamedValue *named_value);
 
+// Set the corresponding field in the PJRT_NamedValue structure.
+// The one to use is based on named_value->type.
+extern void Set_PJRT_NamedValue_Union(PJRT_NamedValue *named_value, PJRT_NamedValueUnion split_value);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif

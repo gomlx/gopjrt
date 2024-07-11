@@ -95,6 +95,41 @@ func NewScalarLiteralFromAny(value any) *Literal {
 	return l
 }
 
+// NewArrayLiteralFromAny creates a scalar Literal with the given dynamically typed flat values and its underlying dimensions.
+// If dimensions is omitted, it's assumed to be a 1D tensor with dimension matching the length of flat.
+// It uses reflection to inspect the type.
+func NewArrayLiteralFromAny(flatAny any, dimensions ...int) *Literal {
+	flatV := reflect.ValueOf(flatAny)
+	if flatV.Kind() != reflect.Slice {
+		exceptions.Panicf("NewArrayLiteralFromAny expects a slice, got %T instead", flatAny)
+	}
+	dtype := dtypes.FromGoType(flatV.Type().Elem())
+	if dtype == dtypes.InvalidDType {
+		exceptions.Panicf("NewArrayLiteralFromAny expects a slice of valid DTypes, got %T instead", flatAny)
+	}
+	if len(dimensions) == 0 {
+		dimensions = []int{flatV.Len()}
+	}
+	shape := MakeShape(dtype, dimensions...)
+	if shape.Size() != flatV.Len() {
+		exceptions.Panicf("NewArrayLiteralFromAny got a slice of length %d, but the shape %s given has %d elements",
+			flatV.Len(), shape, shape.Size())
+	}
+
+	// Copy data as bytes -- to avoid using complex reflected slices.
+	flatPtr := flatV.Index(0).Addr().UnsafePointer()
+	var pinner runtime.Pinner
+	pinner.Pin(flatPtr)
+	defer pinner.Unpin()
+	flatData := unsafe.Slice((*byte)(flatPtr), shape.Memory())
+
+	l := NewLiteralFromShape(shape)
+	lData := unsafe.Slice((*byte)(unsafe.Pointer(l.cLiteral.data)), shape.Memory())
+
+	copy(lData, flatData)
+	return l
+}
+
 // newLiteral creates the literal and registers the finalizer.
 func newLiteral(cLiteral *C.Literal, shape Shape) *Literal {
 	l := &Literal{cLiteral: cLiteral, shape: shape}

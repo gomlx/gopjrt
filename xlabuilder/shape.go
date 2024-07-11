@@ -61,6 +61,12 @@ func (s Shape) Size() int {
 	return size
 }
 
+// Memory returns the memory used to store an array of the given shape, the same as the size in bytes.
+// Careful, so far all types in Go and on device seem to use the same sizes, but future type this is not guaranteed.
+func (s Shape) Memory() uintptr {
+	return s.DType.Memory() * uintptr(s.Size())
+}
+
 // Clone makes a deep copy (including dimensions and tuples) of the given shape.
 func (s Shape) Clone() (newS Shape) {
 	newS.DType = s.DType

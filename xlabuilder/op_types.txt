@@ -86,9 +86,17 @@ Conj:one
 
 # Two-arguments ops:
 
+// Add returns the element-wise sum of the two values.
+// Standard broadcasting rules apply (see documentation).
 Add:two
+// Mul returns the element-wise multiplication of the two values.
+// Standard broadcasting rules apply (see documentation).
 Mul:two
+// Sub returns the element-wise subtraction of the two values.
+// Standard broadcasting rules apply (see documentation).
 Sub:two
+// Div returns the element-wise subtraction of the two values.
+// Standard broadcasting rules apply (see documentation).
 Div:two
 // Rem returns the remainder operation, also known as modulo (or Mod for short).
 // Notice despite the name XLA implements Mod not IEEE754 Remainder operation.

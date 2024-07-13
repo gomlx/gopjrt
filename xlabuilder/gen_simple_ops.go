@@ -258,7 +258,8 @@ func Conj(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Add returns the Op that represents the output of the corresponding operation.
+// Add returns the element-wise sum of the two values.
+// Standard broadcasting rules apply (see documentation).
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Add(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -273,7 +274,8 @@ func Add(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Mul returns the Op that represents the output of the corresponding operation.
+// Mul returns the element-wise multiplication of the two values.
+// Standard broadcasting rules apply (see documentation).
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Mul(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -288,7 +290,8 @@ func Mul(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Sub returns the Op that represents the output of the corresponding operation.
+// Sub returns the element-wise subtraction of the two values.
+// Standard broadcasting rules apply (see documentation).
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Sub(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -303,7 +306,8 @@ func Sub(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Div returns the Op that represents the output of the corresponding operation.
+// Div returns the element-wise subtraction of the two values.
+// Standard broadcasting rules apply (see documentation).
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Div(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

@@ -14,6 +14,7 @@
 * Added `Buffer.Device` and `Client.NumForDevice`.
 * Properly setting client options for `pjrt.NewClient`. Added test for reading/writing `C.PJRT_NamedValues`.
 * Added `xlabuilder.Shape.Memory` and `xlabuilder.NewArrayLiteralFromAny`.
+* Added `xlabuilder.Op.Builder()`
 
 # v0.1.2 SuppressAbseilLoggingHack
 

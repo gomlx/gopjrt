@@ -67,6 +67,11 @@ func newOp(opType OpType, opInputs ...*Op) *Op {
 	return op
 }
 
+// Builder returns the XlaBuilder associated with this Op.
+func (op *Op) Builder() *XlaBuilder {
+	return op.builder
+}
+
 // opFinalizer by freeing the underlying C++ resources.
 func opFinalizer(op *Op) {
 	if op.cOp == nil {

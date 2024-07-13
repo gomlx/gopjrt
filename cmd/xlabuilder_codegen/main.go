@@ -16,7 +16,7 @@ type OpInfo struct {
 }
 
 func main() {
-	// Read node_types.xt
+	// Read op_types.xt
 	opsInfo := make([]OpInfo, 0, 200)
 	f := must.M1(os.OpenFile(OpTypesFileName, os.O_RDONLY, os.ModePerm))
 	scanner := bufio.NewScanner(f)

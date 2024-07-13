@@ -127,6 +127,7 @@ Min:two
 // Max returns the element-wise highest value among the two.
 Max:two
 Pow:two
+// Complex returns the complex number taking x0 as the real part and x1 as the imaginary part.
 Complex:two
 
 // Two-arguments comparison ops:

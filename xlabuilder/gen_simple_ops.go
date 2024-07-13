@@ -456,7 +456,7 @@ func Pow(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Complex returns the Op that represents the output of the corresponding operation.
+// Complex returns the complex number taking x0 as the real part and x1 as the imaginary part.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Complex(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

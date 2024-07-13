@@ -25,8 +25,8 @@ import (
 )
 
 {{range .}}{{if eq .Type "one"}}
-// {{.Name}} returns the Op that represents the output of the corresponding operation.
-// The op is created on the same XlaBuilder as used for x.
+{{range .Comments}}// {{.}}
+{{end}}// The op is created on the same XlaBuilder as used for x.
 func {{.Name}}(x *Op) (*Op, error) {
 	builder := x.builder
 	y := newOp({{.Name}}Op, x)
@@ -37,8 +37,8 @@ func {{.Name}}(x *Op) (*Op, error) {
 	return y, nil
 }
 {{end}}{{if or (eq .Type "two") (eq .Type "two_cmp")}}
-// {{.Name}} returns the Op that represents the output of the corresponding operation.
-// The op is created on the same XlaBuilder as used for x0 and x1.
+{{range .Comments}}// {{.}}
+{{end}}// The op is created on the same XlaBuilder as used for x0 and x1.
 func {{.Name}}(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of {{.Name}}(x0, x1) come from different XlaBuilder objects (or nil)")

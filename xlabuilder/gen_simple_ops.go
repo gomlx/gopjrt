@@ -102,7 +102,7 @@ func Log(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Log1p returns the Op that represents the output of the corresponding operation.
+// Log1p returns the expression log(x+1).
 // The op is created on the same XlaBuilder as used for x.
 func Log1p(x *Op) (*Op, error) {
 	builder := x.builder
@@ -126,7 +126,7 @@ func LogicalNot(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Logistic returns the Op that represents the output of the corresponding operation.
+// Logistic returns the element-wise expression 1/(1+exp(-x)). Also known as the Sigmoid function.
 // The op is created on the same XlaBuilder as used for x.
 func Logistic(x *Op) (*Op, error) {
 	builder := x.builder
@@ -138,7 +138,7 @@ func Logistic(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Sign returns the Op that represents the output of the corresponding operation.
+// Sign returns element-wise +1, +/-0 or -1 depending on the sign of x. It returns NaN if the input is NaN.
 // The op is created on the same XlaBuilder as used for x.
 func Sign(x *Op) (*Op, error) {
 	builder := x.builder
@@ -150,7 +150,7 @@ func Sign(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Clz returns the Op that represents the output of the corresponding operation.
+// Clz returns element-wise the "count leading zeros" bits of input node x -- for integer values.
 // The op is created on the same XlaBuilder as used for x.
 func Clz(x *Op) (*Op, error) {
 	builder := x.builder
@@ -210,7 +210,7 @@ func Sqrt(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Rsqrt returns the Op that represents the output of the corresponding operation.
+// Rsqrt returns the element-wise reciprocal of square root operation 1/sqrt(x).
 // The op is created on the same XlaBuilder as used for x.
 func Rsqrt(x *Op) (*Op, error) {
 	builder := x.builder
@@ -222,7 +222,7 @@ func Rsqrt(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Imag returns the Op that represents the output of the corresponding operation.
+// Imag returns the imaginary part of a complex number. It returns 0 if the x is a float number.
 // The op is created on the same XlaBuilder as used for x.
 func Imag(x *Op) (*Op, error) {
 	builder := x.builder
@@ -234,7 +234,7 @@ func Imag(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Real returns the Op that represents the output of the corresponding operation.
+// Real return the real part of a complex number. It returns x if the x is a float number.
 // The op is created on the same XlaBuilder as used for x.
 func Real(x *Op) (*Op, error) {
 	builder := x.builder
@@ -246,7 +246,7 @@ func Real(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// Conj returns the Op that represents the output of the corresponding operation.
+// Conj returns the conjugate of a complex number. E.g: Conj(1+3i) = 1-3i
 // The op is created on the same XlaBuilder as used for x.
 func Conj(x *Op) (*Op, error) {
 	builder := x.builder
@@ -318,7 +318,8 @@ func Div(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Rem returns the Op that represents the output of the corresponding operation.
+// Rem returns the remainder operation, also known as modulo (or Mod for short).
+// Notice despite the name XLA implements Mod not IEEE754 Remainder operation.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Rem(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -333,7 +334,7 @@ func Rem(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// And returns the Op that represents the output of the corresponding operation.
+// And returns the element-wise logic "and" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func And(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -348,7 +349,7 @@ func And(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Or returns the Op that represents the output of the corresponding operation.
+// Or returns the element-wise logic "and" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Or(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -363,7 +364,7 @@ func Or(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Xor returns the Op that represents the output of the corresponding operation.
+// Xor returns the element-wise logic "and" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Xor(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -378,7 +379,20 @@ func Xor(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Dot returns the Op that represents the output of the corresponding operation.
+// Dot returns the "dot product" operation.
+// The exact semantics of this operation depend on the ranks of the operands:
+//
+// | Input | Output | Semantics |
+// | vector [n] dot vector [n] | scalar | vector dot product |
+// | matrix [m x k] dot vector [k] | vector [m]	matrix-vector multiplication |
+// | matrix [m x k] dot matrix [k x n] | matrix [m x n] | matrix-matrix multiplication |
+//
+// The operation performs sum of products over the second dimension of x0 (or the first if it has rank 1) and
+// the first dimension of x1.
+// These are the "contracted" dimensions.
+// The contracted dimensions of x0 and x1 must be of the same size.
+// In practice, it can be used to perform dot products between vectors, vector/matrix multiplications or
+// matrix/matrix multiplications.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Dot(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -393,7 +407,7 @@ func Dot(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Min returns the Op that represents the output of the corresponding operation.
+// Min returns the element-wise smallest value among the two.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Min(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -408,7 +422,7 @@ func Min(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Max returns the Op that represents the output of the corresponding operation.
+// Max returns the element-wise highest value among the two.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Max(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -453,7 +467,7 @@ func Complex(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Equal returns the Op that represents the output of the corresponding operation.
+// Two-arguments comparison ops:
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Equal(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -543,7 +557,11 @@ func LessThan(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// EqualTotalOrder returns the Op that represents the output of the corresponding operation.
+// EqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func EqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -558,7 +576,11 @@ func EqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// NotEqualTotalOrder returns the Op that represents the output of the corresponding operation.
+// NotEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func NotEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -573,7 +595,11 @@ func NotEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// GreaterOrEqualTotalOrder returns the Op that represents the output of the corresponding operation.
+// GreaterOrEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func GreaterOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -588,7 +614,11 @@ func GreaterOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// GreaterThanTotalOrder returns the Op that represents the output of the corresponding operation.
+// GreaterThanTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func GreaterThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -603,7 +633,11 @@ func GreaterThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// LessOrEqualTotalOrder returns the Op that represents the output of the corresponding operation.
+// LessOrEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func LessOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -618,7 +652,11 @@ func LessOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// LessThanTotalOrder returns the Op that represents the output of the corresponding operation.
+// LessThanTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func LessThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

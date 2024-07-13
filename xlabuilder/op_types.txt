@@ -10,12 +10,13 @@
 // - Any empty lines or lines starting with // or # are comments.
 // - Any line with a node type should not have anything else (no comments after the node type name)
 // - Order matter
+// - Comments starting with // just preceding an entry becomes comments to the corresponding function.
 //
 // **IMPORTANT** Change in the order of this file will make binary releases among different versions incompatible.
 // For backward (or forward, depending on the reference point) compatibility, pls only add new ops in the end,
 // even if things look out of order.
 
-// Invalid should always be the first one.
+# Invalid should always be the first one.
 Invalid:invalid
 
 // Special ops:
@@ -51,7 +52,8 @@ BatchNormGrad:special
 RngBitGenerator:special
 While:special
 
-// One-argument ops:
+# One-argument ops:
+
 Abs:one
 Neg:one
 Exp:one
@@ -60,32 +62,61 @@ Floor:one
 Ceil:one
 Round:one
 Log:one
+// Log1p returns the expression log(x+1).
 Log1p:one
 LogicalNot:one
+// Logistic returns the element-wise expression 1/(1+exp(-x)). Also known as the Sigmoid function.
 Logistic:one
+// Sign returns element-wise +1, +/-0 or -1 depending on the sign of x. It returns NaN if the input is NaN.
 Sign:one
+// Clz returns element-wise the "count leading zeros" bits of input node x -- for integer values.
 Clz:one
 Cos:one
 Sin:one
 Tanh:one
 Sqrt:one
+// Rsqrt returns the element-wise reciprocal of square root operation 1/sqrt(x).
 Rsqrt:one
+// Imag returns the imaginary part of a complex number. It returns 0 if the x is a float number.
 Imag:one
+// Real return the real part of a complex number. It returns x if the x is a float number.
 Real:one
+// Conj returns the conjugate of a complex number. E.g: Conj(1+3i) = 1-3i
 Conj:one
 
-// Two-arguments ops:
+# Two-arguments ops:
+
 Add:two
 Mul:two
 Sub:two
 Div:two
-// Notice XLA implements Mod not IEEE754 Remainder operation.
+// Rem returns the remainder operation, also known as modulo (or Mod for short).
+// Notice despite the name XLA implements Mod not IEEE754 Remainder operation.
 Rem:two
+// And returns the element-wise logic "and" operator.
 And:two
+// Or returns the element-wise logic "and" operator.
 Or:two
+// Xor returns the element-wise logic "and" operator.
 Xor:two
+// Dot returns the "dot product" operation.
+// The exact semantics of this operation depend on the ranks of the operands:
+//
+// | Input | Output | Semantics |
+// | vector [n] dot vector [n] | scalar | vector dot product |
+// | matrix [m x k] dot vector [k] | vector [m]	matrix-vector multiplication |
+// | matrix [m x k] dot matrix [k x n] | matrix [m x n] | matrix-matrix multiplication |
+//
+// The operation performs sum of products over the second dimension of x0 (or the first if it has rank 1) and
+// the first dimension of x1.
+// These are the "contracted" dimensions.
+// The contracted dimensions of x0 and x1 must be of the same size.
+// In practice, it can be used to perform dot products between vectors, vector/matrix multiplications or
+// matrix/matrix multiplications.
 Dot:two
+// Min returns the element-wise smallest value among the two.
 Min:two
+// Max returns the element-wise highest value among the two.
 Max:two
 Pow:two
 Complex:two
@@ -97,10 +128,46 @@ GreaterOrEqual:two_cmp
 GreaterThan:two_cmp
 LessOrEqual:two_cmp
 LessThan:two_cmp
+
+// EqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 EqualTotalOrder:two_cmp
+
+// NotEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 NotEqualTotalOrder:two_cmp
+
+// GreaterOrEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 GreaterOrEqualTotalOrder:two_cmp
+
+// GreaterThanTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 GreaterThanTotalOrder:two_cmp
+
+// LessOrEqualTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 LessOrEqualTotalOrder:two_cmp
+
+// LessThanTotalOrder returns the element-wise operation.
+//
+// Standard broadcasting rules apply (see documentation).
+//
+// The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 LessThanTotalOrder:two_cmp
 

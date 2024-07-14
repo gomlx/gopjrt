@@ -476,7 +476,7 @@ func Complex(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Two-arguments comparison ops:
+// Equal performs element-wise equality check, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Equal(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -491,7 +491,7 @@ func Equal(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// NotEqual returns the Op that represents the output of the corresponding operation.
+// NotEqual performs element-wise inequality check, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func NotEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -506,7 +506,7 @@ func NotEqual(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// GreaterOrEqual returns the Op that represents the output of the corresponding operation.
+// GreaterOrEqual performs element-wise comparison, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func GreaterOrEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -521,7 +521,7 @@ func GreaterOrEqual(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// GreaterThan returns the Op that represents the output of the corresponding operation.
+// GreaterThan performs element-wise comparison, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func GreaterThan(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -536,7 +536,7 @@ func GreaterThan(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// LessOrEqual returns the Op that represents the output of the corresponding operation.
+// LessOrEqual performs element-wise comparison, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func LessOrEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -551,7 +551,7 @@ func LessOrEqual(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// LessThan returns the Op that represents the output of the corresponding operation.
+// LessThan performs element-wise comparison, returns boolean results with the same dimensions as input.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func LessThan(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

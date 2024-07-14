@@ -135,12 +135,19 @@ Pow:two
 // the value is broadcast to every other value.
 Complex:two
 
-// Two-arguments comparison ops:
+# Two-arguments comparison ops:
+
+// Equal performs element-wise equality check, returns boolean results with the same dimensions as input.
 Equal:two_cmp
+// NotEqual performs element-wise inequality check, returns boolean results with the same dimensions as input.
 NotEqual:two_cmp
+// GreaterOrEqual performs element-wise comparison, returns boolean results with the same dimensions as input.
 GreaterOrEqual:two_cmp
+// GreaterThan performs element-wise comparison, returns boolean results with the same dimensions as input.
 GreaterThan:two_cmp
+// LessOrEqual performs element-wise comparison, returns boolean results with the same dimensions as input.
 LessOrEqual:two_cmp
+// LessThan performs element-wise comparison, returns boolean results with the same dimensions as input.
 LessThan:two_cmp
 
 // EqualTotalOrder returns the element-wise operation.

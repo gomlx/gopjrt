@@ -326,7 +326,7 @@ func DecodeBroadcastInDim(op *Op) (outputShape Shape, broadcastAxes []int) {
 
 // Transpose axes of x.
 // There should be one value in permutations for each axis in x.
-// The output will have: output.Shape.Dimension[permutation[i]] = x.Shape.Dimension[i].
+// The output will have: output.Shape.Dimension[ii] = x.Shape.Dimension[permutations[i]].
 func Transpose(x *Op, permutations ...int) (*Op, error) {
 	rank := x.Shape.Rank()
 	if len(permutations) != rank {

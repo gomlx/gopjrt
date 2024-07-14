@@ -566,7 +566,6 @@ func TestReverse(t *testing.T) {
 
 func TestWhile(t *testing.T) {
 	client := getPJRTClient(t)
-
 	builder := New(t.Name())
 	dtype := dtypes.Int64
 	x := capture(Parameter(builder, "x", 0, MakeShape(dtype))).Test(t)

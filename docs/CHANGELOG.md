@@ -16,6 +16,7 @@
 * Added `xlabuilder.Shape.Memory` and `xlabuilder.NewArrayLiteralFromAny`.
 * Added `xlabuilder.Op.Builder()`
 * Added comments support to op_types.txt and added comments to several of the operations.
+* Renamed `xlabuilder.BatchNorm{Inference,Training}` to `xlabuilder.BatchNormFor{Inference,Training}` 
 
 # v0.1.2 SuppressAbseilLoggingHack
 

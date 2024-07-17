@@ -96,7 +96,6 @@ func NewScalarLiteralFromAny(value any) *Literal {
 }
 
 // NewArrayLiteralFromAny creates a scalar Literal with the given dynamically typed flat values and its underlying dimensions.
-// If dimensions is omitted, it's assumed to be a 1D tensor with dimension matching the length of flat.
 // It uses reflection to inspect the type.
 func NewArrayLiteralFromAny(flatAny any, dimensions ...int) *Literal {
 	flatV := reflect.ValueOf(flatAny)
@@ -106,9 +105,6 @@ func NewArrayLiteralFromAny(flatAny any, dimensions ...int) *Literal {
 	dtype := dtypes.FromGoType(flatV.Type().Elem())
 	if dtype == dtypes.InvalidDType {
 		exceptions.Panicf("NewArrayLiteralFromAny expects a slice of valid DTypes, got %T instead", flatAny)
-	}
-	if len(dimensions) == 0 {
-		dimensions = []int{flatV.Len()}
 	}
 	shape := MakeShape(dtype, dimensions...)
 	if shape.Size() != flatV.Len() {

@@ -17,6 +17,7 @@
 * Added `xlabuilder.Op.Builder()`
 * Added comments support to op_types.txt and added comments to several of the operations.
 * Renamed `xlabuilder.BatchNorm{Inference,Training}` to `xlabuilder.BatchNormFor{Inference,Training}` 
+* Fixed `NewArrayLiteralFromAny` to also accept scalar values, if dimensions is empty.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

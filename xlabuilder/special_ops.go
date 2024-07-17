@@ -858,7 +858,7 @@ func selectAndScatterImpl(operand, source *Op, reduceType ReduceOpType,
 	dtype := operand.Shape.DType
 	selectComputation, scatterComputation, err := builder.GetSelectAndScatterComputation(reduceType, dtype)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to get select and scatter computations %s for SelectAnScatter operation", reduceType)
+		return nil, errors.WithMessagef(err, "failed to get select and scatter computations %q for SelectAnScatter operation", reduceType)
 	}
 	zero, err := ScalarZero(builder, dtype)
 	if err != nil {
@@ -906,14 +906,14 @@ func (b *XlaBuilder) GetSelectAndScatterComputation(reduction ReduceOpType, dtyp
 		}
 		rhs, err = Parameter(subBuilder, "rhs", 1, MakeShape(dtype))
 		if err != nil {
-			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			err = errors.WithMessagef(err, "while trying to create a select computation for %q", reduction)
 			return
 		}
 		var output *Op
 		switch reduction {
 		case ReduceSumType, ReduceProductType:
 			// All values are selected, since they all affect the result.
-			output, err = Constant(b, NewScalarLiteral(true))
+			output, err = Constant(subBuilder, NewScalarLiteral(true))
 		case ReduceMaxType:
 			output, err = GreaterOrEqual(lhs, rhs)
 		case ReduceMinType:
@@ -923,12 +923,12 @@ func (b *XlaBuilder) GetSelectAndScatterComputation(reduction ReduceOpType, dtyp
 			return
 		}
 		if err != nil {
-			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			err = errors.WithMessagef(err, "while trying to create a select computation for %q", reduction)
 			return
 		}
 		selectComputation, err = subBuilder.Build(output)
 		if err != nil {
-			err = errors.WithMessagef(err, "while trying to create a select computation %s", reduction)
+			err = errors.WithMessagef(err, "while trying to create a select computation for %q", reduction)
 			return
 		}
 		subBuilder.Destroy()

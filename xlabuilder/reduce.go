@@ -302,14 +302,15 @@ func (r *ReduceWindowConfig) UseComputation(reduceComputation *XlaComputation, i
 	return r
 }
 
-// WithStrides provides the stride size for each axis of x. One value per axis of x must be given.
+// WithStrides provides the stride size for each axis of x.
+// Either nil or one value per axis of x must be given.
 //
 // The default is same value as windowDimensions.
 func (r *ReduceWindowConfig) WithStrides(strides []int) *ReduceWindowConfig {
 	if r.err != nil {
 		return r
 	}
-	if len(strides) != r.rank {
+	if len(strides) != r.rank && len(strides) != 0 {
 		r.err = errors.Errorf("ReduceWindow requires a stride for each axis of x, but x has rank %d, and %d strides were passed to WithStrides().", r.rank, len(strides))
 		return r
 	}
@@ -317,44 +318,47 @@ func (r *ReduceWindowConfig) WithStrides(strides []int) *ReduceWindowConfig {
 	return r
 }
 
-// WithBaseDilations provides the base dilation for each axis of x. One value per axis of x must be given.
+// WithBaseDilations provides the base dilation for each axis of x.
+// Either nil or one value per axis of x must be given.
 //
 // The default is 0 for every axis.
 func (r *ReduceWindowConfig) WithBaseDilations(baseDilations []int) *ReduceWindowConfig {
 	if r.err != nil {
 		return r
 	}
-	if len(baseDilations) != r.rank {
-		r.err = errors.Errorf("ReduceWindow requires a stride for each axis of x, but x has rank %d, and %d baseDilations were passed to WithBaseDilations().", r.rank, len(baseDilations))
+	if len(baseDilations) != r.rank && len(baseDilations) != 0 {
+		r.err = errors.Errorf("ReduceWindow requires a base dilation for each axis of x, but x has rank %d, and %d baseDilations were passed to WithBaseDilations().", r.rank, len(baseDilations))
 		return r
 	}
 	r.baseDilations = baseDilations
 	return r
 }
 
-// WithWindowDilations provides the window dilation for each axis of x. One value per axis of x must be given.
+// WithWindowDilations provides the window dilation for each axis of x.
+// Either nil or one value per axis of x must be given.
 //
-// The default is 0 for every axis.
+// The default is 1 for every axis.
 func (r *ReduceWindowConfig) WithWindowDilations(windowDilations []int) *ReduceWindowConfig {
 	if r.err != nil {
 		return r
 	}
-	if len(windowDilations) != r.rank {
-		r.err = errors.Errorf("ReduceWindow requires a stride for each axis of x, but x has rank %d, and %d windowDilations were passed to WithWindowDilations().", r.rank, len(windowDilations))
+	if len(windowDilations) != r.rank && len(windowDilations) != 0 {
+		r.err = errors.Errorf("ReduceWindow requires a window dilation for each axis of x, but x has rank %d, and %d windowDilations were passed to WithWindowDilations().", r.rank, len(windowDilations))
 		return r
 	}
 	r.windowDilations = windowDilations
 	return r
 }
 
-// WithPadding provides the amount of padding on the start and end of each axis of x. One value per axis of x must be given.
+// WithPadding provides the amount of padding on the start and end of each axis of x.
+// Either nil or one value per axis of x must be given.
 //
 // The default is (0, 0) for every axis.
 func (r *ReduceWindowConfig) WithPadding(paddings [][2]int) *ReduceWindowConfig {
 	if r.err != nil {
 		return r
 	}
-	if len(paddings) != r.rank {
+	if len(paddings) != r.rank && len(paddings) != 0 {
 		r.err = errors.Errorf("ReduceWindow requires a padding definition for each axis of x, but x has rank %d, and %d paddings were passed to WithWindowDilations().", r.rank, len(paddings))
 		return r
 	}
@@ -379,16 +383,16 @@ func (r *ReduceWindowConfig) Done() (*Op, error) {
 	if r.reduceComputation == nil || r.initialValue == nil {
 		return nil, errors.New("ReduceWindow(...) didnt specify the type of reduction, use Max, Min, Sum, Product or a custom one with UseComputation")
 	}
-	if r.strides == nil {
-		r.strides = r.windowDimensions
-	}
-	if r.baseDilations == nil {
-		r.baseDilations = sliceWithValue(r.rank, 1)
-	}
-	if r.windowDilations == nil {
+	if len(r.windowDilations) == 0 {
 		r.windowDilations = sliceWithValue(r.rank, 1)
 	}
-	if r.paddings == nil {
+	if len(r.strides) == 0 {
+		r.strides = r.windowDimensions
+	}
+	if len(r.baseDilations) == 0 {
+		r.baseDilations = sliceWithValue(r.rank, 1)
+	}
+	if len(r.paddings) == 0 {
 		r.paddings = make([][2]int, r.rank)
 	}
 

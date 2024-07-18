@@ -186,7 +186,7 @@ func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
 		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
 	}
 	op := newOp(ConvertDTypeOp, x)
-	op.IntArg = int(dtype)
+	op.IntArg = int(dtype.PrimitiveType())
 	err := x.builder.addOp(op)
 	if err != nil {
 		return nil, err

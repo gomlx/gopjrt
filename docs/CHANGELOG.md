@@ -20,6 +20,7 @@
 * Fixed `NewArrayLiteralFromAny` to also accept scalar values, if dimensions is empty.
 * Fixed `ReduceWindow` default values and allow setting values to nil.
 * Fixed `Pad` to allow missing configuration for axis, per documentation.
+* Fixed `ConvertDType` to convert the dtypes to the XLA version `PrimitiveType` before using.
 
 # v0.1.2 SuppressAbseilLoggingHack
 

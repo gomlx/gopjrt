@@ -508,10 +508,6 @@ func Pad(x, fillValue *Op, axesConfig ...PadAxis) (*Op, error) {
 	if rank == 0 {
 		return nil, errors.New("cannot use Pad() with scalar values")
 	}
-	if len(axesConfig) != rank {
-		return nil, errors.Errorf("Pad() requires one axis configuration per x axis: x rank is %d, and %d PadAxis configurations were given",
-			rank, len(axesConfig))
-	}
 	op := newOp(PadOp, x, fillValue)
 	op.IntsArg = make([]int, 0, 3*rank)
 	for axis := 0; axis < rank; axis++ {

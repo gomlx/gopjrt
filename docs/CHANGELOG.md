@@ -1,3 +1,8 @@
+# Next
+
+* Execute.NonDonatable -> Execute.DonateNone
+* Added Execute.SetDonate
+
 # v0.2.0 GoMLX integration fixes -- GoMLX more extensive tests caught several small issues in Gopjrt.
 
 * Moved some `dtypes` support functionality from GoMLX to Gopjrt. 

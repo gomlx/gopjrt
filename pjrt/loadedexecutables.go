@@ -124,7 +124,7 @@ func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
 		executable: e,
 		inputs:     inputs,
 	}
-	c.NotDonatable()
+	c.DonateNone()
 	return c
 }
 
@@ -213,11 +213,11 @@ func (c *ExecutionConfig) DonateAll() *ExecutionConfig {
 	return c
 }
 
-// NotDonatable makes all inputs to be marked as non-donatable. This is the default.
+// DonateNone makes all inputs to be marked as non-donatable. This is the default.
 //
 // Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
 // and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
-func (c *ExecutionConfig) NotDonatable() *ExecutionConfig {
+func (c *ExecutionConfig) DonateNone() *ExecutionConfig {
 	c.nonDonatableInputs = make([]int, len(c.inputs))
 	for ii := range c.inputs {
 		c.nonDonatableInputs[ii] = ii
@@ -235,6 +235,27 @@ func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 	c.nonDonatableInputs = slices.DeleteFunc(c.nonDonatableInputs, func(i int) bool {
 		return slices.Index(inputsIndices, i) != -1
 	})
+	return c
+}
+
+// SetDonate set the donate status of all inputs in one call. The default is no input is donated.
+//
+// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
+// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+func (c *ExecutionConfig) SetDonate(donate []bool) *ExecutionConfig {
+	if c.err != nil {
+		return c
+	}
+	if len(donate) != len(c.inputs) {
+		c.err = errors.Errorf("LoadedExecutable.Execute().SetDonate() requires one value for each input, but there are %d inputs, and %d donate values given", len(c.inputs), len(donate))
+		return c
+	}
+	c.nonDonatableInputs = make([]int, 0, len(c.inputs))
+	for idx, donateIdx := range donate {
+		if !donateIdx {
+			c.nonDonatableInputs = append(c.nonDonatableInputs, idx)
+		}
+	}
 	return c
 }
 

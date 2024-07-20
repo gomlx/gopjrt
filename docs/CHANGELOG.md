@@ -2,6 +2,7 @@
 
 * Execute.NonDonatable -> Execute.DonateNone
 * Added Execute.SetDonate
+* Use `github.com/dmarkham/enumer` instead of the usual `stringer` for dtypes.
 
 # v0.2.0 GoMLX integration fixes -- GoMLX more extensive tests caught several small issues in Gopjrt.
 

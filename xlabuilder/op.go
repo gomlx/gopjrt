@@ -77,7 +77,10 @@ func opFinalizer(op *Op) {
 	if op.cOp == nil {
 		return
 	}
-	C.XlaOpDestroy(unsafe.Pointer(op.cOp))
+	if op.Type != IdentityOp {
+		// IdentityOp borrows the cOp from its parent.
+		C.XlaOpDestroy(unsafe.Pointer(op.cOp))
+	}
 	op.cOp = nil
 }
 

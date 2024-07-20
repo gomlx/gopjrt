@@ -129,6 +129,7 @@ func (b *XlaBuilder) addOp(op *Op) error {
 		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
 	}
 	op.cOp = (*C.XlaOp)(serializedOp.new_op)
+	serializedOp.new_op = nil // Ownership transferred.
 	op.Shape = shapeFromCShape(serializedOp.new_shape)
 	destroyCSerializedOp(serializedOp)
 	return nil

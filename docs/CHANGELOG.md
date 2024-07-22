@@ -4,6 +4,7 @@
 * Added Execute.SetDonate
 * Use `github.com/dmarkham/enumer` instead of the usual `stringer` for dtypes.
 * Fixed double free of C.XlaOp pointers for Identity ops.
+* Added `DynamicSlice` and `DynamicSliceUpdate`.
 
 # v0.2.0 GoMLX integration fixes -- GoMLX more extensive tests caught several small issues in Gopjrt.
 

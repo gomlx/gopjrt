@@ -571,7 +571,7 @@ func TestWhile(t *testing.T) {
 	x := capture(Parameter(builder, "x", 0, MakeShape(dtype))).Test(t)
 	value := capture(ScalarOne(builder, dtype)).Test(t)
 
-	// Calcualte factorial using a While loop.
+	// Calculate factorial using a While loop.
 	// While loop:
 	// - initialState: (x, 1)
 	initialState := capture(Tuple(x, value)).Test(t)
@@ -615,4 +615,36 @@ func TestWhile(t *testing.T) {
 	got = int(execWithScalars(t, client, exec, int64(7)))
 	require.Equal(t, 5040, got)
 	builder.Destroy()
+}
+
+func TestDynamicSlice(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+	dtype := dtypes.Float64
+	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
+	operand = capture(Reshape(operand, 3, 4)).Test(t)
+	startIndices := capture(Constant(builder, NewArrayLiteral([]int32{1, 1}, 2))).Test(t)
+	output := capture(DynamicSlice(operand, []*Op{startIndices}, []int{2, 2})).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []int{2, 2}, gotDims)
+	require.Equal(t, []float64{5, 6, 9, 10}, gotFlat)
+}
+
+func TestDynamicUpdateSlice(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+	dtype := dtypes.Float64
+	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
+	operand = capture(Reshape(operand, 3, 4)).Test(t)
+	update := capture(Constant(builder, NewArrayLiteral([]float64{-1, -1, -1, -1}, 2, 2))).Test(t)
+	startIndices := capture(Constant(builder, NewArrayLiteral([]int32{1, 1}, 2))).Test(t)
+	output := capture(DynamicUpdateSlice(operand, update, []*Op{startIndices})).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []int{3, 4}, gotDims)
+	require.Equal(t, []float64{
+		0, 1, 2, 3,
+		4, -1, -1, 7,
+		8, -1, -1, 11}, gotFlat)
 }

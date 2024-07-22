@@ -87,6 +87,8 @@ enum OpType {
   GreaterThanTotalOrderOp,
   LessOrEqualTotalOrderOp,
   LessThanTotalOrderOp,
+  DynamicSliceOp,
+  DynamicUpdateSliceOp,
 };
 
 #ifdef __cplusplus

@@ -192,3 +192,9 @@ LessOrEqualTotalOrder:two_cmp
 // The "TotalOrder" version of the operation enforces `-NaN < -Inf < -Finite < -0 < +0 < +Finite < +Inf < +NaN`.
 LessThanTotalOrder:two_cmp
 
+
+# New ops but be appended to the bottom.
+
+DynamicSlice:special
+DynamicUpdateSlice:special
+

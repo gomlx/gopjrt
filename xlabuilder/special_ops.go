@@ -1296,3 +1296,54 @@ func DecodeWhile(op *Op) (initialState *Op, condition, body *XlaComputation) {
 	body = op.SecondComputationArg
 	return
 }
+
+// DynamicSlice extracts a sub-array from the input array at dynamic start_indices.
+// The size of the slice in each axis is passed in sliceDims, which specify the slice
+// intervals for each axis: [start, start + size).
+// The shape of startIndices must be rank == 1, with dimension size equal to the rank of operand.
+//
+// See description in https://openxla.org/xla/operation_semantics#dynamicslice
+func DynamicSlice(operand *Op, startIndices []*Op, sliceDims []int) (*Op, error) {
+	builder := operand.builder
+	allOps := append([]*Op{operand}, startIndices...)
+	op := newOp(DynamicSliceOp, allOps...)
+	op.IntsArg = sliceDims
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeDynamicSlice retrieves the arguments for the DynamicSlice op.
+func DecodeDynamicSlice(op *Op) (operand *Op, startIndices []*Op, sliceDims []int) {
+	operand = op.OpInputs[0]
+	startIndices = op.OpInputs[1:]
+	sliceDims = op.IntsArg
+	return
+}
+
+// DynamicUpdateSlice generates a result which is the value of the input array operand, with a slice update overwritten
+// at startIndices.
+// The shape of update determines the shape of the sub-array of the result which is updated.
+// The shape of startIndices must be rank == 1, with dimension size equal to the rank of operand.
+//
+// See description in https://openxla.org/xla/operation_semantics#dynamicupdateslice
+func DynamicUpdateSlice(operand, update *Op, startIndices []*Op) (*Op, error) {
+	builder := operand.builder
+	allOps := append([]*Op{operand, update}, startIndices...)
+	op := newOp(DynamicUpdateSliceOp, allOps...)
+	err := builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeDynamicUpdateSlice retrieves the arguments for the DynamicUpdateSlice op.
+func DecodeDynamicUpdateSlice(op *Op) (operand, update *Op, startIndices []*Op) {
+	operand = op.OpInputs[0]
+	update = op.OpInputs[1]
+	startIndices = op.OpInputs[2:]
+	return
+}

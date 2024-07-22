@@ -86,11 +86,13 @@ func _() {
 	_ = x[GreaterThanTotalOrderOp-75]
 	_ = x[LessOrEqualTotalOrderOp-76]
 	_ = x[LessThanTotalOrderOp-77]
+	_ = x[DynamicSliceOp-78]
+	_ = x[DynamicUpdateSliceOp-79]
 }
 
-const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpTransposeOpCallOpReduceOpReduceWindowOpConcatenateOpSliceOpArgMinMaxOpPadOpGatherOpScatterOpSelectAndScatterOpConvGeneralDilatedOpReverseOpDotGeneralOpFftOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpRngBitGeneratorOpWhileOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOp"
+const _OpType_name = "InvalidOpParameterOpIotaOpConstantOpIdentityOpConvertDTypeOpWhereOpTupleOpGetTupleElementOpReshapeOpBroadcastOpBroadcastInDimOpTransposeOpCallOpReduceOpReduceWindowOpConcatenateOpSliceOpArgMinMaxOpPadOpGatherOpScatterOpSelectAndScatterOpConvGeneralDilatedOpReverseOpDotGeneralOpFftOpBatchNormTrainingOpBatchNormInferenceOpBatchNormGradOpRngBitGeneratorOpWhileOpAbsOpNegOpExpOpExpm1OpFloorOpCeilOpRoundOpLogOpLog1pOpLogicalNotOpLogisticOpSignOpClzOpCosOpSinOpTanhOpSqrtOpRsqrtOpImagOpRealOpConjOpAddOpMulOpSubOpDivOpRemOpAndOpOrOpXorOpDotOpMinOpMaxOpPowOpComplexOpEqualOpNotEqualOpGreaterOrEqualOpGreaterThanOpLessOrEqualOpLessThanOpEqualTotalOrderOpNotEqualTotalOrderOpGreaterOrEqualTotalOrderOpGreaterThanTotalOrderOpLessOrEqualTotalOrderOpLessThanTotalOrderOpDynamicSliceOpDynamicUpdateSliceOp"
 
-var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 144, 152, 166, 179, 186, 197, 202, 210, 219, 237, 257, 266, 278, 283, 302, 322, 337, 354, 361, 366, 371, 376, 383, 390, 396, 403, 408, 415, 427, 437, 443, 448, 453, 458, 464, 470, 477, 483, 489, 495, 500, 505, 510, 515, 520, 525, 529, 534, 539, 544, 549, 554, 563, 570, 580, 596, 609, 622, 632, 649, 669, 695, 718, 741, 761}
+var _OpType_index = [...]uint16{0, 9, 20, 26, 36, 46, 60, 67, 74, 91, 100, 111, 127, 138, 144, 152, 166, 179, 186, 197, 202, 210, 219, 237, 257, 266, 278, 283, 302, 322, 337, 354, 361, 366, 371, 376, 383, 390, 396, 403, 408, 415, 427, 437, 443, 448, 453, 458, 464, 470, 477, 483, 489, 495, 500, 505, 510, 515, 520, 525, 529, 534, 539, 544, 549, 554, 563, 570, 580, 596, 609, 622, 632, 649, 669, 695, 718, 741, 761, 775, 795}
 
 func (i OpType) String() string {
 	if i < 0 || i >= OpType(len(_OpType_index)-1) {

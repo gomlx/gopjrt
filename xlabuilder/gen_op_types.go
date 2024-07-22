@@ -84,4 +84,6 @@ const (
 	GreaterThanTotalOrderOp
 	LessOrEqualTotalOrderOp
 	LessThanTotalOrderOp
+	DynamicSliceOp
+	DynamicUpdateSliceOp
 )

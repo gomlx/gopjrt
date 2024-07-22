@@ -444,6 +444,26 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = xla::While(condition_comp, body_comp, *inputs[0]);
     break;
   }
+  case DynamicSliceOp: {
+    auto &operand = *inputs[0];
+    vector<XlaOp> start_indices(serialized_op->num_op_inputs-1);
+    for (int ii = 0; ii < serialized_op->num_op_inputs-1; ii++) {
+        start_indices[ii] = XlaOp(*inputs[ii+1]);
+    }
+    op = xla::DynamicSlice(operand, start_indices, list_of_ints);
+    break;
+  }
+  case DynamicUpdateSliceOp: {
+    auto &operand = *inputs[0];
+    auto &update = *inputs[1];
+    vector<XlaOp> start_indices(serialized_op->num_op_inputs-2);
+    for (int ii = 0; ii < serialized_op->num_op_inputs-2; ii++) {
+        start_indices[ii] = XlaOp(*inputs[ii+2]);
+    }
+    op = xla::DynamicUpdateSlice(operand, update, start_indices);
+    break;
+  }
+
 
   // One-argument ops:
   case AbsOp:

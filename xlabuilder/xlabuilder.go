@@ -126,7 +126,7 @@ func (b *XlaBuilder) addOp(op *Op) error {
 
 	err := errorFromStatus(C.XlaBuilderAddOp(unsafe.Pointer(b.cXlaBuilder), serializedOp))
 	if err != nil {
-		return errors.Wrapf(err, "while trying to add op %s to XlaBuilder", op.Type)
+		return errors.Wrapf(err, "while trying to add op %s (%d) to XlaBuilder", op.Type, int(op.Type))
 	}
 	op.cOp = (*C.XlaOp)(serializedOp.new_op)
 	serializedOp.new_op = nil // Ownership transferred.

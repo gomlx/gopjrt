@@ -612,7 +612,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   default:
     return new xla::Status(
         absl::StatusCode::kInvalidArgument,
-        absl::StrFormat("invalid op_type=%d for ComputationAddOp",
+        absl::StrFormat("unknown op_type=%d for XlaBuilderAddOp",
                         serialized_op->op_type));
   }
   if (!op.valid()) {

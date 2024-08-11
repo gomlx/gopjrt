@@ -43,6 +43,9 @@ func {{.Name}}(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of {{.Name}}(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp({{.Name}}Op, x0, x1)
 	err := builder.addOp(y)

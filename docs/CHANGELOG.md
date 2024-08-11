@@ -5,6 +5,7 @@
 * Use `github.com/dmarkham/enumer` instead of the usual `stringer` for dtypes.
 * Fixed double free of C.XlaOp pointers for Identity ops.
 * Added `DynamicSlice` and `DynamicSliceUpdate`.
+* Added check for matching DTypes for the common ops taking 2 operands.
 
 # v0.2.0 GoMLX integration fixes -- GoMLX more extensive tests caught several small issues in Gopjrt.
 

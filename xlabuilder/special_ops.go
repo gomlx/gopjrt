@@ -203,6 +203,9 @@ func Where(condition, onTrue, onFalse *Op) (*Op, error) {
 		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
 	}
 	builder := condition.builder
+	if onTrue.Shape.DType != onFalse.Shape.DType {
+		return nil, errors.Errorf("dtype of onTrue (%s) and onFalse (%s) don't match", onTrue.Shape.DType, onFalse.Shape.DType)
+	}
 	op := newOp(WhereOp, condition, onTrue, onFalse)
 	err := builder.addOp(op)
 	if err != nil {
@@ -386,6 +389,13 @@ func Concatenate(axis int, operands ...*Op) (*Op, error) {
 		// Trivial solution.
 		return operands[0], nil
 	}
+	dtype := operands[0].Shape.DType
+	for ii, op := range operands {
+		if op.Shape.DType != dtype {
+			return nil, errors.Errorf("Concatenate operand 0 has dtype %s, by operand %d has dtype %s: dtypes must match",
+				dtype, ii, op.Shape.DType)
+		}
+	}
 	builder := operands[0].builder
 	op := newOp(ConcatenateOp, operands...)
 	op.IntArg = axis
@@ -507,6 +517,9 @@ func Pad(x, fillValue *Op, axesConfig ...PadAxis) (*Op, error) {
 	rank := x.Shape.Rank()
 	if rank == 0 {
 		return nil, errors.New("cannot use Pad() with scalar values")
+	}
+	if x.Shape.DType != fillValue.Shape.DType {
+		return nil, errors.Errorf("operand and fillValue dtypes (%s and %s) don't match for Pad()", x.Shape.DType, fillValue.Shape.DType)
 	}
 	op := newOp(PadOp, x, fillValue)
 	op.IntsArg = make([]int, 0, 3*rank)
@@ -1331,6 +1344,9 @@ func DecodeDynamicSlice(op *Op) (operand *Op, startIndices []*Op, sliceDims []in
 // See description in https://openxla.org/xla/operation_semantics#dynamicupdateslice
 func DynamicUpdateSlice(operand, update *Op, startIndices []*Op) (*Op, error) {
 	builder := operand.builder
+	if operand.Shape.DType != update.Shape.DType {
+		return nil, errors.Errorf("operand and update dtypes (%s and %s) don't match for DynamicUpdateSlice", operand.Shape.DType, update.Shape.DType)
+	}
 	allOps := append([]*Op{operand, update}, startIndices...)
 	op := newOp(DynamicUpdateSliceOp, allOps...)
 	err := builder.addOp(op)

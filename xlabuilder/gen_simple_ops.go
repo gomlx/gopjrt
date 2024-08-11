@@ -265,6 +265,9 @@ func Add(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Add(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(AddOp, x0, x1)
 	err := builder.addOp(y)
@@ -280,6 +283,9 @@ func Add(x0, x1 *Op) (*Op, error) {
 func Mul(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Mul(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(MulOp, x0, x1)
@@ -297,6 +303,9 @@ func Sub(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Sub(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(SubOp, x0, x1)
 	err := builder.addOp(y)
@@ -312,6 +321,9 @@ func Sub(x0, x1 *Op) (*Op, error) {
 func Div(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Div(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(DivOp, x0, x1)
@@ -329,6 +341,9 @@ func Rem(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Rem(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(RemOp, x0, x1)
 	err := builder.addOp(y)
@@ -343,6 +358,9 @@ func Rem(x0, x1 *Op) (*Op, error) {
 func And(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of And(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(AndOp, x0, x1)
@@ -359,6 +377,9 @@ func Or(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Or(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(OrOp, x0, x1)
 	err := builder.addOp(y)
@@ -373,6 +394,9 @@ func Or(x0, x1 *Op) (*Op, error) {
 func Xor(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Xor(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(XorOp, x0, x1)
@@ -402,6 +426,9 @@ func Dot(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Dot(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(DotOp, x0, x1)
 	err := builder.addOp(y)
@@ -416,6 +443,9 @@ func Dot(x0, x1 *Op) (*Op, error) {
 func Min(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Min(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(MinOp, x0, x1)
@@ -432,6 +462,9 @@ func Max(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Max(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(MaxOp, x0, x1)
 	err := builder.addOp(y)
@@ -446,6 +479,9 @@ func Max(x0, x1 *Op) (*Op, error) {
 func Pow(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Pow(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(PowOp, x0, x1)
@@ -467,6 +503,9 @@ func Complex(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Complex(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(ComplexOp, x0, x1)
 	err := builder.addOp(y)
@@ -481,6 +520,9 @@ func Complex(x0, x1 *Op) (*Op, error) {
 func Equal(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of Equal(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(EqualOp, x0, x1)
@@ -497,6 +539,9 @@ func NotEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of NotEqual(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(NotEqualOp, x0, x1)
 	err := builder.addOp(y)
@@ -511,6 +556,9 @@ func NotEqual(x0, x1 *Op) (*Op, error) {
 func GreaterOrEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of GreaterOrEqual(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(GreaterOrEqualOp, x0, x1)
@@ -527,6 +575,9 @@ func GreaterThan(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of GreaterThan(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(GreaterThanOp, x0, x1)
 	err := builder.addOp(y)
@@ -542,6 +593,9 @@ func LessOrEqual(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of LessOrEqual(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(LessOrEqualOp, x0, x1)
 	err := builder.addOp(y)
@@ -556,6 +610,9 @@ func LessOrEqual(x0, x1 *Op) (*Op, error) {
 func LessThan(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of LessThan(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(LessThanOp, x0, x1)
@@ -576,6 +633,9 @@ func EqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of EqualTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(EqualTotalOrderOp, x0, x1)
 	err := builder.addOp(y)
@@ -594,6 +654,9 @@ func EqualTotalOrder(x0, x1 *Op) (*Op, error) {
 func NotEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of NotEqualTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(NotEqualTotalOrderOp, x0, x1)
@@ -614,6 +677,9 @@ func GreaterOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of GreaterOrEqualTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(GreaterOrEqualTotalOrderOp, x0, x1)
 	err := builder.addOp(y)
@@ -632,6 +698,9 @@ func GreaterOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 func GreaterThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of GreaterThanTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(GreaterThanTotalOrderOp, x0, x1)
@@ -652,6 +721,9 @@ func LessOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of LessOrEqualTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
 	builder := x0.builder
 	y := newOp(LessOrEqualTotalOrderOp, x0, x1)
 	err := builder.addOp(y)
@@ -670,6 +742,9 @@ func LessOrEqualTotalOrder(x0, x1 *Op) (*Op, error) {
 func LessThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
 		return nil, errors.New("arguments of LessThanTotalOrder(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
 	y := newOp(LessThanTotalOrderOp, x0, x1)

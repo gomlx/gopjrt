@@ -1,4 +1,4 @@
-# Next
+# v0.2.1 Improved Donate handling; Added DynamicSlice and DynamicSliceUpdate.
 
 * Execute.NonDonatable -> Execute.DonateNone
 * Added Execute.SetDonate

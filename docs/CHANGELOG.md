@@ -1,3 +1,7 @@
+# Next:
+
+* Added `install.sh` and `install_cuda.sh`
+
 # v0.2.1 Improved Donate handling; Added DynamicSlice and DynamicSliceUpdate.
 
 * Execute.NonDonatable -> Execute.DonateNone

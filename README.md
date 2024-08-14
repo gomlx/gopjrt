@@ -1,4 +1,4 @@
-# gopjrt
+# gopjrt ([Installing](#installing))
 
 [![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/gomlx/gopjrt?tab=doc)
 [![GitHub](https://img.shields.io/github/license/gomlx/gopjrt)](https://github.com/Kwynto/gosession/blob/master/LICENSE)
@@ -186,7 +186,42 @@ and execution with `PJRT` for comparison, with some benchmarks.
 
 ## Installing
 
-There are two parts that needs installing:
+**TLDR;**: **gopjrt** requires a C library installed and a plugin module. Run the script 
+[`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) to 
+automatically install them (for CPU). 
+And in addition, run [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) to
+automatically install Nvidia's GPU support.
+
+
+There are two parts that needs installing: (1) XLA Builder library (it's a C++ wrapper); (2) PJRT plugins for the
+accelerator devices you want to support.
+
+The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ and (2) the PJRT for CPU,
+again only for _linux/amd64_. Just [download it from the latest release in GitHub](https://github.com/gomlx/gopjrt/releases/latest). 
+
+(*) It would be awesome if someone could build a _mac/arm64_ version.
+
+### Installing XLA Builder
+
+This is the C wrapper (for the C++ XlaBuilder library) needed by Go. 
+For _linux/amd64_ you can [download](https://github.com/gomlx/gopjrt/releases/latest) the file `gomlx_xlabuilder-linux-amd64.tar.gz`
+and "untar" it to `/usr/local` -- or some area of your system that is visible by the C-compiler (includes) and the loader (either in `LD_LIBRARY_PATH`
+or `/etc/ld.config`)
+
+You can use the tool under `cmd/install.sh` (it also installs the PJRT CPU plugin). 
+Or manually, with something like the following in Linux:
+
+```bash
+cd /usr/local
+gopjrt_release_download_url="$(curl -s -L -I 'https://github.com/gomlx/gopjrt/releases/latest' | egrep -i '^location: ' |  awk '{print $2}' | sed 's|/tag/|/download/| ; s/\r$//')"
+echo "Downloading GOPJRT/XlaBuilder library from ${gopjrt_release_download_url}/gomlx_xlabuilder-linux-amd64.tar.gz"
+sudo printf "\tsudo authorized\n"
+curl -L "${gopjrt_release_download_url}/gomlx_xlabuilder-linux-amd64.tar.gz" | sudo tar xzv
+```
+
+For other base systems, you can build it (see the `github.com/gomlx/gopjrt/c` directory) from scratch: 
+if things work, generally it's straight forward, and in a modern computer it will take a few minutes only.
+But for different platforms, XLA can be tricky to configure.
 
 ### Installing PJRT plugins
 
@@ -201,7 +236,18 @@ The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform
 `pjrt_c_api_cpu_plugin.so.gz`. Please, uncompress the file and move it to your plugin directory -- e.g.:
 `/usr/local/lib/gomlx/pjrt`.
 
-#### Nvidia's CUDA for Linux
+You can use the tool under `cmd/install.sh`. Or manually, with something like the following in Linux:
+
+```bash
+gopjrt_release_download_url="$(curl -s -L -I 'https://github.com/gomlx/gopjrt/releases/latest' | egrep -i '^location: ' |  awk '{print $2}' | sed 's|/tag/|/download/| ; s/\r$//')"
+echo "Downloading PJRT CPU plugin from ${gopjrt_release_download_url}/pjrt_c_api_cpu_plugin.so.gz"
+sudo printf "\tsudo authorized\n"
+sudo mkdir -p /usr/local/lib/gomlx/pjrt
+cd /usr/local/lib/gomlx/pjrt
+curl -L "${gopjrt_release_download_url}/pjrt_c_api_cpu_plugin.so.gz" | gunzip | sudo bash -c 'cat > pjrt_c_api_cpu_plugin.so'
+```
+
+#### Nvidia's GPU (CUDA) support for Linux
 
 NVidia licenses are complicated (I don't understand), so ... I hesitate to provide a prebuilt plugin and dependencies.
 But there is a simple way to achieve it, by linking the files from a Jax installation.

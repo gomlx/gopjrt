@@ -189,7 +189,7 @@ and execution with `PJRT` for comparison, with some benchmarks.
 **TLDR;**: **gopjrt** requires a C library installed and a plugin module. Run the script 
 [`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) to 
 automatically install them (for CPU). 
-And in addition, run [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) to
+And in addition, run [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) to
 automatically install Nvidia's GPU support.
 
 
@@ -251,6 +251,8 @@ curl -L "${gopjrt_release_download_url}/pjrt_c_api_cpu_plugin.so.gz" | gunzip | 
 
 NVidia licenses are complicated (I don't understand), so ... I hesitate to provide a prebuilt plugin and dependencies.
 But there is a simple way to achieve it, by linking the files from a Jax installation.
+And a script to facilitate it in [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh).
+Manually, you should do the following:
 
 Create and activate a [virtual environment (venv) for Python](https://docs.python.org/3/library/venv.html).
 Probably a [Conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 

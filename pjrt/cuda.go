@@ -3,8 +3,8 @@ package pjrt
 import (
 	"k8s.io/klog/v2"
 	"os"
-	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -23,13 +23,12 @@ func hasNvidiaGPU() bool {
 	if hasNvidiaGPUCache != nil {
 		return *hasNvidiaGPUCache
 	}
-	cmd := exec.Command("lspci")
-	output, err := cmd.Output()
+	matches, err := filepath.Glob("/dev/nvidia*")
 	if err != nil {
-		klog.Errorf("Failed to figure out if there is an Nvidia GPU installed while trying to run %q: %v", cmd, err)
+		klog.Errorf("Failed to figure out if there is an Nvidia GPU installed while searching for files matching \"/dev/nvidia*\": %v", err)
 		return false
 	}
-	hasGPU := strings.Contains(strings.ToLower(string(output)), "nvidia")
+	hasGPU := len(matches) > 0
 	hasNvidiaGPUCache = &hasGPU
 	return hasGPU
 }

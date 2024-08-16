@@ -114,47 +114,34 @@ func loadLibraryPaths(paths []string, fileWithIncludes string) []string {
 	return paths
 }
 
-// loadPlugin tries to dlopen the plugin and will return a pointer to a C function that returns the PJRT_API.
-//
-// Notice that if the library is loaded, the `dlopen`(3) handle is never closed and is lost -- only when the process closes.
-// It is assumed that a library is not going to be loaded more than once.
-func loadPlugin(pluginPath string) (C.GetPJRTApiFn, error) {
-	return linuxLoadPlugin(pluginPath, false)
-}
-
-// checkPlugin tries to dlopen the plugin and verify that the GetPjrtApi function is exported.
-//
-// The handle returned by dlopen is properly destroyed.
-func checkPlugin(pluginPath string) error {
-	_, err := linuxLoadPlugin(pluginPath, true)
-	return err
-}
-
-func linuxLoadPlugin(pluginPath string, onlyCheck bool) (C.GetPJRTApiFn, error) {
+// loadPlugin tries to dlopen the plugin and returns a handle with the pointer to the PJRT api function
+func loadPlugin(pluginPath string) (handleWrapper dllHandleWrapper, err error) {
 	info, err := os.Stat(pluginPath)
 	if err != nil {
-		return nil, err
+		err = errors.Wrapf(err, "failed to stat %q", pluginPath)
+		return
 	}
 	if info.IsDir() {
-		return nil, errors.New("plugin path is a directory!?")
+		err = errors.Errorf("plugin path %q is a directory!?", pluginPath)
+		return
 	}
 
 	nameC := C.CString(pluginPath)
-	klog.V(2).Infof("trying to load library (onlyCheck=%v) %s\n", onlyCheck, pluginPath)
+	klog.V(2).Infof("trying to load library %s\n", pluginPath)
 	handle := C.dlopen(nameC, C.RTLD_LAZY)
 	cFree(nameC)
 	if handle == nil {
 		err = errors.Errorf("failed to dynamically load PJRT plugin from %q: check with `ldd %s`, maybe there are missing required libraries.", pluginPath, pluginPath)
 		klog.Warningf("%v", err)
-		return nil, err
+		return
 	}
 
 	klog.V(1).Infof("loaded library %s\n", pluginPath)
-	h := &libHandle{
+	h := &linuxDLLHandle{
 		Handle: handle,
 		Name:   pluginPath,
 	}
-	getPJRT, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
+	cPtr, err := h.GetSymbolPointer(GetPJRTApiFunctionName)
 	if err != nil {
 		err = errors.Errorf("tried to load %q, but failed to find symbol %q, skipping: %v", pluginPath, GetPJRTApiFunctionName, err)
 		klog.Warningf("%v", err)
@@ -162,31 +149,27 @@ func linuxLoadPlugin(pluginPath string, onlyCheck bool) (C.GetPJRTApiFn, error) 
 		if err2 != nil {
 			klog.Warningf("Failed to close dynamic library %q: %v", pluginPath, err2)
 		}
-		return nil, err
+		return
 	}
-
-	if onlyCheck {
-		err = h.Close()
-		if err != nil {
-			klog.Warningf("Failed to close dynamic library %q: %v", pluginPath, err)
-		}
-		return nil, nil
-	}
-
-	// Keep handle alive till the end of the program.
-	var cPtr C.GetPJRTApiFn
-	cPtr = (C.GetPJRTApiFn)(getPJRT)
-	return cPtr, nil
+	h.PJRTApiFn = (C.GetPJRTApiFn)(cPtr)
+	handleWrapper = h
+	return
 }
 
-// libHandle represents an open handle to a library (.so)
-type libHandle struct {
-	Handle unsafe.Pointer
-	Name   string
+// linuxDLLHandle represents an open handle to a library (.so)
+type linuxDLLHandle struct {
+	Handle    unsafe.Pointer
+	PJRTApiFn C.GetPJRTApiFn
+	Name      string
+}
+
+// GetPJRTApiFn returns the pointer to the PJRT API function.
+func (l *linuxDLLHandle) GetPJRTApiFn() (C.GetPJRTApiFn, error) {
+	return l.PJRTApiFn, nil
 }
 
 // GetSymbolPointer takes a symbol name and returns a pointer to the symbol.
-func (l *libHandle) GetSymbolPointer(symbol string) (unsafe.Pointer, error) {
+func (l *linuxDLLHandle) GetSymbolPointer(symbol string) (unsafe.Pointer, error) {
 	sym := C.CString(symbol)
 	defer C.free(unsafe.Pointer(sym))
 
@@ -201,7 +184,7 @@ func (l *libHandle) GetSymbolPointer(symbol string) (unsafe.Pointer, error) {
 }
 
 // Close closes a LibHandle.
-func (l *libHandle) Close() error {
+func (l *linuxDLLHandle) Close() error {
 	C.dlerror()
 	C.dlclose(l.Handle)
 	e := C.dlerror()

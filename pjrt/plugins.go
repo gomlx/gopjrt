@@ -24,6 +24,7 @@ import (
 type Plugin struct {
 	name, path string
 	api        *C.PJRT_Api
+	dllHandle  dllHandleWrapper
 	attributes NamedValuesMap
 }
 
@@ -50,8 +51,8 @@ func pjrtPluginAttributes(plugin *Plugin) (NamedValuesMap, error) {
 
 // newPlugin creates a new plugin from the api pointer.
 // Internal: use GetPlugin instead.
-func newPlugin(name, pluginPath string, api *C.PJRT_Api) (*Plugin, error) {
-	plugin := &Plugin{name: name, path: pluginPath, api: api}
+func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrapper) (*Plugin, error) {
+	plugin := &Plugin{name: name, path: pluginPath, api: api, dllHandle: dllHandle}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)

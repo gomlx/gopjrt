@@ -1,6 +1,8 @@
 # Next:
 
 * Added `install.sh` and `install_cuda.sh`
+* `pjrt.AvailablePlugins` now checks that the plugin can be initialized: so if a "cuda" plugin is available in machine
+  without an Nvidia GPU, it won't be listed.
 
 # v0.2.1 Improved Donate handling; Added DynamicSlice and DynamicSliceUpdate.
 

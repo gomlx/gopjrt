@@ -1,4 +1,8 @@
-# Next:
+# v0.2.3
+
+* Fixed check for Nvidia GPU cards so it works within docker images.
+
+# v0.2.2
 
 * Added `install.sh` and `install_cuda.sh`
 * `pjrt.AvailablePlugins` now checks that the plugin can be initialized: so if a "cuda" plugin is available in machine

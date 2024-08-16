@@ -27,7 +27,7 @@ pip install "jax[cuda12]"
 sudo printf "\t- sudo authorized\n"
 sudo mkdir -p "${INSTALL_DIR}/lib/gomlx/pjrt"
 sudo rm -f "${INSTALL_DIR}/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so"
-sudo cp -f "${JAX_VENV_DIR}/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so" \
+sudo cp -f "${JAX_VENV_DIR}/lib/python3."*"/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so" \
   "${INSTALL_DIR}/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so"
 ls -lh "${INSTALL_DIR}/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so"
 
@@ -36,7 +36,7 @@ printf "\t- removing previous Nvidia drivers installation for gomlx/gopjrt\n"
 sudo mkdir -p "${INSTALL_DIR}/lib/gomlx/nvidia"
 sudo rm -rf "${INSTALL_DIR}/lib/gomlx/nvidia/"*
 printf "\t- copying over Nvidia drivers from Jax installation\n"
-sudo cp -r "${JAX_VENV_DIR}/lib/python3.12/site-packages/nvidia/"* \
+sudo cp -r "${JAX_VENV_DIR}/lib/python3."*"/site-packages/nvidia/"* \
   "${INSTALL_DIR}/lib/gomlx/nvidia/"
 ls -lh "${INSTALL_DIR}/lib/gomlx/nvidia/"
 

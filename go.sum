@@ -1,3 +1,5 @@
+github.com/chenxingqiang/go-floatx v0.0.0-20240103165049-2f5e300cb3c3 h1:2m11dpwbI3ccPgDbAbJ8X6fonuzsi54n70duaraoLn8=
+github.com/chenxingqiang/go-floatx v0.0.0-20240103165049-2f5e300cb3c3/go.mod h1:7v935pWqAb/hfUDQyVXq8eXUoXWa7Mub1xEuRbtTFWE=
 github.com/chewxy/math32 v1.10.1 h1:LFpeY0SLJXeaiej/eIp2L40VYfscTvKh/FSEZ68uMkU=
 github.com/chewxy/math32 v1.10.1/go.mod h1:dOB2rcuFrCn6UHrze36WSLVPKtzPMRAQvBvUwkSsLqs=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

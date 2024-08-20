@@ -1,3 +1,7 @@
+# v0.2.4
+
+* Added bfloat16 support.
+
 # v0.2.3
 
 * Fixed check for Nvidia GPU cards so it works within docker images.

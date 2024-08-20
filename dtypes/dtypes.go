@@ -1,8 +1,8 @@
 package dtypes
 
 import (
-	"github.com/chenxingqiang/go-floatx"
 	"github.com/gomlx/exceptions"
+	"github.com/gomlx/gopjrt/dtypes/bfloat16"
 	"github.com/pkg/errors"
 	"github.com/x448/float16"
 	"math"
@@ -23,7 +23,7 @@ func FromGenericsType[T Supported]() DType {
 		return Float32
 	case float16.Float16:
 		return Float16
-	case floatx.BFloat16:
+	case bfloat16.BFloat16:
 		return BFloat16
 	case int:
 		switch strconv.IntSize {
@@ -136,7 +136,7 @@ var (
 	float32Type  = reflect.TypeOf(float32(0))
 	float64Type  = reflect.TypeOf(float64(0))
 	float16Type  = reflect.TypeOf(float16.Float16(0))
-	bfloat16Type = reflect.TypeOf(floatx.BFloat16(0))
+	bfloat16Type = reflect.TypeOf(bfloat16.BFloat16(0))
 )
 
 // GoType returns the Go `reflect.Type` corresponding to the tensor DType.
@@ -222,7 +222,7 @@ func (dtype DType) LowestValue() any {
 	case Float16:
 		return float16.Inf(-1)
 	case BFloat16:
-		return floatx.BF16Inf(-1)
+		return bfloat16.Inf(-1)
 
 	default:
 		exceptions.Panicf("LowestValue for dtype %s not defined", dtype)
@@ -263,7 +263,7 @@ func (dtype DType) HighestValue() any {
 	case Float16:
 		return float16.Inf(1)
 	case BFloat16:
-		return floatx.BF16Inf(1)
+		return bfloat16.Inf(1)
 
 	default:
 		exceptions.Panicf("LowestValue for dtype %s not defined", dtype)
@@ -305,7 +305,7 @@ func (dtype DType) SmallestNonZeroValueForDType() any {
 	case Float16:
 		return float16.Float16(0x0001) // 1p-24, see discussion in https://github.com/x448/float16/pull/46
 	case BFloat16:
-		return floatx.BF16Frombits(0x0001) // 1p-24, see discussion in https://github.com/x448/float16/pull/46
+		return bfloat16.SmallestNonzero // 1p-24, see discussion in https://github.com/x448/float16/pull/46
 
 	default:
 		panic(errors.Errorf("SmallestNonZeroValueForDType not defined for dtype %s", dtype))
@@ -365,7 +365,7 @@ func (dtype DType) IsSupported() bool {
 // Notice Go's `int` type is not portable, since it may translate to dtypes Int32 or Int64 depending
 // on the platform.
 type Supported interface {
-	bool | float16.Float16 | floatx.BFloat16 |
+	bool | float16.Float16 | bfloat16.BFloat16 |
 		float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
 		complex64 | complex128
 }
@@ -374,7 +374,7 @@ type Supported interface {
 // Used as traits for generics.
 //
 // It includes complex numbers.
-// It doesn't include float16.Float16 or floatx.BFloat61 because they are not a native number type.
+// It doesn't include float16.Float16 or bfloat16.BFloat16 because they are not a native number type.
 type Number interface {
 	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | complex64 | complex128
 }

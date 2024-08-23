@@ -1,3 +1,7 @@
+# v0.3.0
+
+* Moved each compiled XLA proto to their own package under `gopjrt/protos/`: this facilitates conversion to Google3 BUILD scheme.
+
 # v0.2.4
 
 * Added bfloat16 support.

@@ -19,9 +19,10 @@
 // 	protoc        v5.27.2
 // source: xla/autotune_results.proto
 
-package protos
+package autotune_results
 
 import (
+	autotuning "github.com/gomlx/gopjrt/protos/autotuning"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -105,7 +106,7 @@ type AutotuningLogs struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Logs []*AutotuningLog `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
+	Logs []*autotuning.AutotuningLog `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
 }
 
 func (x *AutotuningLogs) Reset() {
@@ -140,7 +141,7 @@ func (*AutotuningLogs) Descriptor() ([]byte, []int) {
 	return file_xla_autotune_results_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *AutotuningLogs) GetLogs() []*AutotuningLog {
+func (x *AutotuningLogs) GetLogs() []*autotuning.AutotuningLog {
 	if x != nil {
 		return x.Logs
 	}
@@ -152,9 +153,9 @@ type AutotuneResults_Entry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Device string          `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
-	Hlo    string          `protobuf:"bytes,2,opt,name=hlo,proto3" json:"hlo,omitempty"`
-	Result *AutotuneResult `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
+	Device string                     `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
+	Hlo    string                     `protobuf:"bytes,2,opt,name=hlo,proto3" json:"hlo,omitempty"`
+	Result *autotuning.AutotuneResult `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
 }
 
 func (x *AutotuneResults_Entry) Reset() {
@@ -203,7 +204,7 @@ func (x *AutotuneResults_Entry) GetHlo() string {
 	return ""
 }
 
-func (x *AutotuneResults_Entry) GetResult() *AutotuneResult {
+func (x *AutotuneResults_Entry) GetResult() *autotuning.AutotuneResult {
 	if x != nil {
 		return x.Result
 	}
@@ -250,11 +251,11 @@ func file_xla_autotune_results_proto_rawDescGZIP() []byte {
 
 var file_xla_autotune_results_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_xla_autotune_results_proto_goTypes = []any{
-	(*AutotuneResults)(nil),       // 0: xla.AutotuneResults
-	(*AutotuningLogs)(nil),        // 1: xla.AutotuningLogs
-	(*AutotuneResults_Entry)(nil), // 2: xla.AutotuneResults.Entry
-	(*AutotuningLog)(nil),         // 3: xla.AutotuningLog
-	(*AutotuneResult)(nil),        // 4: xla.AutotuneResult
+	(*AutotuneResults)(nil),           // 0: xla.AutotuneResults
+	(*AutotuningLogs)(nil),            // 1: xla.AutotuningLogs
+	(*AutotuneResults_Entry)(nil),     // 2: xla.AutotuneResults.Entry
+	(*autotuning.AutotuningLog)(nil),  // 3: xla.AutotuningLog
+	(*autotuning.AutotuneResult)(nil), // 4: xla.AutotuneResult
 }
 var file_xla_autotune_results_proto_depIdxs = []int32{
 	2, // 0: xla.AutotuneResults.results:type_name -> xla.AutotuneResults.Entry
@@ -272,7 +273,6 @@ func file_xla_autotune_results_proto_init() {
 	if File_xla_autotune_results_proto != nil {
 		return
 	}
-	file_xla_autotuning_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_xla_autotune_results_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*AutotuneResults); i {

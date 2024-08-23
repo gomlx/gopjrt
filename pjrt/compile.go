@@ -3,7 +3,7 @@ package pjrt
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/cbuffer"
-	pjrt_proto "github.com/gomlx/gopjrt/protos"
+	"github.com/gomlx/gopjrt/protos/compile_options"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
@@ -36,7 +36,7 @@ type CompileConfig struct {
 	programFormat string
 
 	// options is the CompileOptionsProto being configured.
-	options *pjrt_proto.CompileOptionsProto
+	options *compile_options.CompileOptionsProto
 
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
@@ -46,10 +46,10 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 	cc = &CompileConfig{
 		plugin:  client.plugin,
 		client:  client,
-		options: &pjrt_proto.CompileOptionsProto{},
+		options: &compile_options.CompileOptionsProto{},
 	}
 	// Default values specified in the comments of the proto (but not as proper proto defaults).
-	cc.options.ExecutableBuildOptions = &pjrt_proto.ExecutableBuildOptionsProto{
+	cc.options.ExecutableBuildOptions = &compile_options.ExecutableBuildOptionsProto{
 		DeviceOrdinal: -1,
 		NumReplicas:   1,
 		NumPartitions: 1,
@@ -99,8 +99,8 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	return pjrtClientCompile(cc.plugin, cc.client, cc.program, cc.programFormat, binOptions)
 }
 
-// WithHLO configures the program to the serialized HLO (HloModule pjrt_proto).
-// The serialized pjrt_proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
+// WithHLO configures the program to the serialized HLO (HloModule proto).
+// The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
 // call to Done is returned.
 //
 // Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
@@ -127,7 +127,7 @@ type XlaComputation interface {
 }
 
 // WithComputation configures the program to the xlabuilder.XlaComputation -- see xlabuilder package.
-// Behind the scenes it is an HLO program (HloModule pjrt_proto), but this handles the details.
+// Behind the scenes it is an HLO program (HloModule proto), but this handles the details.
 //
 // Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
 // It panics if more than one WithHLO or WithComputation is called.

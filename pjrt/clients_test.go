@@ -2,7 +2,7 @@ package pjrt
 
 import (
 	"fmt"
-	pjrt_proto "github.com/gomlx/gopjrt/protos"
+	"github.com/gomlx/gopjrt/protos/hlo"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"os"
@@ -67,7 +67,7 @@ func TestCompileAndExecute(t *testing.T) {
 		// Load test program.
 		hloBin, err := os.ReadFile(programTest.name)
 		require.NoError(t, err)
-		hloProto := &pjrt_proto.HloModuleProto{}
+		hloProto := &hlo.HloModuleProto{}
 		require.NoError(t, proto.Unmarshal(hloBin, hloProto), "Unmarshalling HloModuleProto")
 		//fmt.Printf("HloModuleProto: {\n%s}\n", prototext.Format(hloProto))
 

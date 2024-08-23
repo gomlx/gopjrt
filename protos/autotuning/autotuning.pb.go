@@ -10,9 +10,10 @@
 // 	protoc        v5.27.2
 // source: xla/autotuning.proto
 
-package protos
+package autotuning
 
 import (
+	dnn "github.com/gomlx/gopjrt/protos/dnn"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
@@ -307,7 +308,7 @@ func (x *AutotuneResult) GetCudaConvPlan() *AutotuneResult_CudaConvPlanKey {
 	return nil
 }
 
-func (x *AutotuneResult) GetAlgorithm() *AlgorithmProto {
+func (x *AutotuneResult) GetAlgorithm() *dnn.AlgorithmProto {
 	if x, ok := x.GetKey().(*AutotuneResult_Algorithm); ok {
 		return x.Algorithm
 	}
@@ -335,7 +336,7 @@ type AutotuneResult_CudaConvPlan struct {
 }
 
 type AutotuneResult_Algorithm struct {
-	Algorithm *AlgorithmProto `protobuf:"bytes,16,opt,name=algorithm,proto3,oneof"`
+	Algorithm *dnn.AlgorithmProto `protobuf:"bytes,16,opt,name=algorithm,proto3,oneof"`
 }
 
 func (*AutotuneResult_Conv) isAutotuneResult_Key() {}
@@ -551,7 +552,7 @@ func (x *AutotuneResult_FailureResult) GetReferenceCudaConvPlan() *AutotuneResul
 	return nil
 }
 
-func (x *AutotuneResult_FailureResult) GetReferenceAlgorithm() *AlgorithmProto {
+func (x *AutotuneResult_FailureResult) GetReferenceAlgorithm() *dnn.AlgorithmProto {
 	if x, ok := x.GetKey().(*AutotuneResult_FailureResult_ReferenceAlgorithm); ok {
 		return x.ReferenceAlgorithm
 	}
@@ -582,7 +583,7 @@ type AutotuneResult_FailureResult_ReferenceCudaConvPlan struct {
 }
 
 type AutotuneResult_FailureResult_ReferenceAlgorithm struct {
-	ReferenceAlgorithm *AlgorithmProto `protobuf:"bytes,15,opt,name=reference_algorithm,json=referenceAlgorithm,proto3,oneof"`
+	ReferenceAlgorithm *dnn.AlgorithmProto `protobuf:"bytes,15,opt,name=reference_algorithm,json=referenceAlgorithm,proto3,oneof"`
 }
 
 func (*AutotuneResult_FailureResult_ReferenceConv) isAutotuneResult_FailureResult_Key() {}
@@ -1002,7 +1003,7 @@ var file_xla_autotuning_proto_goTypes = []any{
 	(*AutotuneResult_CudaConvPlanKey)(nil), // 8: xla.AutotuneResult.CudaConvPlanKey
 	(*AutotuneResult_TritonGemmKey)(nil),   // 9: xla.AutotuneResult.TritonGemmKey
 	(*durationpb.Duration)(nil),            // 10: google.protobuf.Duration
-	(*AlgorithmProto)(nil),                 // 11: stream_executor.dnn.AlgorithmProto
+	(*dnn.AlgorithmProto)(nil),             // 11: stream_executor.dnn.AlgorithmProto
 	(*anypb.Any)(nil),                      // 12: google.protobuf.Any
 }
 var file_xla_autotuning_proto_depIdxs = []int32{
@@ -1034,7 +1035,6 @@ func file_xla_autotuning_proto_init() {
 	if File_xla_autotuning_proto != nil {
 		return
 	}
-	file_tsl_protobuf_dnn_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_xla_autotuning_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*CudnnVersion); i {

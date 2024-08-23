@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/protos"
+	"github.com/gomlx/gopjrt/protos/xla_data"
 	"slices"
 	"strings"
 	"unsafe"
@@ -133,7 +133,7 @@ func shapeFromCShape(cShape *C.Shape) (shape Shape) {
 	if cShape == nil {
 		return
 	}
-	shape.DType = dtypes.FromPrimitiveType(protos.PrimitiveType(cShape.dtype))
+	shape.DType = dtypes.FromPrimitiveType(xla_data.PrimitiveType(cShape.dtype))
 	rank := int(cShape.rank)
 	if rank > 0 {
 		shape.Dimensions = make([]int, cShape.rank)

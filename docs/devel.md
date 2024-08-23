@@ -15,9 +15,7 @@ To generate the latest proto Go programs (see [tutorial](https://protobuf.dev/ge
 * Install the Protocol Buffers compiler: `sudo apt install protobuf-compiler`
 * Install the most recent `protoc-gen-go`: `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
 * Set XLA_SRC to a clone of the `github.com/openxla/xla` repository.
-  * See that either https://github.com/openxla/xla/pull/13985 is merged (or patch it locally, just remove one line) or
-    (maybe) that https://github.com/golang/protobuf/issues/1621 is accepted and fixed.
-  * Same issue with https://github.com/openxla/xla/blob/main/third_party/tsl/tsl/protobuf/dnn.proto#L8
+* Go to the `protos` sub-package and do `go generate .` See `cmd/protoc_xla_prots/main.go` for details.
 
 ## Package `xlabuilder`
 

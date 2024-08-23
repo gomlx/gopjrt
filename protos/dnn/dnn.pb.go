@@ -4,9 +4,9 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        v5.27.2
-// source: tsl/protobuf/dnn.proto
+// source: third_party/tsl/tsl/protobuf/dnn.proto
 
-package protos
+package dnn
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -87,11 +87,11 @@ func (x DataType) String() string {
 }
 
 func (DataType) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[0].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[0].Descriptor()
 }
 
 func (DataType) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[0]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[0]
 }
 
 func (x DataType) Number() protoreflect.EnumNumber {
@@ -100,7 +100,7 @@ func (x DataType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataType.Descriptor instead.
 func (DataType) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{0}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{0}
 }
 
 // Describes how a convolution input or output layer's data is formatted.
@@ -158,11 +158,11 @@ func (x DataLayout) String() string {
 }
 
 func (DataLayout) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[1].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[1].Descriptor()
 }
 
 func (DataLayout) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[1]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[1]
 }
 
 func (x DataLayout) Number() protoreflect.EnumNumber {
@@ -171,7 +171,7 @@ func (x DataLayout) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataLayout.Descriptor instead.
 func (DataLayout) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1}
 }
 
 // Describes how a convolution filter is laid out in the memory.
@@ -228,11 +228,11 @@ func (x FilterLayout) String() string {
 }
 
 func (FilterLayout) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[2].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[2].Descriptor()
 }
 
 func (FilterLayout) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[2]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[2]
 }
 
 func (x FilterLayout) Number() protoreflect.EnumNumber {
@@ -241,7 +241,7 @@ func (x FilterLayout) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FilterLayout.Descriptor instead.
 func (FilterLayout) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{2}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{2}
 }
 
 // Describes a kind of non-linearity (threshold-like mathematical function).
@@ -309,11 +309,11 @@ func (x ActivationMode) String() string {
 }
 
 func (ActivationMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[3].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[3].Descriptor()
 }
 
 func (ActivationMode) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[3]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[3]
 }
 
 func (x ActivationMode) Number() protoreflect.EnumNumber {
@@ -322,7 +322,7 @@ func (x ActivationMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActivationMode.Descriptor instead.
 func (ActivationMode) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{3}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{3}
 }
 
 // Describe the math definition for the conv op. The popular behavior is
@@ -358,11 +358,11 @@ func (x ConvolutionMode) String() string {
 }
 
 func (ConvolutionMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[4].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[4].Descriptor()
 }
 
 func (ConvolutionMode) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[4]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[4]
 }
 
 func (x ConvolutionMode) Number() protoreflect.EnumNumber {
@@ -371,7 +371,7 @@ func (x ConvolutionMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConvolutionMode.Descriptor instead.
 func (ConvolutionMode) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{4}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{4}
 }
 
 type ConvolutionKind int32
@@ -416,11 +416,11 @@ func (x ConvolutionKind) String() string {
 }
 
 func (ConvolutionKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[5].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[5].Descriptor()
 }
 
 func (ConvolutionKind) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[5]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[5]
 }
 
 func (x ConvolutionKind) Number() protoreflect.EnumNumber {
@@ -429,7 +429,7 @@ func (x ConvolutionKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConvolutionKind.Descriptor instead.
 func (ConvolutionKind) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{5}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{5}
 }
 
 // NormKind kind
@@ -466,11 +466,11 @@ func (x NormKind) String() string {
 }
 
 func (NormKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[6].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[6].Descriptor()
 }
 
 func (NormKind) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[6]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[6]
 }
 
 func (x NormKind) Number() protoreflect.EnumNumber {
@@ -479,7 +479,7 @@ func (x NormKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use NormKind.Descriptor instead.
 func (NormKind) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{6}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{6}
 }
 
 // FusedMHAKind kind
@@ -516,11 +516,11 @@ func (x FusedMHAKind) String() string {
 }
 
 func (FusedMHAKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[7].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[7].Descriptor()
 }
 
 func (FusedMHAKind) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[7]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[7]
 }
 
 func (x FusedMHAKind) Number() protoreflect.EnumNumber {
@@ -529,7 +529,7 @@ func (x FusedMHAKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FusedMHAKind.Descriptor instead.
 func (FusedMHAKind) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{7}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{7}
 }
 
 // FusedMHAMaskKind kind
@@ -572,11 +572,11 @@ func (x FMHAMaskKind) String() string {
 }
 
 func (FMHAMaskKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[8].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[8].Descriptor()
 }
 
 func (FMHAMaskKind) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[8]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[8]
 }
 
 func (x FMHAMaskKind) Number() protoreflect.EnumNumber {
@@ -585,7 +585,7 @@ func (x FMHAMaskKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FMHAMaskKind.Descriptor instead.
 func (FMHAMaskKind) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{8}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{8}
 }
 
 type AlgorithmProto_MathType int32
@@ -620,11 +620,11 @@ func (x AlgorithmProto_MathType) String() string {
 }
 
 func (AlgorithmProto_MathType) Descriptor() protoreflect.EnumDescriptor {
-	return file_tsl_protobuf_dnn_proto_enumTypes[9].Descriptor()
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[9].Descriptor()
 }
 
 func (AlgorithmProto_MathType) Type() protoreflect.EnumType {
-	return &file_tsl_protobuf_dnn_proto_enumTypes[9]
+	return &file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes[9]
 }
 
 func (x AlgorithmProto_MathType) Number() protoreflect.EnumNumber {
@@ -633,7 +633,7 @@ func (x AlgorithmProto_MathType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AlgorithmProto_MathType.Descriptor instead.
 func (AlgorithmProto_MathType) EnumDescriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1, 0}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1, 0}
 }
 
 // Generic tensor representation.
@@ -654,7 +654,7 @@ type TensorDescriptorProto struct {
 func (x *TensorDescriptorProto) Reset() {
 	*x = TensorDescriptorProto{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tsl_protobuf_dnn_proto_msgTypes[0]
+		mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -667,7 +667,7 @@ func (x *TensorDescriptorProto) String() string {
 func (*TensorDescriptorProto) ProtoMessage() {}
 
 func (x *TensorDescriptorProto) ProtoReflect() protoreflect.Message {
-	mi := &file_tsl_protobuf_dnn_proto_msgTypes[0]
+	mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -680,7 +680,7 @@ func (x *TensorDescriptorProto) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TensorDescriptorProto.ProtoReflect.Descriptor instead.
 func (*TensorDescriptorProto) Descriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{0}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *TensorDescriptorProto) GetDimensions() []int64 {
@@ -763,7 +763,7 @@ type AlgorithmProto struct {
 func (x *AlgorithmProto) Reset() {
 	*x = AlgorithmProto{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tsl_protobuf_dnn_proto_msgTypes[1]
+		mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -776,7 +776,7 @@ func (x *AlgorithmProto) String() string {
 func (*AlgorithmProto) ProtoMessage() {}
 
 func (x *AlgorithmProto) ProtoReflect() protoreflect.Message {
-	mi := &file_tsl_protobuf_dnn_proto_msgTypes[1]
+	mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -789,7 +789,7 @@ func (x *AlgorithmProto) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlgorithmProto.ProtoReflect.Descriptor instead.
 func (*AlgorithmProto) Descriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *AlgorithmProto) GetAlgoId() int64 {
@@ -855,7 +855,7 @@ type AlgorithmConfigProto struct {
 func (x *AlgorithmConfigProto) Reset() {
 	*x = AlgorithmConfigProto{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tsl_protobuf_dnn_proto_msgTypes[2]
+		mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -868,7 +868,7 @@ func (x *AlgorithmConfigProto) String() string {
 func (*AlgorithmConfigProto) ProtoMessage() {}
 
 func (x *AlgorithmConfigProto) ProtoReflect() protoreflect.Message {
-	mi := &file_tsl_protobuf_dnn_proto_msgTypes[2]
+	mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -881,7 +881,7 @@ func (x *AlgorithmConfigProto) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlgorithmConfigProto.ProtoReflect.Descriptor instead.
 func (*AlgorithmConfigProto) Descriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{2}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{2}
 }
 
 func (m *AlgorithmConfigProto) GetOptionalAlgorithm() isAlgorithmConfigProto_OptionalAlgorithm {
@@ -979,7 +979,7 @@ type ConvolutionDescriptorProto struct {
 func (x *ConvolutionDescriptorProto) Reset() {
 	*x = ConvolutionDescriptorProto{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_tsl_protobuf_dnn_proto_msgTypes[3]
+		mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -992,7 +992,7 @@ func (x *ConvolutionDescriptorProto) String() string {
 func (*ConvolutionDescriptorProto) ProtoMessage() {}
 
 func (x *ConvolutionDescriptorProto) ProtoReflect() protoreflect.Message {
-	mi := &file_tsl_protobuf_dnn_proto_msgTypes[3]
+	mi := &file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1005,7 +1005,7 @@ func (x *ConvolutionDescriptorProto) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConvolutionDescriptorProto.ProtoReflect.Descriptor instead.
 func (*ConvolutionDescriptorProto) Descriptor() ([]byte, []int) {
-	return file_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{3}
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ConvolutionDescriptorProto) GetPaddings() []int64 {
@@ -1057,10 +1057,11 @@ func (x *ConvolutionDescriptorProto) GetName() string {
 	return ""
 }
 
-var File_tsl_protobuf_dnn_proto protoreflect.FileDescriptor
+var File_third_party_tsl_tsl_protobuf_dnn_proto protoreflect.FileDescriptor
 
-var file_tsl_protobuf_dnn_proto_rawDesc = []byte{
-	0x0a, 0x16, 0x74, 0x73, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x64,
+var file_third_party_tsl_tsl_protobuf_dnn_proto_rawDesc = []byte{
+	0x0a, 0x26, 0x74, 0x68, 0x69, 0x72, 0x64, 0x5f, 0x70, 0x61, 0x72, 0x74, 0x79, 0x2f, 0x74, 0x73,
+	0x6c, 0x2f, 0x74, 0x73, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x64,
 	0x6e, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x13, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d,
 	0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x2e, 0x64, 0x6e, 0x6e, 0x1a, 0x1e, 0x67,
 	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x77,
@@ -1220,20 +1221,20 @@ var file_tsl_protobuf_dnn_proto_rawDesc = []byte{
 }
 
 var (
-	file_tsl_protobuf_dnn_proto_rawDescOnce sync.Once
-	file_tsl_protobuf_dnn_proto_rawDescData = file_tsl_protobuf_dnn_proto_rawDesc
+	file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescOnce sync.Once
+	file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescData = file_third_party_tsl_tsl_protobuf_dnn_proto_rawDesc
 )
 
-func file_tsl_protobuf_dnn_proto_rawDescGZIP() []byte {
-	file_tsl_protobuf_dnn_proto_rawDescOnce.Do(func() {
-		file_tsl_protobuf_dnn_proto_rawDescData = protoimpl.X.CompressGZIP(file_tsl_protobuf_dnn_proto_rawDescData)
+func file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescGZIP() []byte {
+	file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescOnce.Do(func() {
+		file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescData = protoimpl.X.CompressGZIP(file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescData)
 	})
-	return file_tsl_protobuf_dnn_proto_rawDescData
+	return file_third_party_tsl_tsl_protobuf_dnn_proto_rawDescData
 }
 
-var file_tsl_protobuf_dnn_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_tsl_protobuf_dnn_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_tsl_protobuf_dnn_proto_goTypes = []any{
+var file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_third_party_tsl_tsl_protobuf_dnn_proto_goTypes = []any{
 	(DataType)(0),                      // 0: stream_executor.dnn.DataType
 	(DataLayout)(0),                    // 1: stream_executor.dnn.DataLayout
 	(FilterLayout)(0),                  // 2: stream_executor.dnn.FilterLayout
@@ -1251,7 +1252,7 @@ var file_tsl_protobuf_dnn_proto_goTypes = []any{
 	nil,                                // 14: stream_executor.dnn.AlgorithmProto.TuningKnobsEntry
 	(*wrapperspb.UInt64Value)(nil),     // 15: google.protobuf.UInt64Value
 }
-var file_tsl_protobuf_dnn_proto_depIdxs = []int32{
+var file_third_party_tsl_tsl_protobuf_dnn_proto_depIdxs = []int32{
 	0,  // 0: stream_executor.dnn.TensorDescriptorProto.data_type:type_name -> stream_executor.dnn.DataType
 	1,  // 1: stream_executor.dnn.TensorDescriptorProto.data_layout:type_name -> stream_executor.dnn.DataLayout
 	2,  // 2: stream_executor.dnn.TensorDescriptorProto.filter_layout:type_name -> stream_executor.dnn.FilterLayout
@@ -1269,13 +1270,13 @@ var file_tsl_protobuf_dnn_proto_depIdxs = []int32{
 	0,  // [0:10] is the sub-list for field type_name
 }
 
-func init() { file_tsl_protobuf_dnn_proto_init() }
-func file_tsl_protobuf_dnn_proto_init() {
-	if File_tsl_protobuf_dnn_proto != nil {
+func init() { file_third_party_tsl_tsl_protobuf_dnn_proto_init() }
+func file_third_party_tsl_tsl_protobuf_dnn_proto_init() {
+	if File_third_party_tsl_tsl_protobuf_dnn_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_tsl_protobuf_dnn_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*TensorDescriptorProto); i {
 			case 0:
 				return &v.state
@@ -1287,7 +1288,7 @@ func file_tsl_protobuf_dnn_proto_init() {
 				return nil
 			}
 		}
-		file_tsl_protobuf_dnn_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*AlgorithmProto); i {
 			case 0:
 				return &v.state
@@ -1299,7 +1300,7 @@ func file_tsl_protobuf_dnn_proto_init() {
 				return nil
 			}
 		}
-		file_tsl_protobuf_dnn_proto_msgTypes[2].Exporter = func(v any, i int) any {
+		file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*AlgorithmConfigProto); i {
 			case 0:
 				return &v.state
@@ -1311,7 +1312,7 @@ func file_tsl_protobuf_dnn_proto_init() {
 				return nil
 			}
 		}
-		file_tsl_protobuf_dnn_proto_msgTypes[3].Exporter = func(v any, i int) any {
+		file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*ConvolutionDescriptorProto); i {
 			case 0:
 				return &v.state
@@ -1324,11 +1325,11 @@ func file_tsl_protobuf_dnn_proto_init() {
 			}
 		}
 	}
-	file_tsl_protobuf_dnn_proto_msgTypes[0].OneofWrappers = []any{
+	file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[0].OneofWrappers = []any{
 		(*TensorDescriptorProto_DataLayout)(nil),
 		(*TensorDescriptorProto_FilterLayout)(nil),
 	}
-	file_tsl_protobuf_dnn_proto_msgTypes[2].OneofWrappers = []any{
+	file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes[2].OneofWrappers = []any{
 		(*AlgorithmConfigProto_Algorithm)(nil),
 		(*AlgorithmConfigProto_AlgorithmNoScratch)(nil),
 		(*AlgorithmConfigProto_ScratchSize)(nil),
@@ -1337,19 +1338,19 @@ func file_tsl_protobuf_dnn_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_tsl_protobuf_dnn_proto_rawDesc,
+			RawDescriptor: file_third_party_tsl_tsl_protobuf_dnn_proto_rawDesc,
 			NumEnums:      10,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_tsl_protobuf_dnn_proto_goTypes,
-		DependencyIndexes: file_tsl_protobuf_dnn_proto_depIdxs,
-		EnumInfos:         file_tsl_protobuf_dnn_proto_enumTypes,
-		MessageInfos:      file_tsl_protobuf_dnn_proto_msgTypes,
+		GoTypes:           file_third_party_tsl_tsl_protobuf_dnn_proto_goTypes,
+		DependencyIndexes: file_third_party_tsl_tsl_protobuf_dnn_proto_depIdxs,
+		EnumInfos:         file_third_party_tsl_tsl_protobuf_dnn_proto_enumTypes,
+		MessageInfos:      file_third_party_tsl_tsl_protobuf_dnn_proto_msgTypes,
 	}.Build()
-	File_tsl_protobuf_dnn_proto = out.File
-	file_tsl_protobuf_dnn_proto_rawDesc = nil
-	file_tsl_protobuf_dnn_proto_goTypes = nil
-	file_tsl_protobuf_dnn_proto_depIdxs = nil
+	File_third_party_tsl_tsl_protobuf_dnn_proto = out.File
+	file_third_party_tsl_tsl_protobuf_dnn_proto_rawDesc = nil
+	file_third_party_tsl_tsl_protobuf_dnn_proto_goTypes = nil
+	file_third_party_tsl_tsl_protobuf_dnn_proto_depIdxs = nil
 }

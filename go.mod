@@ -1,6 +1,6 @@
 module github.com/gomlx/gopjrt
 
-go 1.22
+go 1.23
 
 require (
 	github.com/chenxingqiang/go-floatx v0.0.0-20240103165049-2f5e300cb3c3

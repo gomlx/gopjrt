@@ -1,8 +1,5 @@
-// Package proto includes the Go bindings for several XLA protos needed for the pjrt package.
-//
-// They are all auto-generated. See docs/devel.md for details on the tools needed to generate these.
+// Package protos is empty, it simply include a rule to generate all the sub-packages:
+// one sub-package per XLA proto used in gopjrt.
 package protos
 
-//go:generate ../cmd/protoc_xla_protos.sh
-
-// No code, all is in the .pb.go files.
+//go:generate go run ../cmd/protoc_xla_protos

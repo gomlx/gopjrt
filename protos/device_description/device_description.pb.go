@@ -19,9 +19,10 @@
 // 	protoc        v5.27.2
 // source: xla/stream_executor/device_description.proto
 
-package protos
+package device_description
 
 import (
+	autotune_results "github.com/gomlx/gopjrt/protos/autotune_results"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -428,8 +429,8 @@ type GpuTargetConfigProto struct {
 	// TODO(b/248362914): Autotuning results should be separate from
 	// GpuTargetConfig because autotuning can be updated regularly separate from
 	// the target.
-	AutotuneResults      *AutotuneResults `protobuf:"bytes,6,opt,name=autotune_results,json=autotuneResults,proto3" json:"autotune_results,omitempty"`
-	DeviceDescriptionStr string           `protobuf:"bytes,7,opt,name=device_description_str,json=deviceDescriptionStr,proto3" json:"device_description_str,omitempty"`
+	AutotuneResults      *autotune_results.AutotuneResults `protobuf:"bytes,6,opt,name=autotune_results,json=autotuneResults,proto3" json:"autotune_results,omitempty"`
+	DeviceDescriptionStr string                            `protobuf:"bytes,7,opt,name=device_description_str,json=deviceDescriptionStr,proto3" json:"device_description_str,omitempty"`
 }
 
 func (x *GpuTargetConfigProto) Reset() {
@@ -485,7 +486,7 @@ func (x *GpuTargetConfigProto) GetDnnVersionInfo() *DnnVersionInfoProto {
 	return nil
 }
 
-func (x *GpuTargetConfigProto) GetAutotuneResults() *AutotuneResults {
+func (x *GpuTargetConfigProto) GetAutotuneResults() *autotune_results.AutotuneResults {
 	if x != nil {
 		return x.AutotuneResults
 	}
@@ -630,12 +631,12 @@ func file_xla_stream_executor_device_description_proto_rawDescGZIP() []byte {
 
 var file_xla_stream_executor_device_description_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_xla_stream_executor_device_description_proto_goTypes = []any{
-	(*CudaComputeCapabilityProto)(nil), // 0: stream_executor.CudaComputeCapabilityProto
-	(*RocmComputeCapabilityProto)(nil), // 1: stream_executor.RocmComputeCapabilityProto
-	(*GpuDeviceInfoProto)(nil),         // 2: stream_executor.GpuDeviceInfoProto
-	(*DnnVersionInfoProto)(nil),        // 3: stream_executor.DnnVersionInfoProto
-	(*GpuTargetConfigProto)(nil),       // 4: stream_executor.GpuTargetConfigProto
-	(*AutotuneResults)(nil),            // 5: xla.AutotuneResults
+	(*CudaComputeCapabilityProto)(nil),       // 0: stream_executor.CudaComputeCapabilityProto
+	(*RocmComputeCapabilityProto)(nil),       // 1: stream_executor.RocmComputeCapabilityProto
+	(*GpuDeviceInfoProto)(nil),               // 2: stream_executor.GpuDeviceInfoProto
+	(*DnnVersionInfoProto)(nil),              // 3: stream_executor.DnnVersionInfoProto
+	(*GpuTargetConfigProto)(nil),             // 4: stream_executor.GpuTargetConfigProto
+	(*autotune_results.AutotuneResults)(nil), // 5: xla.AutotuneResults
 }
 var file_xla_stream_executor_device_description_proto_depIdxs = []int32{
 	0, // 0: stream_executor.GpuDeviceInfoProto.cuda_compute_capability:type_name -> stream_executor.CudaComputeCapabilityProto
@@ -655,7 +656,6 @@ func file_xla_stream_executor_device_description_proto_init() {
 	if File_xla_stream_executor_device_description_proto != nil {
 		return
 	}
-	file_xla_autotune_results_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_xla_stream_executor_device_description_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*CudaComputeCapabilityProto); i {

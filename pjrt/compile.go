@@ -1,7 +1,6 @@
 package pjrt
 
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/cbuffer"
 	"github.com/gomlx/gopjrt/protos/compile_options"
 	"github.com/pkg/errors"
@@ -40,6 +39,9 @@ type CompileConfig struct {
 
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
+
+	// err is the first error that occurred during setup.
+	err error
 }
 
 func newCompileConfig(client *Client) (cc *CompileConfig) {
@@ -62,6 +64,9 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	if cc.client == nil || cc.plugin == nil {
 		return nil, errors.New("misconfigured CompileConfig, or an attempt of using it more than once, which is not supported -- call Client.Compile() again")
+	}
+	if cc.err != nil {
+		return nil, cc.err
 	}
 
 	// Make sure things are cleaned up before leaving:
@@ -108,8 +113,12 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
+	if cc.err != nil {
+		return cc
+	}
 	if len(cc.program) > 0 || cc.programFormat != "" {
-		exceptions.Panicf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
+		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
+		return cc
 	}
 
 	cc.program = serialized
@@ -134,8 +143,12 @@ type XlaComputation interface {
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileConfig {
+	if cc.err != nil {
+		return cc
+	}
 	if len(cc.program) > 0 || cc.programFormat != "" {
-		exceptions.Panicf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
+		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
+		return cc
 	}
 
 	// Get HLO program from computation.

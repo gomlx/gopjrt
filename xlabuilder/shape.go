@@ -9,6 +9,7 @@ import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/protos/xla_data"
+	"github.com/pkg/errors"
 	"slices"
 	"strings"
 	"unsafe"
@@ -41,6 +42,17 @@ func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 		}
 	}
 	return s
+}
+
+// MakeShapeOrError is the same as MakeShape, but it returns an error instead if the dimensions are <= 0.
+func MakeShapeOrError(dtype dtypes.DType, dimensions ...int) (Shape, error) {
+	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
+	for _, dim := range dimensions {
+		if dim <= 0 {
+			return Shape{}, errors.Errorf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+		}
+	}
+	return s, nil
 }
 
 // IsScalar returns whether the Shape is a scalar, i.e. its len(Shape.Dimensions) == 0.

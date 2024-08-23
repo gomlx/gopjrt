@@ -1,6 +1,8 @@
-# v0.3.0
+# v0.3.0 Some of the API now returns errors instead of panic
 
 * Moved each compiled XLA proto to their own package under `gopjrt/protos/`: this facilitates conversion to Google3 BUILD scheme.
+* Converted several panics to error returning from pjrt and xlabuilder. This means the API changed a bit.
+* Added script `cmd/run_coverage.sh`.
 
 # v0.2.4
 

@@ -7,7 +7,6 @@ package pjrt
 */
 import "C"
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -312,35 +311,6 @@ func (b *BufferFromHostConfig) FromFlatDataWithDimensions(flat any, dimensions [
 	sizeBytes := uintptr(flatV.Len()) * element0Type.Size()
 	data := unsafe.Slice((*byte)(element0.Addr().UnsafePointer()), sizeBytes)
 	return b.FromRawData(data, dtype, dimensions)
-}
-
-// FlatDataToRawWithDimensions takes a flat slice of values and the target dimensions of the underlying array and convert
-// to the raw data, dtype and dimensions needed by BufferFromHostConfig.FromRawData.
-//
-// If len(flat) != Product(dimensions) it panics.
-//
-// Scalars can be defined with len(dimensions) == 0 and len(flat) == 1.
-func FlatDataToRawWithDimensions[T dtypes.Supported](flat []T, dimensions ...int) ([]byte, dtypes.DType, []int) {
-	// Checks dimensions.
-	expectedSize := 1
-	for _, dim := range dimensions {
-		if dim <= 0 {
-			exceptions.Panicf("FlatDataToRawWithDimensions cannot be given zero or negative dimensions, got %v", dimensions)
-		}
-		expectedSize *= dim
-	}
-	if len(flat) != expectedSize {
-		exceptions.Panicf("FlatDataToRawWithDimensions given a flat slice of size %d that doesn't match dimensions %v (total size %d)",
-			len(flat), dimensions, expectedSize)
-	}
-	dtype := dtypes.FromGenericsType[T]()
-	if len(flat) == 0 {
-		return nil, dtype, dimensions
-	}
-	flatBytesSize := len(flat) * int(unsafe.Sizeof(flat[0]))
-	rawPointer := unsafe.Pointer(unsafe.SliceData(flat))
-	rawSlice := unsafe.Slice((*byte)(rawPointer), flatBytesSize)
-	return rawSlice, dtype, dimensions
 }
 
 // ScalarToRaw generates the raw values needed by BufferFromHostConfig.FromRawData to feed a simple scalar value.

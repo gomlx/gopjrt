@@ -152,8 +152,10 @@ func ScalarZero(builder *XlaBuilder, dtype dtypes.DType) (*Op, error) {
 	if value != nil {
 		return value, nil
 	}
-	literal := NewScalarLiteralFromFloat64(0, dtype)
-	var err error
+	literal, err := NewScalarLiteralFromFloat64(0, dtype)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "while trying to create a %s zero constant", dtype)
+	}
 	value, err = Constant(builder, literal)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "while trying to create a %s zero constant", dtype)
@@ -170,8 +172,10 @@ func ScalarOne(builder *XlaBuilder, dtype dtypes.DType) (*Op, error) {
 	if value != nil {
 		return value, nil
 	}
-	literal := NewScalarLiteralFromFloat64(1, dtype)
-	var err error
+	literal, err := NewScalarLiteralFromFloat64(1, dtype)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "while trying to create a %s one constant", dtype)
+	}
 	value, err = Constant(builder, literal)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "while trying to create a %s one constant", dtype)

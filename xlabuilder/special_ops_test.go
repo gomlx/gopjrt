@@ -9,6 +9,12 @@ import (
 	"testing"
 )
 
+func mustNewArrayLiteral[T dtypes.Supported](t *testing.T, flat []T, dimensions ...int) *Literal {
+	l, err := NewArrayLiteral[T](flat, dimensions...)
+	require.NoError(t, err)
+	return l
+}
+
 func TestTuple(t *testing.T) {
 	client := getPJRTClient(t)
 	builder := New(t.Name())
@@ -30,7 +36,7 @@ func TestGetTupleElement(t *testing.T) {
 	builder := New(t.Name())
 
 	x0 := capture(Constant(builder, NewScalarLiteral(int32(7)))).Test(t)
-	x1 := capture(Constant(builder, NewArrayLiteral([]complex64{11, 15}))).Test(t)
+	x1 := capture(Constant(builder, mustNewArrayLiteral(t, []complex64{11, 15}))).Test(t)
 	x2 := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
 	tuple := capture(Tuple(x0, x1, x2)).Test(t)
 	output := capture(GetTupleElement(tuple, 1)).Test(t)
@@ -119,7 +125,9 @@ func TestWhere(t *testing.T) {
 
 	// Exact same test as iota, but change the dtype of the result.
 	shape := MakeShape(dtypes.Float32, 5, 3)
-	zeros := capture(Constant(builder, NewLiteralFromShape(shape))).Test(t)
+	l, err := NewLiteralFromShape(shape)
+	require.NoError(t, err)
+	zeros := capture(Constant(builder, l)).Test(t)
 	one := capture(Constant(builder, NewScalarLiteral(float32(1)))).Test(t)
 	ones := capture(Add(zeros, one)).Test(t)
 	values := capture(Iota(builder, shape, 0)).Test(t)
@@ -285,14 +293,14 @@ func TestArgMinMax(t *testing.T) {
 	client := getPJRTClient(t)
 	builder := New(t.Name())
 
-	x := capture(Constant(builder, NewArrayLiteral([]int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
+	x := capture(Constant(builder, mustNewArrayLiteral(t, []int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
 	output := capture(ArgMinMax(x, 1, dtypes.Int8, true)).Test(t)
 	exec := compile(t, client, capture(builder.Build(output)).Test(t))
 	got, dims := execArrayOutput[int8](t, client, exec)
 	require.Equal(t, []int8{1, 0}, got)
 	require.Equal(t, []int{2}, dims)
 
-	x = capture(Constant(builder, NewArrayLiteral([]int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
+	x = capture(Constant(builder, mustNewArrayLiteral(t, []int64{2, 0, 7, -3, 4, 2}, 2, 3))).Test(t)
 	output = capture(ArgMinMax(x, 0, dtypes.Int8, false)).Test(t)
 	exec = compile(t, client, capture(builder.Build(output)).Test(t))
 	got, dims = execArrayOutput[int8](t, client, exec)
@@ -335,7 +343,7 @@ func TestGather(t *testing.T) {
 		shape := MakeShape(dtypes.Float64 /* batch */, 5, 3)
 		x := capture(Iota(builder, MakeShape(shape.DType, shape.Size()), 0)).Test(t)
 		x = capture(Reshape(x, shape.Dimensions...)).Test(t)
-		indices := capture(Constant(builder, NewArrayLiteral([]int32{2, 0}, 2, 1))).Test(t)
+		indices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{2, 0}, 2, 1))).Test(t)
 		indexVectorAxis := 1
 		offsetAxes := []int{1}
 		collapsedSliceAxes := []int{0}
@@ -362,7 +370,7 @@ func TestGather(t *testing.T) {
 		shape := MakeShape(dtypes.Float32 /* batch */, 3, 2, 6)
 		x := capture(Iota(builder, MakeShape(shape.DType, shape.Size()), 0)).Test(t)
 		x = capture(Reshape(x, shape.Dimensions...)).Test(t)
-		indices := capture(Constant(builder, NewArrayLiteral([]int32{
+		indices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{
 			0, 0, 0,
 			2, 1, 5}, 2, 3))).Test(t)
 		indexVectorAxis := 1
@@ -395,8 +403,10 @@ func TestScatter(t *testing.T) {
 	{
 		dtype := dtypes.Float64
 		shape := MakeShape(dtype /* batch */, 5, 3)
-		operand := capture(Constant(builder, NewLiteralFromShape(shape))).Test(t) // 5*3 zeros
-		indices := capture(Constant(builder, NewArrayLiteral([]int32{
+		l, err := NewLiteralFromShape(shape)
+		require.NoError(t, err)
+		operand := capture(Constant(builder, l)).Test(t) // 5*3 zeros
+		indices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{
 			// 5 scatter updates:
 			0, 1,
 			0, 2,
@@ -623,7 +633,7 @@ func TestDynamicSlice(t *testing.T) {
 	dtype := dtypes.Float64
 	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
 	operand = capture(Reshape(operand, 3, 4)).Test(t)
-	startIndices := capture(Constant(builder, NewArrayLiteral([]int32{1, 1}, 2))).Test(t)
+	startIndices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{1, 1}, 2))).Test(t)
 	output := capture(DynamicSlice(operand, []*Op{startIndices}, []int{2, 2})).Test(t)
 	exec := compile(t, client, capture(builder.Build(output)).Test(t))
 	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
@@ -637,8 +647,8 @@ func TestDynamicUpdateSlice(t *testing.T) {
 	dtype := dtypes.Float64
 	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
 	operand = capture(Reshape(operand, 3, 4)).Test(t)
-	update := capture(Constant(builder, NewArrayLiteral([]float64{-1, -1, -1, -1}, 2, 2))).Test(t)
-	startIndices := capture(Constant(builder, NewArrayLiteral([]int32{1, 1}, 2))).Test(t)
+	update := capture(Constant(builder, mustNewArrayLiteral(t, []float64{-1, -1, -1, -1}, 2, 2))).Test(t)
+	startIndices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{1, 1}, 2))).Test(t)
 	output := capture(DynamicUpdateSlice(operand, update, []*Op{startIndices})).Test(t)
 	exec := compile(t, client, capture(builder.Build(output)).Test(t))
 	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)

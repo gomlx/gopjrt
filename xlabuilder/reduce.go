@@ -96,11 +96,17 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 		case ReduceProductType:
 			initialValue, err = ScalarOne(b, dtype)
 		case ReduceMaxType:
-			literal := NewScalarLiteralFromAny(dtype.LowestValue())
-			initialValue, err = Constant(b, literal)
+			var literal *Literal
+			literal, err = NewScalarLiteralFromAny(dtype.LowestValue())
+			if err == nil {
+				initialValue, err = Constant(b, literal)
+			}
 		case ReduceMinType:
-			literal := NewScalarLiteralFromAny(dtype.HighestValue())
-			initialValue, err = Constant(b, literal)
+			var literal *Literal
+			literal, err = NewScalarLiteralFromAny(dtype.HighestValue())
+			if err == nil {
+				initialValue, err = Constant(b, literal)
+			}
 		default:
 			err = errors.Errorf("unknown reduce computation type: %s (%d)", reduction, reduction)
 			return

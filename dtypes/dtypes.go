@@ -3,7 +3,6 @@ package dtypes
 import (
 	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
-	"github.com/pkg/errors"
 	"github.com/x448/float16"
 	"math"
 	"reflect"
@@ -308,7 +307,8 @@ func (dtype DType) SmallestNonZeroValueForDType() any {
 		return bfloat16.SmallestNonzero // 1p-24, see discussion in https://github.com/x448/float16/pull/46
 
 	default:
-		panic(errors.Errorf("SmallestNonZeroValueForDType not defined for dtype %s", dtype))
+		exceptions.Panicf("SmallestNonZeroValueForDType not defined for dtype %s", dtype)
+		panic(nil) // Removes lint warning.
 	}
 }
 

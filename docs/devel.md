@@ -37,10 +37,5 @@ and the user won't need to do anything.
 ## Updating `coverage.out` file
 
 This is not done as a github actions because it would take too long to download the datasets, etc.
-Instead, we do it manually with:
+Instead, do it manually by running `cmd/run_coverage.sh` from the root of the repository.
 
-```shell
-PACKAGE_COVERAGE="./pjrt ./xlabuilder"
-go test -v -cover -coverprofile docs/coverage.out -coverpkg "${PACKAGE_COVERAGE}" 
-go tool cover -func docs/coverage.out -o docs/coverage.out
-```

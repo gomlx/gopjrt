@@ -1,3 +1,7 @@
+# Nexxt
+
+* Fixed +/-Inf for bfloat16.
+
 # v0.3.0 Some of the API now returns errors instead of panic
 
 * Moved each compiled XLA proto to their own package under `gopjrt/protos/`: this facilitates conversion to Google3 BUILD scheme.

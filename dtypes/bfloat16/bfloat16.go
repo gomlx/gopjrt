@@ -55,10 +55,7 @@ func (f BFloat16) String() string {
 // A sign >= returns positive infinity.
 // A sign < 0 returns negative infinity.
 func Inf(sign int) BFloat16 {
-	if sign >= 0 {
-		return BFloat16(0x7c00)
-	}
-	return BFloat16(0x8000 | 0x7c00)
+	return FromFloat32(float32(math.Inf(sign)))
 }
 
 // SmallestNonzero is the smallest nonzero denormal value for bfloat16 (9.1835e-41).

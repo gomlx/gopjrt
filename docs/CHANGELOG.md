@@ -1,6 +1,7 @@
-# Nexxt
+# v0.3.1
 
 * Fixed +/-Inf for bfloat16.
+* Removed dependencies on "github.com/gomlx/exceptions".
 
 # v0.3.0 Some of the API now returns errors instead of panic
 

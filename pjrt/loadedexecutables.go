@@ -7,7 +7,6 @@ package pjrt
 */
 import "C"
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
@@ -327,7 +326,7 @@ func allocatePerDeviceBufferList(numDevices int, buffers []*Buffer) ***C.PJRT_Bu
 			}
 			if buffers[idxBuffer].cBuffer == nil {
 				// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
-				exceptions.Panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", idxBuffer)
+				panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", idxBuffer)
 			}
 			return buffers[idxBuffer].cBuffer
 		})

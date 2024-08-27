@@ -5,7 +5,6 @@ package xlabuilder
 */
 import "C"
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
 	"github.com/pkg/errors"
@@ -98,12 +97,8 @@ func NewScalarLiteralFromFloat64(value float64, dtype dtypes.DType) (*Literal, e
 		return NewScalarLiteral(bfloat16.FromFloat32(float32(value))), nil
 	default:
 		var convertedValue reflect.Value
-		panicMsg := exceptions.Try(func() {
-			convertedValue = reflect.ValueOf(value).Convert(dtype.GoType())
-		})
-		if panicMsg != nil {
-			return nil, errors.Errorf("failed to convert %g to dtype %s: %v", value, dtype, panicMsg)
-		}
+		convertedValue = reflect.ValueOf(value)
+		convertedValue = convertedValue.Convert(dtype.GoType())
 		l, err := NewLiteralFromShape(MakeShape(dtype))
 		if err != nil {
 			return nil, err

@@ -4,8 +4,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/gomlx/exceptions"
 	"github.com/janpfeifer/must"
+	"github.com/pkg/errors"
 	"os"
 	"strings"
 )
@@ -15,6 +15,14 @@ const OpTypesFileName = "op_types.txt"
 type OpInfo struct {
 	Name, Type string
 	Comments   []string
+}
+
+// panicf panics with formatted description.
+//
+// It is only used for "bugs in the code" -- when parameters don't follow the specifications.
+// In principle, it should never happen -- the same way nil-pointer panics should never happen.
+func panicf(format string, args ...any) {
+	panic(errors.Errorf(format, args...))
 }
 
 func main() {
@@ -40,7 +48,7 @@ func main() {
 		}
 		parts := strings.Split(line, ":")
 		if len(parts) != 2 {
-			exceptions.Panicf("Invalid op definition in %q:%d : %q", OpTypesFileName, lineNum, line)
+			panicf("Invalid op definition in %q:%d : %q", OpTypesFileName, lineNum, line)
 		}
 		if len(comments) == 0 {
 			comments = append(comments, fmt.Sprintf("%s returns the Op that represents the output of the corresponding operation.", parts[0]))

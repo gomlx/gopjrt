@@ -1,13 +1,29 @@
 package dtypes
 
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
+	"github.com/pkg/errors"
 	"github.com/x448/float16"
 	"math"
 	"reflect"
 	"strconv"
 )
+
+// panicf panics with formatted description.
+//
+// It is only used for "bugs in the code" -- when parameters don't follow the specifications.
+// In principle, it should never happen -- the same way nil-pointer panics should never happen.
+func panicf(format string, args ...any) {
+	panic(errors.Errorf(format, args...))
+}
+
+func init() {
+	// Only works for 32 and 64 bits platforms.
+	// TODO: find some compile-time check.
+	if strconv.IntSize != 32 && strconv.IntSize != 64 {
+		panicf("cannot use int of %d bits with gopjrt -- only platforms with int32 or int64 are supported", strconv.IntSize)
+	}
+}
 
 // Generate automatic C-to-Go boilerplate code for pjrt_c_api.h.
 //go:generate go run ../cmd/dtypes_codegen
@@ -31,7 +47,7 @@ func FromGenericsType[T Supported]() DType {
 		case 64:
 			return Int64
 		default:
-			exceptions.Panicf("Cannot use int of %d bits with gopjrt -- try using int32 or int64", strconv.IntSize)
+			panicf("Cannot use int of %d bits with gopjrt -- try using int32 or int64", strconv.IntSize)
 		}
 	case int64:
 		return Int64
@@ -75,7 +91,7 @@ func FromGoType(t reflect.Type) DType {
 		case 64:
 			return Int64
 		default:
-			exceptions.Panicf("cannot use int of %d bits with GoMLX -- try using int32 or int64", strconv.IntSize)
+			panicf("cannot use int of %d bits with GoMLX -- try using int32 or int64", strconv.IntSize)
 		}
 	case reflect.Int64:
 		return Int64
@@ -177,8 +193,10 @@ func (dtype DType) GoType() reflect.Type {
 		return reflect.TypeOf(complex128(0))
 
 	default:
-		exceptions.Panicf("unknown dtype %q (%d) in DType.GoType", dtype, dtype)
-		panic(nil) // Quiet lint warning.
+		// This should never happen, except if someone entered an invalid DType number beyond the values
+		// defined.
+		panicf("unknown dtype %q (%d) in DType.GoType", dtype, dtype)
+		panic(nil)
 	}
 }
 
@@ -224,9 +242,9 @@ func (dtype DType) LowestValue() any {
 		return bfloat16.Inf(-1)
 
 	default:
-		exceptions.Panicf("LowestValue for dtype %s not defined", dtype)
+		// For invalid dtypes (like complex numbers), return zero.
+		return reflect.New(dtype.GoType()).Elem().Interface()
 	}
-	return 0 // Never reaches here.
 }
 
 // HighestValue for dtype converted to the corresponding Go type.
@@ -265,9 +283,9 @@ func (dtype DType) HighestValue() any {
 		return bfloat16.Inf(1)
 
 	default:
-		exceptions.Panicf("LowestValue for dtype %s not defined", dtype)
+		// For invalid dtypes (like complex numbers), return zero.
+		return reflect.New(dtype.GoType()).Elem().Interface()
 	}
-	return 0 // Never reaches here.
 }
 
 // SmallestNonZeroValueForDType is the smallest non-zero value dtypes.
@@ -307,8 +325,8 @@ func (dtype DType) SmallestNonZeroValueForDType() any {
 		return bfloat16.SmallestNonzero // 1p-24, see discussion in https://github.com/x448/float16/pull/46
 
 	default:
-		exceptions.Panicf("SmallestNonZeroValueForDType not defined for dtype %s", dtype)
-		panic(nil) // Removes lint warning.
+		// For invalid dtypes (like complex numbers), return zero.
+		return reflect.New(dtype.GoType()).Elem().Interface()
 	}
 }
 

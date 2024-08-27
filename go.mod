@@ -3,9 +3,7 @@ module github.com/gomlx/gopjrt
 go 1.23
 
 require (
-	github.com/chenxingqiang/go-floatx v0.0.0-20240103165049-2f5e300cb3c3
 	github.com/chewxy/math32 v1.10.1
-	github.com/gomlx/exceptions v0.0.3
 	github.com/janpfeifer/gonb v0.10.1
 	github.com/janpfeifer/must v0.0.2
 	github.com/pkg/errors v0.9.1

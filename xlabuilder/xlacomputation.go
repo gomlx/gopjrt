@@ -6,7 +6,6 @@ package xlabuilder
 */
 import "C"
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/cbuffer"
 	"runtime"
 	"unsafe"
@@ -69,7 +68,7 @@ func (comp *XlaComputation) Name() string {
 // See XlaComputation documentation on how to pretty-print the computation as text HLO.
 func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	if comp.IsNil() {
-		exceptions.Panicf("XlaComputation is nil, maybe it has already been destroyed?")
+		panicf("XlaComputation is nil, maybe it has already been destroyed?")
 	}
 	defer runtime.KeepAlive(comp)
 	if comp == nil || comp.cXlaComputation == nil {
@@ -86,7 +85,7 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 // Alternatively, see XlaComputation documentation on how to pretty-print the computation as text HLO.
 func (comp *XlaComputation) TextHLO() string {
 	if comp.IsNil() {
-		exceptions.Panicf("XlaComputation is nil, maybe it has already been destroyed?")
+		panicf("XlaComputation is nil, maybe it has already been destroyed?")
 	}
 	defer runtime.KeepAlive(comp)
 	if comp == nil || comp.cXlaComputation == nil {

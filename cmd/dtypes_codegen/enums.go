@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/protos/xla_data"
 	"github.com/janpfeifer/must"
+	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"regexp"
@@ -16,6 +16,14 @@ import (
 const (
 	DTypeEnumGoFileName = "gen_dtype_enum.go"
 )
+
+// panicf panics with formatted description.
+//
+// It is only used for "bugs in the code" -- when parameters don't follow the specifications.
+// In principle, it should never happen -- the same way nil-pointer panics should never happen.
+func panicf(format string, args ...any) {
+	panic(errors.Errorf(format, args...))
+}
 
 var aliases = map[string]string{
 	"INVALID": "InvalidDType",
@@ -121,7 +129,7 @@ func generateEnums(contents string) {
 	var enumV *enumValue
 	matches := reEnums.FindStringSubmatch(contents)
 	if len(matches) == 0 {
-		exceptions.Panicf("failed to match PJRT_Buffer_Types enum from pjrt_c_api.h")
+		panicf("failed to match PJRT_Buffer_Types enum from pjrt_c_api.h")
 	}
 	for _, line := range strings.Split(matches[2], "\n") {
 		if line == "" {

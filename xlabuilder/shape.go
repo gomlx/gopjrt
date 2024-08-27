@@ -33,7 +33,8 @@ type Shape struct {
 }
 
 // MakeShape filled with the values given.
-// It doesn't work for tuple shapes.
+//
+// The dimensions must be >= 1, and it doesn't work for tuple shapes.
 func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {

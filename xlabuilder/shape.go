@@ -6,7 +6,6 @@ package xlabuilder
 import "C"
 import (
 	"fmt"
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/protos/xla_data"
 	"github.com/pkg/errors"
@@ -39,7 +38,7 @@ func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {
 		if dim <= 0 {
-			exceptions.Panicf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+			panicf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
 		}
 	}
 	return s

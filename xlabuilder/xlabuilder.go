@@ -6,7 +6,6 @@ package xlabuilder
 */
 import "C"
 import (
-	"github.com/gomlx/exceptions"
 	"github.com/pkg/errors"
 	"runtime"
 	"unsafe"
@@ -17,6 +16,14 @@ import (
 // Since CGO C types cannot cross boundaries of a package (see issue https://github.com/golang/go/issues/13467)
 // We make a copy of chelper.go for every sub-directory that needs it.
 //go:generate go run ../cmd/copy_go_code --original=chelper.go
+
+// panicf panics with formatted description.
+//
+// It is only used for "bugs in the code" -- when parameters don't follow the specifications.
+// In principle, it should never happen -- the same way nil-pointer panics should never happen.
+func panicf(format string, args ...any) {
+	panic(errors.Errorf(format, args...))
+}
 
 // XlaBuilder is used to create "computations" (XlaComputation), that are like "StableHLO" functions.
 //
@@ -163,7 +170,7 @@ func (b *XlaBuilder) Build(outputOp *Op) (*XlaComputation, error) {
 // It takes as input the computationName that is going to be built with it.
 func (b *XlaBuilder) CreateSubBuilder(computationName string) *XlaBuilder {
 	if b.IsNil() {
-		exceptions.Panicf("trying to access XlaBuilder that is nil or already destroyed")
+		panicf("trying to access XlaBuilder that is nil or already destroyed")
 	}
 	cName := C.CString(computationName)
 	defer cFree(cName)

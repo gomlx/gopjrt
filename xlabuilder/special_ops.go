@@ -2,7 +2,6 @@ package xlabuilder
 
 import (
 	"fmt"
-	"github.com/gomlx/exceptions"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/protos/xla_data"
 	"github.com/pkg/errors"
@@ -119,7 +118,7 @@ func DecodeIota(op *Op) (shape Shape, iotaAxis int) {
 func Identity(input *Op) *Op {
 	builder := input.builder
 	if builder.IsNil() {
-		exceptions.Panicf("trying to access XlaBuilder that is nil or already destroyed")
+		panicf("trying to access XlaBuilder that is nil or already destroyed")
 	}
 	op := newOp(IdentityOp)
 	op.OpInputs = []*Op{input}
@@ -455,7 +454,7 @@ func Slice(x *Op, starts, limits, strides []int) (*Op, error) {
 func DecodeSlice(op *Op) (starts, limits, strides []int) {
 	rank := op.OpInputs[0].Shape.Rank()
 	if len(op.IntsArg) != 3*rank {
-		exceptions.Panicf("DecodeSlice() has input of rank %d, but arguments don't have 3*%d elements, instead got %d",
+		panicf("DecodeSlice() has input of rank %d, but arguments don't have 3*%d elements, instead got %d -- probably the op as not a SliceOp?",
 			rank, 3*rank, len(op.IntsArg))
 	}
 	starts = op.IntsArg[0:rank]

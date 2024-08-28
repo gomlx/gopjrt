@@ -1,3 +1,7 @@
+# Next
+
+* Added ReduceAnd and ReduceOr logical operations.
+
 # v0.3.1
 
 * Fixed +/-Inf for bfloat16.

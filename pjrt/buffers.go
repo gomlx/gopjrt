@@ -20,6 +20,7 @@ import (
 type Buffer struct {
 	cBuffer *C.PJRT_Buffer
 	client  *Client
+	// DEBUG: creationStackTrace error
 }
 
 // newBuffer creates Buffer and registers it for freeing.
@@ -27,8 +28,17 @@ func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 	b := &Buffer{
 		client:  client,
 		cBuffer: cBuffer,
+		// DEBUG: creationStackTrace: errors.New("bufferCreation"),
 	}
 	runtime.SetFinalizer(b, func(b *Buffer) {
+		/* DEBUG:
+		if b != nil && cBuffer != nil && b.client != nil && b.client.plugin != nil {
+			dims, _ := b.Dimensions()
+			dtype, _ := b.DType()
+			fmt.Printf("\nGC buffer: (%s)%v\n", dtype, dims)
+			fmt.Printf("\tStack trace:\n%+v\n", b.creationStackTrace)
+		}
+		*/
 		err := b.Destroy()
 		if err != nil {
 			klog.Errorf("Buffer.Destroy failed: %v", err)

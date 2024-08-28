@@ -119,8 +119,8 @@ func execScalarOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exe
 	// Transfer output on-device buffer to a "host" value (in Go).
 	var err error
 	value, err = pjrt.BufferToScalar[T](outputBuffers[0])
-	fmt.Printf("  > f()=(%T) %v\n", value, value)
 	require.NoErrorf(t, err, "Failed to transfer results of %q execution", exec.Name)
+	fmt.Printf("  > f()=(%T) %v\n", value, value)
 	return
 }
 

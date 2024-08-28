@@ -28,6 +28,12 @@ const (
 
 	// ReduceMinType reduces by taking the minimum value.
 	ReduceMinType
+
+	// ReduceAndType reduces by taking the logical-and value.
+	ReduceAndType
+
+	// ReduceOrType reduces by taking the logical-or value.
+	ReduceOrType
 )
 
 //go:generate stringer -type ReduceOpType reduce.go
@@ -71,6 +77,18 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 			output, err = Max(lhs, rhs)
 		case ReduceMinType:
 			output, err = Min(lhs, rhs)
+		case ReduceAndType:
+			if dtype != dtypes.Bool {
+				err = errors.Errorf("ReduceAndType only supports boolean values (dtypes.Bool), got %q instead", dtype)
+				return
+			}
+			output, err = And(lhs, rhs)
+		case ReduceOrType:
+			if dtype != dtypes.Bool {
+				err = errors.Errorf("ReduceOrType only supports boolean values (dtypes.Bool), got %q instead", dtype)
+				return
+			}
+			output, err = Or(lhs, rhs)
 		default:
 			err = errors.Errorf("unknown reduce computation type: %s (%d)", reduction, reduction)
 			return
@@ -91,9 +109,9 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 	initialValue = b.cachedStandardConstants[reductionName]
 	if initialValue == nil {
 		switch reduction {
-		case ReduceSumType:
+		case ReduceSumType, ReduceOrType:
 			initialValue, err = ScalarZero(b, dtype)
-		case ReduceProductType:
+		case ReduceProductType, ReduceAndType:
 			initialValue, err = ScalarOne(b, dtype)
 		case ReduceMaxType:
 			var literal *Literal
@@ -187,6 +205,22 @@ func ReduceSum(x *Op, axes ...int) (*Op, error) {
 // If no axes are given, it reduces the full array.
 func ReduceProduct(x *Op, axes ...int) (*Op, error) {
 	return simpleReduceImpl(ReduceProductType, x, axes...)
+}
+
+// ReduceAnd is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the logical-and of the reduced axes.
+// It only works for booleans.
+//
+// If no axes are given, it reduces the full array.
+func ReduceAnd(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceAndType, x, axes...)
+}
+
+// ReduceOr is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the logical-or of the reduced axes.
+// It only works for booleans.
+//
+// If no axes are given, it reduces the full array.
+func ReduceOr(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceOrType, x, axes...)
 }
 
 type ReduceWindowConfig struct {

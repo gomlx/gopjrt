@@ -1,6 +1,7 @@
 package xlabuilder_test
 
 import (
+	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
@@ -9,10 +10,10 @@ import (
 
 func TestReduce(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := New(t.Name())
 
 	// Test with ReduceMax:
 	{
+		builder := New(fmt.Sprintf("%s-ReduceMax", t.Name()))
 		input := capture(Iota(builder, MakeShape(dtypes.Float32, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		maxColumns := capture(ReduceMax(input, 0)).Test(t)
@@ -29,10 +30,12 @@ func TestReduce(t *testing.T) {
 		got, dims := execArrayOutput[float32](t, client, exec)
 		require.Equal(t, []float32{6.2, 7.5, 8.8}, got)
 		require.Equal(t, []int{3}, dims)
+		builder.Destroy()
 	}
 
 	// Test with ReduceSum and ReduceProduct
 	{
+		builder := New(fmt.Sprintf("%s-ReduceProduct-ReduceSum", t.Name()))
 		input := capture(Iota(builder, MakeShape(dtypes.Float64, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		columnsProduct := capture(ReduceProduct(input, 0)).Test(t)
@@ -46,10 +49,12 @@ func TestReduce(t *testing.T) {
 		got, dims := execArrayOutput[float64](t, client, exec)
 		require.Equal(t, []float64{0.003, 28.012, 80.021}, got)
 		require.Equal(t, []int{3}, dims)
+		builder.Destroy()
 	}
 
 	// Test ReduceMin on all dimensions.
 	{
+		builder := New(fmt.Sprintf("%s-ReduceMin", t.Name()))
 		input := capture(Iota(builder, MakeShape(dtypes.Int64, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		five := capture(Constant(builder, NewScalarLiteral(int64(5)))).Test(t)
@@ -58,6 +63,39 @@ func TestReduce(t *testing.T) {
 		exec := compile(t, client, capture(builder.Build(output)).Test(t))
 		got := execScalarOutput[int64](t, client, exec)
 		require.Equal(t, int64(5), got)
+		builder.Destroy()
+	}
+
+	// Test ReduceAnd and ReduceOr on all dimensions.
+	{
+		testValues := []*Literal{
+			capture(NewArrayLiteral([]bool{false, false, false}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{false, true, false}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{true, false, true}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{true, true, true}, 3)).Test(t),
+		}
+		wantForAnd := []bool{false, false, false, true}
+		wantForOr := []bool{false, true, true, true}
+
+		for ii, testValue := range testValues {
+			builder := New(fmt.Sprintf("%s-ReduceAnd-%d", t.Name(), ii))
+			input := capture(Constant(builder, testValue)).Test(t)
+			output := capture(ReduceAnd(input)).Test(t)
+			exec := compile(t, client, capture(builder.Build(output)).Test(t))
+			got := execScalarOutput[bool](t, client, exec)
+			require.Equal(t, wantForAnd[ii], got)
+			builder.Destroy()
+		}
+
+		for ii, testValue := range testValues {
+			builder := New(fmt.Sprintf("%s-ReduceOr-%d", t.Name(), ii))
+			input := capture(Constant(builder, testValue)).Test(t)
+			output := capture(ReduceOr(input)).Test(t)
+			exec := compile(t, client, capture(builder.Build(output)).Test(t))
+			got := execScalarOutput[bool](t, client, exec)
+			require.Equal(t, wantForOr[ii], got)
+			builder.Destroy()
+		}
 	}
 }
 

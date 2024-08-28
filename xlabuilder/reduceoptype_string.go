@@ -13,11 +13,13 @@ func _() {
 	_ = x[ReduceProductType-2]
 	_ = x[ReduceMaxType-3]
 	_ = x[ReduceMinType-4]
+	_ = x[ReduceAndType-5]
+	_ = x[ReduceOrType-6]
 }
 
-const _ReduceOpType_name = "UndefinedReduceTypeReduceSumTypeReduceProductTypeReduceMaxTypeReduceMinType"
+const _ReduceOpType_name = "UndefinedReduceTypeReduceSumTypeReduceProductTypeReduceMaxTypeReduceMinTypeReduceAndTypeReduceOrType"
 
-var _ReduceOpType_index = [...]uint8{0, 19, 32, 49, 62, 75}
+var _ReduceOpType_index = [...]uint8{0, 19, 32, 49, 62, 75, 88, 100}
 
 func (i ReduceOpType) String() string {
 	if i < 0 || i >= ReduceOpType(len(_ReduceOpType_index)-1) {

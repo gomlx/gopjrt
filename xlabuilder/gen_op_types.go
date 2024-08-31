@@ -86,4 +86,5 @@ const (
 	LessThanTotalOrderOp
 	DynamicSliceOp
 	DynamicUpdateSliceOp
+	ErfOp
 )

@@ -754,3 +754,15 @@ func LessThanTotalOrder(x0, x1 *Op) (*Op, error) {
 	}
 	return y, nil
 }
+
+// Erf returns the "error function", defined as erf(x) = 2/Pi * \int_{0}^{x}{e^{-t^2}dt}.
+// The op is created on the same XlaBuilder as used for x.
+func Erf(x *Op) (*Op, error) {
+	builder := x.builder
+	y := newOp(ErfOp, x)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}

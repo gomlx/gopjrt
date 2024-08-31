@@ -51,6 +51,8 @@ func TestSimpleOps(t *testing.T) {
 	require.NoError(t, err, "Failed to build unary operation Sqrt")
 	x, err = Rsqrt(x)
 	require.NoError(t, err, "Failed to build unary operation Rsqrt")
+	x, err = Erf(x)
+	require.NoError(t, err, "Failed to build unary operation Erf")
 
 	// Binary ops:
 	x, err = Add(x, x)

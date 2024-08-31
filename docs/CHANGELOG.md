@@ -1,3 +1,7 @@
+# Next
+
+* Added Erf operator.
+
 # v0.3.2
 
 * Added ReduceAnd and ReduceOr logical operations.

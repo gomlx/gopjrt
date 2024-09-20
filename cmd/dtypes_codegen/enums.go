@@ -75,11 +75,18 @@ const ({{range .}}
 	{{.Name}} DType = {{.Value}}
 {{end}})
 
-// Original (from pjrt_c_api.h) DType names are aliased here:
+// Aliases from PJRT C API.
 const ({{range .}}{{if .HasAlias}}
 	// {{.Original}} (or PJRT_Buffer_Type_{{.Original}}) is the C enum name for {{.Name}}.
 	{{.Original}} = {{.Name}}
 {{end}}{{end}})
+
+// MapOfNames to their dtypes. It includes also aliases to the various dtypes. 
+// It is also later initialized to include the lower-case version of the names.
+var MapOfNames = map[string]DType{
+{{range .}}	"{{.Name}}": {{.Name}},
+{{if .HasAlias}}	"{{.Original}}": {{.Name}},
+{{end}}{{end}}}
 
 // PrimitiveType returns the DType equivalent used in C++ XlaBuilder. 
 // For internal use only.

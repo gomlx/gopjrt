@@ -1,6 +1,8 @@
 # Next
 
+* Binary distributed compiled in Ubuntu 24.04, updated dependencies on the C library -- pls report if you see any issues.
 * Added Erf operator.
+* Added dtypes.MapOfNames that includes its aliases.
 
 # v0.3.2
 

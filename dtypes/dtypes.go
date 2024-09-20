@@ -4,9 +4,12 @@ import (
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
 	"github.com/pkg/errors"
 	"github.com/x448/float16"
+	"maps"
 	"math"
 	"reflect"
+	"slices"
 	"strconv"
+	"strings"
 )
 
 // panicf panics with formatted description.
@@ -22,6 +25,19 @@ func init() {
 	// TODO: find some compile-time check.
 	if strconv.IntSize != 32 && strconv.IntSize != 64 {
 		panicf("cannot use int of %d bits with gopjrt -- only platforms with int32 or int64 are supported", strconv.IntSize)
+	}
+
+	// Add mapping to lower-case version of dtypes.
+	keys := slices.Collect(maps.Keys(MapOfNames))
+	for _, key := range keys {
+		lowerKey := strings.ToLower(key)
+		if lowerKey == key {
+			continue
+		}
+		if _, found := MapOfNames[lowerKey]; found {
+			continue
+		}
+		MapOfNames[lowerKey] = MapOfNames[key]
 	}
 }
 

@@ -1,8 +1,9 @@
 # v0.4.0 - 2024-09-23
 
-* Binary distributed compiled in Ubuntu 24.04, updated dependencies on the C library -- pls report if you see any issues.
-* Added Erf operator.
+* Binary distributed compiled in Ubuntu 24.04 (glibc 2.38), updated dependencies on the C library. This may cause issues in older distributions.
+* Added Erf operation.
 * Added dtypes.MapOfNames that includes its aliases.
+* Updated binary PJRT CPU plugin build, 50% faster in some cases (!)
 
 # v0.3.2
 

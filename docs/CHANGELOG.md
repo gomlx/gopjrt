@@ -1,3 +1,7 @@
+# Next
+
+* Included C error message when reporting PJRT plugin failures.
+
 # v0.4.0 - 2024-09-23
 
 * Binary distributed compiled in Ubuntu 24.04 (glibc 2.38), updated dependencies on the C library. This may cause issues in older distributions.

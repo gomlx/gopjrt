@@ -131,7 +131,8 @@ func loadPlugin(pluginPath string) (handleWrapper dllHandleWrapper, err error) {
 	handle := C.dlopen(nameC, C.RTLD_LAZY)
 	cFree(nameC)
 	if handle == nil {
-		err = errors.Errorf("failed to dynamically load PJRT plugin from %q: check with `ldd %s`, maybe there are missing required libraries.", pluginPath, pluginPath)
+		msg := C.GoString(C.dlerror())
+		err = errors.Errorf("failed to dynamically load PJRT plugin from %q: %q -- check with `ldd %s` in case there are missing required libraries.", msg, pluginPath, pluginPath)
 		klog.Warningf("%v", err)
 		return
 	}

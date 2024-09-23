@@ -529,6 +529,9 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case ConjOp:
     op = xla::Conj(*inputs[0]);
     break;
+  case ErfOp:
+    op = xla::Erf(*inputs[0]);
+    break;
 
   // Two-arguments ops
   case AddOp:

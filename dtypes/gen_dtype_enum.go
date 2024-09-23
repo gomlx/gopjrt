@@ -111,7 +111,7 @@ const (
 	U2 DType = 25
 )
 
-// Original (from pjrt_c_api.h) DType names are aliased here:
+// Aliases from PJRT C API.
 const (
 	// INVALID (or PJRT_Buffer_Type_INVALID) is the C enum name for InvalidDType.
 	INVALID = InvalidDType
@@ -161,6 +161,53 @@ const (
 	// C128 (or PJRT_Buffer_Type_C128) is the C enum name for Complex128.
 	C128 = Complex128
 )
+
+// MapOfNames to their dtypes. It includes also aliases to the various dtypes.
+// It is also later initialized to include the lower-case version of the names.
+var MapOfNames = map[string]DType{
+	"InvalidDType":  InvalidDType,
+	"INVALID":       InvalidDType,
+	"Bool":          Bool,
+	"PRED":          Bool,
+	"Int8":          Int8,
+	"S8":            Int8,
+	"Int16":         Int16,
+	"S16":           Int16,
+	"Int32":         Int32,
+	"S32":           Int32,
+	"Int64":         Int64,
+	"S64":           Int64,
+	"Uint8":         Uint8,
+	"U8":            Uint8,
+	"Uint16":        Uint16,
+	"U16":           Uint16,
+	"Uint32":        Uint32,
+	"U32":           Uint32,
+	"Uint64":        Uint64,
+	"U64":           Uint64,
+	"Float16":       Float16,
+	"F16":           Float16,
+	"Float32":       Float32,
+	"F32":           Float32,
+	"Float64":       Float64,
+	"F64":           Float64,
+	"BFloat16":      BFloat16,
+	"BF16":          BFloat16,
+	"Complex64":     Complex64,
+	"C64":           Complex64,
+	"Complex128":    Complex128,
+	"C128":          Complex128,
+	"F8E5M2":        F8E5M2,
+	"F8E4M3FN":      F8E4M3FN,
+	"F8E4M3B11FNUZ": F8E4M3B11FNUZ,
+	"F8E5M2FNUZ":    F8E5M2FNUZ,
+	"F8E4M3FNUZ":    F8E4M3FNUZ,
+	"S4":            S4,
+	"U4":            U4,
+	"TOKEN":         TOKEN,
+	"S2":            S2,
+	"U2":            U2,
+}
 
 // PrimitiveType returns the DType equivalent used in C++ XlaBuilder.
 // For internal use only.

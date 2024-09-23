@@ -21,3 +21,15 @@ func TestDType_HighestLowestSmallestValues(t *testing.T) {
 	require.Equal(t, complex128(0), Complex128.LowestValue().(complex128))
 	require.Equal(t, complex64(0), Complex64.SmallestNonZeroValueForDType().(complex64))
 }
+
+func TestMapOfNames(t *testing.T) {
+	require.Equal(t, Float16, MapOfNames["Float16"])
+	require.Equal(t, Float16, MapOfNames["float16"])
+	require.Equal(t, Float16, MapOfNames["F16"])
+	require.Equal(t, Float16, MapOfNames["f16"])
+
+	require.Equal(t, BFloat16, MapOfNames["BFloat16"])
+	require.Equal(t, BFloat16, MapOfNames["bfloat16"])
+	require.Equal(t, BFloat16, MapOfNames["BF16"])
+	require.Equal(t, BFloat16, MapOfNames["bf16"])
+}

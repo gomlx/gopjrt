@@ -1,4 +1,4 @@
-# Next
+# v0.4.0 - 2024-09-23
 
 * Binary distributed compiled in Ubuntu 24.04, updated dependencies on the C library -- pls report if you see any issues.
 * Added Erf operator.

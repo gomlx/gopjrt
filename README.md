@@ -200,6 +200,8 @@ For CUDA (NVidia GPU) support, in addition also run:
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
 
+**That's it**. The next sections explains in more details for those interested in special cases.
+
 (*) It would be awesome if someone could build a _mac/arm64_ version.
 
 ### More details

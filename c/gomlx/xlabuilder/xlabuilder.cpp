@@ -26,9 +26,9 @@
 #include "gomlx/xlabuilder/op.h"
 #include "gomlx/xlabuilder/gen_op_types.h"
 
-#include "xla/client/xla_builder.h"
-#include "xla/client/xla_computation.h"
-#include "xla/client/lib/arithmetic.h"
+#include "xla/hlo/builder/xla_builder.h"
+#include "xla/hlo/builder/xla_computation.h"
+#include "xla/hlo/builder/lib/arithmetic.h"
 #include "xla/literal.h"
 #include "xla/statusor.h"
 #include "xla/types.h"

@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 // C++ only includes: these are not seen by the Go compiler.
-#include "xla/client/xla_builder.h"
+#include "xla/hlo/builder/xla_builder.h"
 #include "xla/shape.h"
 
 struct Literal;

@@ -61,14 +61,15 @@ PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
 # Check the OpenXLA version (commit hash) changed, and if so, download an
 # updated `openxla_xla_bazelrc` file from github.
 # TODO: include a sha256 verification of the file as well.
-if ! grep -q "OPENXLA_XLA_COMMIT_HASH" WORKSPACE ; then
+if ! egrep -q "^OPENXLA_XLA_COMMIT_HASH =" WORKSPACE ; then
   echo "Did not find OPENXLA_XLA_COMMIT_HASH in WORKSPACE file!?"
   exit 1
 fi
 OPENXLA_XLA_COMMIT_HASH="$(
-  grep -E "^OPENXLA_XLA_COMMIT_HASH[[:space:]]*=" WORKSPACE |\
+  grep -E "^OPENXLA_XLA_COMMIT_HASH[[:space:]]*=[[:space:]]*" WORKSPACE |\
     sed -n 's/^[^"]*"\([^"]*\)".*/\1/p'
 )"
+printf "OPENXLA_XLA_COMMIT_HASH=%s\n" "${OPENXLA_XLA_COMMIT_HASH}"
 OPENXLA_BAZELRC="openxla_xla_bazelrc"
 if [[ ! -e "${OPENXLA_BAZELRC}" || ! -e "${OPENXLA_BAZELRC}.version" \
   || "$(< "${OPENXLA_BAZELRC}.version")" != "${OPENXLA_XLA_COMMIT_HASH}" ]] ; then
@@ -78,6 +79,12 @@ if [[ ! -e "${OPENXLA_BAZELRC}" || ! -e "${OPENXLA_BAZELRC}.version" \
 else
     echo "File ${OPENXLA_BAZELRC} at version \"${OPENXLA_XLA_COMMIT_HASH}\" already exists, not fetching."
 fi
+
+# Attempts of enabling `cc_static_library`:
+# See https://github.com/bazelbuild/bazel/issues/1920
+# export USE_BAZEL_VERSION=last_green
+# STARTUP_FLAGS="${STARTUP_FLAGS} --experimental_cc_static_library"
+# Presumably, it will make to Bazel 7.4.0
 
 STARTUP_FLAGS="${STARTUP_FLAGS} ${OUTPUT_DIR}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=${OPENXLA_BAZELRC}"

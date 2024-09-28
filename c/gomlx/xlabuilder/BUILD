@@ -16,9 +16,9 @@ gomlx_xlabuilder_deps = [
     "@xla//xla:util",
     "@xla//xla:xla_data_proto_cc",
     "@xla//xla:xla_proto_cc",
-    "@xla//xla/client:xla_builder",
-    "@xla//xla/client:xla_computation",
-    "@xla//xla/client/lib:math",
+    "@xla//xla/hlo/builder:xla_builder",
+    "@xla//xla/hlo/builder:xla_computation",
+    "@xla//xla/hlo/builder/lib:math",
 ]
 
 cc_library(
@@ -49,6 +49,14 @@ cc_binary(
         ":xlabuilder",
     ],
 )
+
+# Waiting for Bazel 7.4.0:
+#cc_static_library(
+#    name = "libgomlx_xlabuilder.a",
+#    deps = gomlx_xlabuilder_deps + [
+#        ":xlabuilder",
+#    ],
+#)
 
 filegroup(
     name = "headers",

@@ -29,8 +29,8 @@
 
 #ifdef __cplusplus
 // C++ only: Dependencies.
-#include "xla/client/xla_builder.h"
-#include "xla/client/xla_computation.h"
+#include "xla/hlo/builder/xla_builder.h"
+#include "xla/hlo/builder/xla_computation.h"
 
 // Aliases.
 typedef xla::XlaBuilder XlaBuilder;

@@ -186,20 +186,35 @@ and execution with `PJRT` for comparison, with some benchmarks.
 
 ## Installing
 
-**TLDR;**: **gopjrt** requires a C library installed and a plugin module. Run the script 
-[`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) to 
-automatically install them (for CPU). 
-And in addition, run [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) to
-automatically install Nvidia's GPU support.
+### **TLDR;** 
 
+**gopjrt** requires a C library installed and a plugin module. For Linux (*), run the following script:
+
+```bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install.sh | bash
+```
+
+For CUDA (NVidia GPU) support, in addition also run:
+
+```bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
+```
+
+(*) It would be awesome if someone could build a _mac/arm64_ version.
+
+### More details
+
+The two scripts [`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) and [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) can be controlled to install in any arbitrary
+directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` (by setting `GOPJRT_NOSUDO`). You many need
+to fiddle with `LD_LIBRARY_PATH` if the installation directory is not standard, and the `PJRT_PLUGIN_LIBRARY_PATH`
+to tell gopjrt where to find the plugins.
 
 There are two parts that needs installing: (1) XLA Builder library (it's a C++ wrapper); (2) PJRT plugins for the
 accelerator devices you want to support.
 
 The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ and (2) the PJRT for CPU,
-again only for _linux/amd64_. Just [download it from the latest release in GitHub](https://github.com/gomlx/gopjrt/releases/latest). 
-
-(*) It would be awesome if someone could build a _mac/arm64_ version.
+again only for _linux/amd64_. One can [download it from the latest release in GitHub](https://github.com/gomlx/gopjrt/releases/latest), or use the
+[`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) script, which does exactly that.
 
 ### Installing XLA Builder
 
@@ -312,8 +327,6 @@ Or that your system library paths in `/etc/ld.so.conf` include `/usr/local/lib`.
 
 ## FAQ
 
-* **Why is [GoMLX](github.com/gomlx/gomlx) is not using `gopjrt` ?**
-  Not yet, soon.
 * **When is feature X from PJRT or XlaBuilder going to be supported ?**
   Yes, `gopjrt` doesn't wrap everything -- although it does cover the most common operations. 
   The simple ops and structs are auto-generated. But many require hand-writing.

@@ -2,6 +2,8 @@
 
 * Added memory layout information in buffer-to-host transfers: required for TPU.
 * Included C error message when reporting PJRT plugin failures.
+* Added GOPJRT_NOSUDO and GOPJRT_INSTALL_DIR to control `cmd/install.sh` and `cmd/install_cuda.sh`.
+* Improved installation instructions to install directly from Github using `curl`, without the need to clone the repository.
 
 # v0.4.0 - 2024-09-23
 

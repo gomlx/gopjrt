@@ -1,5 +1,6 @@
 # Next
 
+* Added memory layout information in buffer-to-host transfers: required for TPU.
 * Included C error message when reporting PJRT plugin failures.
 
 # v0.4.0 - 2024-09-23

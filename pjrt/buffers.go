@@ -4,6 +4,10 @@ package pjrt
 #include "pjrt_c_api.h"
 #include "gen_api_calls.h"
 #include "gen_new_struct.h"
+
+PJRT_Buffer_MemoryLayout_Tiled *GetTiledLayoutUnion(PJRT_Buffer_MemoryLayout *layout) {
+	return &(layout->tiled);
+}
 */
 import "C"
 import (
@@ -350,6 +354,9 @@ func (b *Buffer) Size() (int, error) {
 
 // ToHost transfers the contents of buffer stored on device to the host.
 // The space in dst has to hold enough space (see Buffer.Size) to hold the required data, or an error is returned.
+//
+// This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
+// reorganize the layout.
 func (b *Buffer) ToHost(dst []byte) error {
 	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed ?
@@ -362,12 +369,41 @@ func (b *Buffer) ToHost(dst []byte) error {
 	pinner.Pin(unsafe.SliceData(dst))
 	defer pinner.Unpin()
 
+	// We'll need the buffer rank to set up the layout.
+	dims, err := b.Dimensions()
+	if err != nil {
+		return err
+	}
+	rank := len(dims)
+
+	// Prepare arguments for the buffer-to-host call.
 	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
 	defer cFree(args)
 	args.src = b.cBuffer
 	args.dst = unsafe.Pointer(unsafe.SliceData(dst))
 	args.dst_size = C.size_t(len(dst))
-	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
+
+	// Layout argument.
+	layoutArgs := C.new_PJRT_Buffer_MemoryLayout()
+	defer cFree(layoutArgs)
+	args.host_layout = layoutArgs
+
+	// Tiled layout must be present, even if there are no tiles (tileArgs.num_tiles==0).
+	layoutArgs._type = C.PJRT_Buffer_MemoryLayout_Type_Tiled
+	tileArgs := C.GetTiledLayoutUnion(layoutArgs)
+
+	// Configure major-to-minor layout into tileArgs, if not scalar.
+	tileArgs.minor_to_major_size = C.size_t(rank)
+	if rank > 0 {
+		tileArgs.minor_to_major = cMallocArray[C.int64_t](rank)
+		minorToMajorMapping := unsafe.Slice(tileArgs.minor_to_major, rank)
+		defer cFree(tileArgs.minor_to_major)
+		for axisIdx := range len(dims) {
+			minorToMajorMapping[axisIdx] = C.int64_t(rank - axisIdx - 1)
+		}
+	}
+
+	err = toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
 	if err != nil {
 		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
 	}

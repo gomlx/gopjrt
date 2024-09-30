@@ -10,7 +10,7 @@
 
 BUILD_TARGET=":gomlx_xlabuilder"
 
-export USE_BAZEL_VERSION=7.2.0  # Latest as of this writing.
+export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
 
 DEBUG=0
 OUTPUT_DIR=""
@@ -80,12 +80,6 @@ else
     echo "File ${OPENXLA_BAZELRC} at version \"${OPENXLA_XLA_COMMIT_HASH}\" already exists, not fetching."
 fi
 
-# Attempts of enabling `cc_static_library`:
-# See https://github.com/bazelbuild/bazel/issues/1920
-# export USE_BAZEL_VERSION=last_green
-# STARTUP_FLAGS="${STARTUP_FLAGS} --experimental_cc_static_library"
-# Presumably, it will make to Bazel 7.4.0
-
 STARTUP_FLAGS="${STARTUP_FLAGS} ${OUTPUT_DIR}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=${OPENXLA_BAZELRC}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.bazelrc"
@@ -110,6 +104,12 @@ BUILD_FLAGS="${BUILD_FLAGS} --define framework_shared_object=false"
 
 # Required from some `third_party/tsl` package:
 BUILD_FLAGS="${BUILD_FLAGS} --experimental_repo_remote_exec"
+
+# Attempts of enabling `cc_static_library`:
+# See https://github.com/bazelbuild/bazel/issues/1920
+# export USE_BAZEL_VERSION=last_green
+# BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
+# Presumably, it will make to Bazel 7.4.0
 
 # Required from more recent XLA bazel configuration.
 # Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where

@@ -12,6 +12,11 @@ BUILD_TARGET=":gomlx_xlabuilder"
 
 export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
 
+# Versions 8 and above don't work. They seem to require blzmod (and the compatibility --enable_workspace build option
+# doesn't seem to work the same):
+# export USE_BAZEL_VERSION=last_green
+# export USE_BAZEL_VERSION=8.0.0-pre.20240911.1
+
 DEBUG=0
 OUTPUT_DIR=""
 while [[ $# -gt 0 ]]; do

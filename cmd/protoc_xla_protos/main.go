@@ -25,7 +25,7 @@ const (
 )
 
 var protos = []string{
-	"third_party/tsl/tsl/protobuf/dnn.proto",
+	"xla/tsl/protobuf/dnn.proto",
 	"xla/autotune_results.proto",
 	"xla/autotuning.proto",
 	"xla/pjrt/compile_options.proto",

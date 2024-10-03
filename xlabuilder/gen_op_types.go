@@ -87,4 +87,6 @@ const (
 	DynamicSliceOp
 	DynamicUpdateSliceOp
 	ErfOp
+	IsFiniteOp
+	PopulationCountOp
 )

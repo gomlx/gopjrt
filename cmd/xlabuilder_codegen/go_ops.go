@@ -111,9 +111,16 @@ func TestSimpleOps(t *testing.T) {
 	result, err = And(result, same)
 	require.NoError(t, err, "Failed to build And operation")
 
+	result, err = IsFinite(x)
+	require.NoError(t, err, "Failed to build IsFinite operation")
+	require.Equal(t, dtypes.Bool, result.Shape.DType, "IsFinite should return booleans") 
+
 	require.NoError(t, err, "Failed to build And operation")
 	i, err = Clz(i)
 	require.NoError(t, err, "Failed to build Clz operation")
+
+	i, err = PopulationCount(i)
+	require.NoError(t, err, "Failed to build PopulationCount operation")
 	same, err = Equal(i, i)
 	require.NoError(t, err, "Failed to build Equal operation")
 
@@ -149,7 +156,7 @@ func GenerateSimpleGoOps(opsInfo []OpInfo) {
 	fmt.Printf("Generated %q based on %q\n", fileName, OpTypesFileName)
 
 	// For testing we skip some that require special types.
-	skip := []string{"LogicalNot", "And", "Or", "Xor", "Dot", "Clz", "Real", "Imag", "Conj", "Complex"}
+	skip := []string{"LogicalNot", "And", "Or", "Xor", "Dot", "Clz", "Real", "Imag", "Conj", "Complex", "IsFinite", "PopulationCount"}
 	filteredOps := slices.DeleteFunc(opsInfo, func(info OpInfo) bool {
 		return slices.Index(skip, info.Name) != -1
 	})

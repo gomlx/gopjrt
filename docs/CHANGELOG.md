@@ -1,3 +1,7 @@
+# v0.4.2 -  2024-10-03
+
+* Added `IsFinite` and `PopulationCount` operations.
+
 # v0.4.1 - 2024-09-28
 
 * Added memory layout information in buffer-to-host transfers: required for TPU.

@@ -532,6 +532,12 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case ErfOp:
     op = xla::Erf(*inputs[0]);
     break;
+  case IsFiniteOp:
+    op = xla::IsFinite(*inputs[0]);
+    break;
+  case PopulationCountOp:
+    op = xla::PopulationCount(*inputs[0]);
+    break;
 
   // Two-arguments ops
   case AddOp:

@@ -766,3 +766,29 @@ func Erf(x *Op) (*Op, error) {
 	}
 	return y, nil
 }
+
+// IsFinite tests whether each element of operand is finite, i.e., is not positive or negative infinity, and is not NaN.
+// It returns an array of boolean values with the same shape as the input, where each element is true if and only if
+// the corresponding input element is finite.
+// The op is created on the same XlaBuilder as used for x.
+func IsFinite(x *Op) (*Op, error) {
+	builder := x.builder
+	y := newOp(IsFiniteOp, x)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// PopulationCount computes the number of bits set in each element of operand.
+// The op is created on the same XlaBuilder as used for x.
+func PopulationCount(x *Op) (*Op, error) {
+	builder := x.builder
+	y := newOp(PopulationCountOp, x)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}

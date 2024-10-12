@@ -90,6 +90,8 @@ enum OpType {
   DynamicSliceOp,
   DynamicUpdateSliceOp,
   ErfOp,
+  IsFiniteOp,
+  PopulationCountOp,
 };
 
 #ifdef __cplusplus

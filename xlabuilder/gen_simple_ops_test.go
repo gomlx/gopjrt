@@ -186,9 +186,16 @@ func TestSimpleOps(t *testing.T) {
 	result, err = And(result, same)
 	require.NoError(t, err, "Failed to build And operation")
 
+	result, err = IsFinite(x)
+	require.NoError(t, err, "Failed to build IsFinite operation")
+	require.Equal(t, dtypes.Bool, result.Shape.DType, "IsFinite should return booleans")
+
 	require.NoError(t, err, "Failed to build And operation")
 	i, err = Clz(i)
 	require.NoError(t, err, "Failed to build Clz operation")
+
+	i, err = PopulationCount(i)
+	require.NoError(t, err, "Failed to build PopulationCount operation")
 	same, err = Equal(i, i)
 	require.NoError(t, err, "Failed to build Equal operation")
 

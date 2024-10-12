@@ -188,13 +188,13 @@ and execution with `PJRT` for comparison, with some benchmarks.
 
 ### **TLDR;** 
 
-**gopjrt** requires a C library installed and a plugin module. For Linux (*), run the following script to install under `/usr/local/{lib,include}`:
+**gopjrt** requires a C library installed and a plugin module. For Linux (*), run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh)) to install under `/usr/local/{lib,include}`:
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install.sh | bash
 ```
 
-For CUDA (NVidia GPU) support, in addition also run:
+For CUDA (NVidia GPU) support, in addition also run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)):
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash

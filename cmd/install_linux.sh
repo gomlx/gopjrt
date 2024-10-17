@@ -42,7 +42,7 @@ fi
 mkdir -p "${GOPJRT_INSTALL_DIR}"
 pushd "${GOPJRT_INSTALL_DIR}"
 curl -L "${url}" | ${_SUDO} tar xzv
-ls -lh "lib/libgomlx_xlabuilder.so"
+ls -lh "lib/libgomlx_xlabuilder.a"
 popd
 
 # Download PJRT CPU plugin

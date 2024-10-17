@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# This script will install the CUDA PJRT plugin, to add support for Nvidia GPUs.
-# You should run `install.sh` first to install XlaBuilder C wrapper library (and the CPU plugin).
+# This script will install the CUDA PJRT plugin, to add support for Nvidia GPUs in Linux (or Windows+WSL).
+# You should run `install_linux.sh` first to install XlaBuilder C wrapper library (and the CPU plugin).
 #
 # Arguments (environment variables):
 #

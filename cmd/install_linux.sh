@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script will install the XlaBuilder C wrapper library and the latest PJRT plugin for gopjrt
-# library. This should be all one need to use it.
+# library for Linux (or Windows+WSL). This should be all one need to use it.
 #
 # Arguments (environment variables):
 #
@@ -12,7 +12,7 @@
 #
 # To execute this without cloning the repository, one can do:
 #
-# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install.sh | bash
+# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux.sh | bash
 #
 # See: https://github.com/gomlx/gopjrt?#installing
 set -e

@@ -1,3 +1,8 @@
+# Next
+
+* GoMLX XlaBuilder C library is now linked as a static library (`.a` instead of `.so`).
+* Added C-wrapper compilation for darwin-arm64.
+
 # v0.4.2 -  2024-10-03
 
 * Added `IsFinite` and `PopulationCount` operations.

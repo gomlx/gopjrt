@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # The following environment variables and flags can be defined:
 #
@@ -47,6 +46,8 @@ set -vex
 
 BAZEL=${BAZEL:-bazel}  # Bazel version > 5.
 PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
+declare -l OS_NAME="$(uname -s)"
+echo "Building for ${OS_NAME}"
 
 # Some environment variables used for XLA configure script, but set here anyway:
 #if ((USE_GPU)) ; then
@@ -88,11 +89,16 @@ fi
 
 STARTUP_FLAGS="${STARTUP_FLAGS} ${OUTPUT_DIR}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=${OPENXLA_BAZELRC}"
-STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.bazelrc"
+STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${OS_NAME}.bazelrc"
 
 # bazel build flags
 BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
-BUILD_FLAGS="${BUILD_FLAGS} --config=linux"  # Linux only for now.
+if [[ "$OS_NAME" == "linux" ]]; then
+  BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"  # Linux only for now.
+elif [[ "$OS_NAME" == "darwin" ]]; then
+  BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"  # Linux only for now.
+fi
+
 if ((DEBUG)) ; then
   BUILD_FLAGS="${BUILD_FLAGS} --config=dbg"
 fi

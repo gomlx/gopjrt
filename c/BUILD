@@ -18,18 +18,6 @@ genrule(
     """,
 )
 
-genrule(
-    name = "gomlx_xlabuilder_dynamic_lib",
-    srcs = [
-        "//gomlx/xlabuilder:libgomlx_xlabuilder.so",
-    ],
-    outs = ["lib/libgomlx_xlabuilder.so"],
-    cmd = """
-    mkdir -p "$(@D)"
-    ln $(location //gomlx/xlabuilder:libgomlx_xlabuilder.so) "$@"
-    """,
-)
-
 # Waiting for cc_static_library.
 genrule(
     name = "gomlx_xlabuilder_static_lib",
@@ -49,7 +37,6 @@ genrule(
     name = "gomlx_xlabuilder",
     srcs = [
         ":gomlx_xlabuilder_headers_include",
-        ":gomlx_xlabuilder_dynamic_lib",
         ":gomlx_xlabuilder_static_lib",
     ],
     outs = ["gomlx_xlabuilder.tar.gz"],

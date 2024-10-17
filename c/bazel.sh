@@ -16,6 +16,7 @@ export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
 # doesn't seem to work the same):
 # export USE_BAZEL_VERSION=last_green
 # export USE_BAZEL_VERSION=8.0.0-pre.20240911.1
+export USE_BAZEL_VERSION=7.4.0rc1  # Latest as of this writing.
 
 DEBUG=0
 OUTPUT_DIR=""
@@ -112,9 +113,8 @@ BUILD_FLAGS="${BUILD_FLAGS} --experimental_repo_remote_exec"
 
 # Attempts of enabling `cc_static_library`:
 # See https://github.com/bazelbuild/bazel/issues/1920
-# export USE_BAZEL_VERSION=last_green
-# BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
 # Presumably, it will make to Bazel 7.4.0
+BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
 
 # Required from more recent XLA bazel configuration.
 # Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where

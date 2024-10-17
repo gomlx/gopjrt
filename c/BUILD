@@ -31,17 +31,17 @@ genrule(
 )
 
 # Waiting for cc_static_library.
-#genrule(
-#    name = "gomlx_xlabuilder_static_lib",
-#    srcs = [
-#        "//gomlx/xlabuilder:libgomlx_xlabuilder.a",
-#    ],
-#    outs = ["lib/libgomlx_xlabuilder.a"],
-#    cmd = """
-#    mkdir -p "$(@D)"
-#    ln $(location //gomlx/xlabuilder:libgomlx_xlabuilder.a) "$@"
-#    """,
-#)
+genrule(
+    name = "gomlx_xlabuilder_static_lib",
+    srcs = [
+        "//gomlx/xlabuilder:gomlx_xlabuilder",
+    ],
+    outs = ["lib/libgomlx_xlabuilder.a"],
+    cmd = """
+    mkdir -p "$(@D)"
+    ln $(location //gomlx/xlabuilder:gomlx_xlabuilder) "$@"
+    """,
+)
 
 # Tar packaging: notice we force date/time and ordering to be deterministic, to generate the
 # always same archive, if the contents are the same. See https://reproducible-builds.org/docs/archives/.
@@ -50,7 +50,7 @@ genrule(
     srcs = [
         ":gomlx_xlabuilder_headers_include",
         ":gomlx_xlabuilder_dynamic_lib",
- #       ":gomlx_xlabuilder_static_lib",
+        ":gomlx_xlabuilder_static_lib",
     ],
     outs = ["gomlx_xlabuilder.tar.gz"],
     cmd_bash = """

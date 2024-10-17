@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # The following environment variables and flags can be defined:
 #
@@ -10,7 +9,13 @@
 
 BUILD_TARGET=":gomlx_xlabuilder"
 
-export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
+
+# Versions 8 and above don't work. They seem to require blzmod (and the compatibility --enable_workspace build option
+# doesn't seem to work the same):
+# export USE_BAZEL_VERSION=last_green
+# export USE_BAZEL_VERSION=8.0.0-pre.20240911.1
+# export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
+export USE_BAZEL_VERSION=7.4.0rc1  # First version allowing cc_static_library rule.
 
 DEBUG=0
 OUTPUT_DIR=""
@@ -41,6 +46,8 @@ set -vex
 
 BAZEL=${BAZEL:-bazel}  # Bazel version > 5.
 PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
+declare -l OS_NAME="$(uname -s)"
+echo "Building for ${OS_NAME}"
 
 # Some environment variables used for XLA configure script, but set here anyway:
 #if ((USE_GPU)) ; then
@@ -82,11 +89,16 @@ fi
 
 STARTUP_FLAGS="${STARTUP_FLAGS} ${OUTPUT_DIR}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=${OPENXLA_BAZELRC}"
-STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.bazelrc"
+STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${OS_NAME}.bazelrc"
 
 # bazel build flags
 BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
-BUILD_FLAGS="${BUILD_FLAGS} --config=linux"  # Linux only for now.
+if [[ "$OS_NAME" == "linux" ]]; then
+  BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"  # Linux only for now.
+elif [[ "$OS_NAME" == "darwin" ]]; then
+  BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"  # Linux only for now.
+fi
+
 if ((DEBUG)) ; then
   BUILD_FLAGS="${BUILD_FLAGS} --config=dbg"
 fi
@@ -107,9 +119,8 @@ BUILD_FLAGS="${BUILD_FLAGS} --experimental_repo_remote_exec"
 
 # Attempts of enabling `cc_static_library`:
 # See https://github.com/bazelbuild/bazel/issues/1920
-# export USE_BAZEL_VERSION=last_green
-# BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
 # Presumably, it will make to Bazel 7.4.0
+BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
 
 # Required from more recent XLA bazel configuration.
 # Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where

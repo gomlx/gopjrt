@@ -109,7 +109,7 @@ func loadNamedPlugin(name string) (*Plugin, error) {
 		pluginPath, found = searchPlugin(name)
 		if !found {
 			return nil, errors.Errorf("plugin name %q not found in paths %v: set PJRT_PLUGIN_LIBRARY_PATH to an specific path(s) to search; "+
-				"plugins should be named pjrt_c_api_<name>_plugin.so",
+				"plugins should be named pjrt_c_api_<name>_plugin.so (or .dylib for Darwin)",
 				name, pluginSearchPaths)
 		}
 	}
@@ -140,8 +140,8 @@ func loadNamedPlugin(name string) (*Plugin, error) {
 var (
 	// Patterns to extract the name from the plugins.
 	rePluginName = []*regexp.Regexp{
-		regexp.MustCompile(`^.*/pjrt_c_api_(\w+)_plugin.so$`),
-		regexp.MustCompile(`^.*/pjrt[-_]plugin[-_](\w+).so$`),
+		regexp.MustCompile(`^.*/pjrt_c_api_(\w+)_plugin.(so|dylib)$`),
+		regexp.MustCompile(`^.*/pjrt[-_]plugin[-_](\w+).(so|dylib)$`),
 	}
 )
 
@@ -160,10 +160,11 @@ func pathToPluginName(pPath string) string {
 //
 // Plugins are searched in the PJRT_PLUGIN_LIBRARY_PATH directory -- or directories, if it is a ":" separated list.
 // If it is not set it will search in "/usr/local/lib/gomlx/pjrt" and the standard libraries directories of the
-// system (in linux in LD_LIBRARY_PATH and /etc/ld.so.conf file) in that order.
+// system (in linux in LD_LIBRARY_PATH and /etc/ld.so.conf file, in Darwin it also searches in DYLD_LIBRARY_PATH) in
+// that order.
 //
-// If there are plugins with the same name but different versions in different directories, it respects the order of the directories given by
-// PJRT_PLUGIN_LIBRARY_PATH or by the system.
+// If there are plugins with the same name but different versions in different directories, it respects the order of the
+// directories given by PJRT_PLUGIN_LIBRARY_PATH or by the system.
 func AvailablePlugins() (pluginsPaths map[string]string) {
 	return searchPlugins("")
 }
@@ -176,7 +177,9 @@ func searchPlugin(searchName string) (path string, found bool) {
 func searchPlugins(searchName string) (pluginsPaths map[string]string) {
 	pluginsPaths = make(map[string]string)
 	for _, pluginPath := range pluginSearchPaths {
-		for _, pattern := range []string{"pjrt-plugin-*.so", "pjrt_plugin_*.so", "pjrt_c_api_*_plugin.so"} {
+		for _, pattern := range []string{
+			"pjrt-plugin-*.so", "pjrt_plugin_*.so", "pjrt_c_api_*_plugin.so",
+			"pjrt-plugin-*.dylib", "pjrt_plugin_*.dylib", "pjrt_c_api_*_plugin.dylib"} {
 			candidates, err := filepath.Glob(path.Join(pluginPath, pattern))
 			if err != nil {
 				continue

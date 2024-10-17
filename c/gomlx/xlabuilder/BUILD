@@ -34,29 +34,13 @@ cc_library(
     alwayslink = True,
 )
 
-cc_binary(
-    name = "libgomlx_xlabuilder.so",
-    linkopts = [
-        "-shared",
-    ],
-    # Setting linkshared=1 and linkstatic=1 should try to link everything (except system libraries) statically
-    # but generate a dynamically linked library -- needed to link it to other languages, Go in this case.
-    # At least that's what I understood from reading the docs in
-    # https://bazel.build/reference/be/c-cpp#cc_binary.linkshared
-    linkshared = 1,
-    linkstatic = 1,
+# Waiting for Bazel 7.4.0:
+cc_static_library(
+    name = "gomlx_xlabuilder",
     deps = gomlx_xlabuilder_deps + [
         ":xlabuilder",
     ],
 )
-
-# Waiting for Bazel 7.4.0:
-#cc_static_library(
-#    name = "libgomlx_xlabuilder.a",
-#    deps = gomlx_xlabuilder_deps + [
-#        ":xlabuilder",
-#    ],
-#)
 
 filegroup(
     name = "headers",

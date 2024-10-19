@@ -19,6 +19,12 @@ gomlx_xlabuilder_deps = [
     "@xla//xla/hlo/builder:xla_builder",
     "@xla//xla/hlo/builder:xla_computation",
     "@xla//xla/hlo/builder/lib:math",
+
+    # StableHLO/MLIR conversion
+    "@llvm-project//mlir:BytecodeWriter",
+    "@stablehlo//:register",
+    "@stablehlo//:stablehlo_serialization",
+    "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
 ]
 
 cc_library(

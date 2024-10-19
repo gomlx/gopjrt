@@ -1,6 +1,5 @@
 package xlabuilder
 
-// #cgo LDFLAGS: -lgomlx_xlabuilder
 /*
 #include <gomlx/xlabuilder/literal.h>
 #include <gomlx/xlabuilder/op.h>

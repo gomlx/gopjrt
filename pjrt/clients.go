@@ -100,8 +100,8 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 	args.program = cProgram
 	args.compile_options = (*C.char)(unsafe.Pointer(unsafe.SliceData(compileOptionsProto)))
 	args.compile_options_size = (C.size_t)(len(compileOptionsProto))
-
-	err := toError(plugin, C.call_PJRT_Client_Compile(plugin.api, args))
+	cErr := C.call_PJRT_Client_Compile(plugin.api, args)
+	err := toError(plugin, cErr)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +168,11 @@ func finalizeClient(c *Client) {
 	if err != nil {
 		klog.Errorf("Client.Destroy failed: %v", err)
 	}
+}
+
+// Plugin returns the Plugin from which the Client was created.
+func (c *Client) Plugin() *Plugin {
+	return c.plugin
 }
 
 // Destroy the client, release resources, and Client is no longer valid.

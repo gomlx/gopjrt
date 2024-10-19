@@ -7,6 +7,7 @@ package xlabuilder
 import "C"
 import (
 	"github.com/gomlx/gopjrt/cbuffer"
+	"github.com/pkg/errors"
 	"runtime"
 	"unsafe"
 )
@@ -79,7 +80,24 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
 }
 
-// TextHLO generates the StableHLO program as a <serialized HLOModule proto> and returns its text representation.
+// SerializedStableHLO exports the computation as a StableHLO as an `mlir:ModuleOp`.
+//
+// It does that by converting the `HLOModule` proto to an `mlir:ModuleOp`.
+func (comp *XlaComputation) SerializedStableHLO() *cbuffer.CBuffer {
+	if comp.IsNil() {
+		panicf("XlaComputation is nil, maybe it has already been destroyed?")
+	}
+	defer runtime.KeepAlive(comp)
+	var vectorData *C.VectorData
+	statusOr := C.XlaComputationSerializedStableHLO(unsafe.Pointer(comp.cXlaComputation))
+	vectorData, err := pointerOrError[C.VectorData](statusOr)
+	if err != nil {
+		panicf("while converting XlaComputation to StableHLO: %v", err)
+	}
+	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
+}
+
+// TextHLO generates the HLO program as a <serialized HLOModule proto> and returns its text representation.
 // It can be used for testing and debugging.
 //
 // Alternatively, see XlaComputation documentation on how to pretty-print the computation as text HLO.
@@ -92,4 +110,21 @@ func (comp *XlaComputation) TextHLO() string {
 		return ""
 	}
 	return cStrFree(C.XlaComputationTextHLO(unsafe.Pointer(comp.cXlaComputation)))
+}
+
+// TextStableHLO generates the StableHLO program.
+func (comp *XlaComputation) TextStableHLO() (string, error) {
+	if comp.IsNil() {
+		return "", errors.New("XlaComputation is nil, maybe it has already been destroyed?")
+	}
+	defer runtime.KeepAlive(comp)
+
+	statusOr := C.XlaComputationStableHLOText(unsafe.Pointer(comp.cXlaComputation))
+	var err error
+	var cText *C.char
+	cText, err = pointerOrError[C.char](statusOr)
+	if err != nil {
+		return "", errors.Wrapf(err, "while converting XlaComputation to StableHLO")
+	}
+	return cStrFree(cText), nil
 }

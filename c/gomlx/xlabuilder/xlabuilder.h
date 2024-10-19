@@ -81,13 +81,25 @@ extern XlaBuilder * XlaBuilderCreateSubBuilder(XlaBuilder *builder, char* name);
 // XlaComputationName returns the name of the XlaComputation.
 extern char* XlaComputationName(XlaComputation *xla_comp);
 
-// XlaComputationSerializedHLO returns the serialized HloModule proto (with the StableHLO program), that can be used by PJRT.
+// XlaComputationSerializedHLO returns the serialized HloModule proto (with the HLO program), that can be used by PJRT
+// with the program type set to "hlo".
 //
 // It returns an error or a VectorData of bytes with the binary blob.
 extern VectorData* XlaComputationSerializedHLO(XlaComputation *xla_comp);
 
 // XlaComputationTextHLO returns the HloModule proto converted to text form for debugging and testing.
 extern char* XlaComputationTextHLO(XlaComputation *xla_comp);
+
+// XlaComputationSerializedStableHLO returns the serialized `mlir::ModuleOp` object (with the StableHLO program),
+// that can be used by PJRT with the program type set to "mlir".
+//
+// It returns either an error or a VectorData* of bytes with the binary blob.
+extern StatusOr XlaComputationSerializedStableHLO(XlaComputation *xla_comp);
+
+// XlaComputationStableHLOText returns the computation converted to text (human-readable) StableHLO.
+//
+// It returns either an error or a char*.
+extern StatusOr XlaComputationStableHLOText(XlaComputation *xla_comp);
 
 // XlaComputationDestroy destroys the XlaComputation reference.
 extern void XlaComputationDestroy(XlaComputation *op);

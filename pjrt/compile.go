@@ -101,15 +101,23 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	}
 	pinner.Pin(unsafe.SliceData(binOptions))
 
-	return pjrtClientCompile(cc.plugin, cc.client, cc.program, cc.programFormat, binOptions)
+	klog.V(2).Infof("calling pjrtClientCompile()")
+	exec, err := pjrtClientCompile(cc.plugin, cc.client, cc.program, cc.programFormat, binOptions)
+	if err != nil {
+		klog.V(1).Infof("pjrtClientCompile() failed: %v", err)
+		return nil, errors.WithMessagef(err, "failed to compile the program")
+	}
+	klog.V(2).Infof("pjrtClientCompile() succeeded")
+	return exec, nil
 }
 
 // WithHLO configures the program to the serialized HLO (HloModule proto).
 // The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
 // call to Done is returned.
 //
-// Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
-// It panics if more than one WithHLO or WithComputation is called.
+// Either WithHLO, WithStableHLO or WithComputation must be set, before Done can be called
+// to trigger the computation, but not both.
+// It panics if more than one version of the program is called.
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
@@ -126,20 +134,47 @@ func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
 	return cc
 }
 
+// WithStableHLO configures the program with a StableHLO program, encoded as a sereialized `mlir.ModuleOp` object.
+// The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
+// call to Done is returned.
+//
+// Either WithHLO, WithStableHLO or WithComputation must be set, before Done can be called
+// to trigger the computation, but not both.
+// It panics if more than one version of the program is called.
+func (cc *CompileConfig) WithStableHLO(serialized []byte) *CompileConfig {
+	if cc.err != nil {
+		return cc
+	}
+	if len(cc.program) > 0 || cc.programFormat != "" {
+		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
+		return cc
+	}
+
+	cc.program = serialized
+	cc.programFormat = "mlir"
+	return cc
+}
+
 // XlaComputation is an interface that matches xlabuilder.XlaComputation method needed by PJRT.
 //
 // Created here to avoid creating a hard dependency to the xlabuilder package.
 //
-// The returned buffer ownership is returned (the caller must free the buffer).
+// The returned buffer ownership is transferred to the caller -- the caller must free the buffer later.
 type XlaComputation interface {
+	// SerializedHLO exports the computation as a serialized `HloModuleProto`.
 	SerializedHLO() *cbuffer.CBuffer
+
+	// SerializedStableHLO exports the computation as a StableHLO as an `mlir:ModuleOp`.
+	SerializedStableHLO() *cbuffer.CBuffer
 }
 
 // WithComputation configures the program to the xlabuilder.XlaComputation -- see xlabuilder package.
 // Behind the scenes it is an HLO program (HloModule proto), but this handles the details.
+// If plugin.UseStableHLO is set to true, it takes the StableHLO (in MLIR format) program instead.
 //
-// Either WithHLO or WithComputation must be set, before Done can be called to trigger the computation, but not both.
-// It panics if more than one WithHLO or WithComputation is called.
+// Either WithHLO, WithStableHLO or WithComputation must be set, before Done can be called
+// to trigger the computation, but not both.
+// It panics if more than one version of the program is called.
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileConfig {
@@ -152,6 +187,12 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 	}
 
 	// Get HLO program from computation.
-	cc.cbufferToFree = computation.SerializedHLO()
-	return cc.WithHLO(cc.cbufferToFree.Bytes())
+	if cc.plugin.UseStableHLO {
+		cc.cbufferToFree = computation.SerializedStableHLO()
+		cc.WithStableHLO(cc.cbufferToFree.Bytes())
+	} else {
+		cc.cbufferToFree = computation.SerializedHLO()
+		cc.WithHLO(cc.cbufferToFree.Bytes())
+	}
+	return cc
 }

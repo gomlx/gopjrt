@@ -122,6 +122,9 @@ BUILD_FLAGS="${BUILD_FLAGS} --experimental_repo_remote_exec"
 # Presumably, it will make to Bazel 7.4.0
 BUILD_FLAGS="${BUILD_FLAGS} --experimental_cc_static_library"
 
+# Absl and TSL redefine each others macros, and the output is full of garbage.
+BUILD_FLAGS="${BUILD_FLAGS} --cxxopt=-Wno-macro-redefined"
+
 # Required from more recent XLA bazel configuration.
 # Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where
 # X=3, YY=11 match the python version.

@@ -6,6 +6,7 @@
   include the whole LLVM :(
   * Enables Apple Metal PJRT -- it only supports StableHLO/MLIR programs (and not the simpler HLO).
 * Updated XLA dependency; Updated PJRT for linux/amd64 CPU.
+* Added `Literal.Data()`
 
 # v0.4.2 -  2024-10-03
 

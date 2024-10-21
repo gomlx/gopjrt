@@ -70,9 +70,8 @@ typedef struct Literal {
 // LiteralDestroy frees all associated resources.
 extern void LiteralDestroy(Literal *literal);
 
-// MakeFromShape create a new literal with the given shape, with uninitialized
-// data. It takes ownership of the given `Shape*` pointer, and stores it within
-// the returned Literal struct.
+// MakeFromShape create a new literal with the given shape, with data initialized to 0.
+// It takes ownership of the given `Shape*` pointer, and stores it within the returned Literal struct.
 extern Literal *MakeLiteralFromShape(Shape *shape);
 
 // Update data, size and size_bytes elements.

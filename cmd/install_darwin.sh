@@ -22,7 +22,6 @@ if [[ "${GOPJRT_NOSUDO}" != "" ]] ; then
   _SUDO=""
 fi
 
-if false ; then
 # Fetch address of resources for latest release:
 download_urls=$(mktemp --tmpdir gopjrt_urls.XXXXXXXX)
 curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
@@ -45,8 +44,6 @@ ls -lh "lib/libgomlx_xlabuilder.a"
 popd
 rm -f "${download_urls}"
 
-fi
-
 #
 # Download PJRT Metal plugin from the "jax-metal" pip package
 #
@@ -60,7 +57,7 @@ if [[ "${JAX_VENV_DIR}" == "" ]] ; then
   python3 -m venv "${JAX_VENV_DIR}"
 fi
 
-# Install jax[cuda12].
+# Install jax-metal.
 source "${JAX_VENV_DIR}/bin/activate"
 printf "\nInstalling jax-metal in ${JAX_VENV_DIR}:\n"
 pip install "jax-metal"
@@ -74,6 +71,7 @@ ${_SUDO} mkdir -p "${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt"
 ${_SUDO} rm -f "${PJRT_PATH}"
 ${_SUDO} cp -f "${JAX_VENV_DIR}/lib/python3."*"/site-packages/jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" "${PJRT_PATH}"
 ls -lh "${PJRT_PATH}"
+deactivate
 
 # Clean up and finish.
 if [[ "${tmp_venv_dir}" != "" ]] ; then
@@ -81,7 +79,3 @@ if [[ "${tmp_venv_dir}" != "" ]] ; then
   rm -rf "${tmp_venv_dir}"
 fi
 echo "Done."
-
-
-
-

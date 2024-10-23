@@ -1,7 +1,8 @@
-# Next
+# v0.4.3 - 2024-10-23
 
 * GoMLX XlaBuilder C library is now linked as a static library (`.a` instead of `.so`).
-* **darwin-arm64** support:
+  * Using new Bazel 7.4.0, with support for `cc_static_library`.
+* **EXPERIMENTAL** support for Apple/Metal (`darwin-arm64`) support:
   * Added C-wrapper compilation for darwin-arm64.
   * Added converter from HLO to StableHLO -- it greatly increases the size of libgomlx_builder.a, since it has to
     include the whole LLVM :(
@@ -10,7 +11,7 @@
 * Updated XLA dependency; Updated PJRT for linux/amd64 CPU.
 * Added `Literal.Data()`
 
-# v0.4.2 -  2024-10-03
+# v0.4.2 - 2024-10-03
 
 * Added `IsFinite` and `PopulationCount` operations.
 

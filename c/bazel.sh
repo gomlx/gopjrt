@@ -15,7 +15,8 @@ BUILD_TARGET=":gomlx_xlabuilder"
 # export USE_BAZEL_VERSION=last_green
 # export USE_BAZEL_VERSION=8.0.0-pre.20240911.1
 # export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
-export USE_BAZEL_VERSION=7.4.0rc1  # First version allowing cc_static_library rule.
+# export USE_BAZEL_VERSION=7.4.0rc1  # First version allowing cc_static_library rule.
+export USE_BAZEL_VERSION=7.4.0
 
 DEBUG=0
 OUTPUT_DIR=""

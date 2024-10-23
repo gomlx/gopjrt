@@ -204,6 +204,8 @@ curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.s
 
 For Darwin/arm64 (M1, M2), run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)) to install under `/usr/local/{lib,include}`:
 
+* **EXPERIMENTAL**, just a subset of the operations and types supported (`float64` doesn't work). See https://developer.apple.com/metal/jax/.
+
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin.sh | bash
 ```
@@ -224,8 +226,9 @@ to tell gopjrt where to find the plugins.
 There are two parts that needs installing: (1) XLA Builder library (it's a C++ wrapper); (2) PJRT plugins for the
 accelerator devices you want to support.
 
-The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ (or Windows WSL) and _darwin/arm64_ and 
-(2) the PJRT for CPU only for _linux/amd64_. 
+The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ (or Windows WSL) and 
+_darwin/arm64_ (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
+and (2) the PJRT for CPU only for _linux/amd64_. 
 
 The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 PJRT from the corresponding Jax pip package.
 
@@ -233,7 +236,8 @@ The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 PJRT f
 
 If you have any questions, or want a custom installation of hte XLA Builder library, check and modify
 [`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
-[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or [`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or 
+[`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh) (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
 they are self-explaining.
 
 ### Installing PJRT plugins

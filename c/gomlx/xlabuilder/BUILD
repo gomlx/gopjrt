@@ -25,9 +25,10 @@ gomlx_xlabuilder_deps = [
 stablehlo_deps = [
     # StableHLO/MLIR conversion
     "@llvm-project//mlir:BytecodeWriter",
-     "@stablehlo//:register",
-     "@stablehlo//:stablehlo_serialization",
-     "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
+    "@llvm-project//mlir:IR",
+    "@stablehlo//:register",
+    "@stablehlo//:stablehlo_serialization",
+    "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
  ]
 
 config_setting(
@@ -48,7 +49,10 @@ cc_library(
         ":use_stablehlo": ["USE_STABLEHLO"],
         "//conditions:default": [],
     }),
-    deps = gomlx_xlabuilder_deps,
+    deps = gomlx_xlabuilder_deps + select({
+             ":use_stablehlo": stablehlo_deps,
+             "//conditions:default": [],
+    }),
     alwayslink = True,
 )
 

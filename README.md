@@ -11,7 +11,7 @@ computations (with large data) from Go using various [backends supported by Open
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
-**NEW**: Experimental, and somewhat limited Apple/Metal support.
+**NEW**: Experimental, and somewhat limited **Apple/Metal support**.
 
 And because Jax, TensorFlow and [optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA,
 it is possible to run Jax functions in Go with `gopjrt`, and probably TensorFlow and PyTorch as well.

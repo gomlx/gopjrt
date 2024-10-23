@@ -7,6 +7,7 @@ import (
 	"github.com/gomlx/gopjrt/pjrt"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"k8s.io/klog/v2"
 	"os"
 	"testing"
 )
@@ -17,6 +18,8 @@ var flagStableHLOOutput = flag.String("hlo", "",
 		"and manually checked for their values.")
 
 var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path to use for XlaBuilder tests that evaluate the program")
+
+var flagUseStableHLO = flag.Bool("stable_hlo", true, "Convert HLO to StableHLO before executing")
 
 type errTester[T any] struct {
 	value T
@@ -39,6 +42,10 @@ func getPJRTClient(t *testing.T) *pjrt.Client {
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
 	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
+	plugin.UseStableHLO = *flagUseStableHLO && HasStableHLO()
+	if *flagUseStableHLO && !HasStableHLO() {
+		klog.Warning("StableHLO disabled because it's not available in build")
+	}
 	fmt.Printf("Loaded PJRT plugin %s\n", plugin)
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
@@ -149,6 +156,40 @@ func TestXlaBuilder(t *testing.T) {
 		require.Equal(t, len(bufBytes), n)
 		require.NoError(t, f.Close(), "Failed to close StableHLO proto output file %q", *flagStableHLOOutput)
 	}
+}
+
+func TestStableHLO(t *testing.T) {
+	if !HasStableHLO() {
+		fmt.Println("Skipping TestStableHLO: StableHLO not included in build.")
+		return
+	}
+
+	// f(x) = x^2
+	builder := New("x*x")
+	fmt.Printf("XlaBuilder %q:\n", builder.Name())
+	x, err := Parameter(builder, "x", 0, MakeShape(dtypes.F32)) // Scalar float32.
+	require.NoError(t, err)
+	fX, err := Mul(x, x)
+	require.NoError(t, err)
+	comp, err := builder.Build(fX)
+	require.NoError(t, err)
+
+	// Convert to StableHLO (text):
+	stableHLO, err := comp.TextStableHLO()
+	require.NoError(t, err)
+	fmt.Printf("StableHLO code:\n=====================================\n%s=====================================\n", stableHLO)
+	want := `{
+  func.func @main(%arg0: tensor<f32>) -> tensor<f32> {
+    %0 = mhlo.multiply %arg0, %arg0 : tensor<f32>
+    return %0 : tensor<f32>
+  }
+}`
+	require.Contains(t, stableHLO, want)
+
+	// Convert to StableHLO (binary):
+	data, err := comp.SerializedStableHLO()
+	require.NoError(t, err)
+	data.Free()
 }
 
 func TestMismatches(t *testing.T) {

@@ -188,117 +188,68 @@ and execution with `PJRT` for comparison, with some benchmarks.
 
 ### **TLDR;** 
 
-**gopjrt** requires a C library installed and a plugin module. For Linux (*), run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh)) to install under `/usr/local/{lib,include}`:
+**gopjrt** requires a C library installed and a plugin module. 
+
+*For Linux or Windows+WSL*, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh)) to install under `/usr/local/{lib,include}`:
 
 ```bash
-curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install.sh | bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux.sh | bash
 ```
 
-For CUDA (NVidia GPU) support, in addition also run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)):
+For Linux (or Windows+WSL)+CUDA (NVidia GPU) support, in addition also run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)):
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
 
-**That's it**. The next sections explains in more details for those interested in special cases.
+For Darwin/arm64 (M1, M2), run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)) to install under `/usr/local/{lib,include}`:
 
-(*) It would be awesome if someone could build a _mac/arm64_ version.
+* **EXPERIMENTAL**, just a subset of the operations and types supported (`float64` doesn't work). See https://developer.apple.com/metal/jax/.
+
+```bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin.sh | bash
+```
+
+**TODO(Darwin)**: Create a Homebrew version.
+
+**That's it**. The next sections explains in more details for those interested in special cases.
 
 ### More details
 
-The two scripts [`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) and [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) can be controlled to install in any arbitrary
-directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` (by setting `GOPJRT_NOSUDO`). You many need
-to fiddle with `LD_LIBRARY_PATH` if the installation directory is not standard, and the `PJRT_PLUGIN_LIBRARY_PATH`
+The the install scripts [`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and [`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)
+can be controlled to install in any arbitrary directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` 
+(by setting `GOPJRT_NOSUDO`). 
+You many need to fiddle with `LD_LIBRARY_PATH` if the installation directory is not standard, and the `PJRT_PLUGIN_LIBRARY_PATH`
 to tell gopjrt where to find the plugins.
 
 There are two parts that needs installing: (1) XLA Builder library (it's a C++ wrapper); (2) PJRT plugins for the
 accelerator devices you want to support.
 
-The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ and (2) the PJRT for CPU,
-again only for _linux/amd64_. One can [download it from the latest release in GitHub](https://github.com/gomlx/gopjrt/releases/latest), or use the
-[`cmd/install.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install.sh) script, which does exactly that.
+The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ (or Windows WSL) and 
+_darwin/arm64_ (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
+and (2) the PJRT for CPU only for _linux/amd64_. 
+
+The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 PJRT from the corresponding Jax pip package.
 
 ### Installing XLA Builder
 
-This is the C wrapper (for the C++ XlaBuilder library) needed by Go. 
-For _linux/amd64_ you can [download](https://github.com/gomlx/gopjrt/releases/latest) the file `gomlx_xlabuilder-linux-amd64.tar.gz`
-and "untar" it to `/usr/local` -- or some area of your system that is visible by the C-compiler (includes) and the loader (either in `LD_LIBRARY_PATH`
-or `/etc/ld.config`)
-
-You can use the tool under `cmd/install.sh` (it also installs the PJRT CPU plugin). 
-Or manually, with something like the following in Linux:
-
-```bash
-cd /usr/local
-gopjrt_release_download_url="$(curl -s -L -I 'https://github.com/gomlx/gopjrt/releases/latest' | egrep -i '^location: ' |  awk '{print $2}' | sed 's|/tag/|/download/| ; s/\r$//')"
-echo "Downloading GOPJRT/XlaBuilder library from ${gopjrt_release_download_url}/gomlx_xlabuilder-linux-amd64.tar.gz"
-sudo printf "\tsudo authorized\n"
-curl -L "${gopjrt_release_download_url}/gomlx_xlabuilder-linux-amd64.tar.gz" | sudo tar xzv
-```
-
-For other base systems, you can build it (see the `github.com/gomlx/gopjrt/c` directory) from scratch: 
-if things work, generally it's straight forward, and in a modern computer it will take a few minutes only.
-But for different platforms, XLA can be tricky to configure.
+If you have any questions, or want a custom installation of hte XLA Builder library, check and modify
+[`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or 
+[`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh) (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
+they are self-explaining.
 
 ### Installing PJRT plugins
 
-The recommended location for plugins is `/usr/local/lib/gomlx/pjrt`, but the `pjrt` package
-will automatically search in all standard library locations (configured in `/etc/ld.so.conf`).
+The recommended location for plugins is `/usr/local/lib/gomlx/pjrt`, and that's where the installation scripts
+[`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and [`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)
+install them.
+
+But **gopjrt** will automatically search for PJRT plugins in all standard library locations (configured in `/etc/ld.so.conf` in Linux).
 Alternatively, one can set the directory(ies) to search for plugins setting the environment variable
 `PJRT_PLUGIN_LIBRARY_PATH`.
-
-#### CPU for Linux
-
-The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform. The file is called
-`pjrt_c_api_cpu_plugin.so.gz`. Please, uncompress the file and move it to your plugin directory -- e.g.:
-`/usr/local/lib/gomlx/pjrt`.
-
-You can use the tool under `cmd/install.sh`. Or manually, with something like the following in Linux:
-
-```bash
-gopjrt_release_download_url="$(curl -s -L -I 'https://github.com/gomlx/gopjrt/releases/latest' | egrep -i '^location: ' |  awk '{print $2}' | sed 's|/tag/|/download/| ; s/\r$//')"
-echo "Downloading PJRT CPU plugin from ${gopjrt_release_download_url}/pjrt_c_api_cpu_plugin.so.gz"
-sudo printf "\tsudo authorized\n"
-sudo mkdir -p /usr/local/lib/gomlx/pjrt
-cd /usr/local/lib/gomlx/pjrt
-curl -L "${gopjrt_release_download_url}/pjrt_c_api_cpu_plugin.so.gz" | gunzip | sudo bash -c 'cat > pjrt_c_api_cpu_plugin.so'
-```
-
-#### Nvidia's GPU (CUDA) support for Linux
-
-NVidia licenses are complicated (I don't understand), so ... I hesitate to provide a prebuilt plugin and dependencies.
-But there is a simple way to achieve it, by linking the files from a Jax installation.
-And a script to facilitate it in [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh).
-Manually, you should do the following:
-
-Create and activate a [virtual environment (venv) for Python](https://docs.python.org/3/library/venv.html).
-Probably a [Conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) 
-would also work.
-
-Then install Jax for Cuda and its dependencies:
-
-```shell
-pip install -U "jax[cuda12]"
-```
-
-Now we want to link 2 things: (1) the cuda PJRT plugin; (2) the various NVidia drivers. 
-Assuming the virtual environment (Python's `venv`) is set, the `$VIRTUAL_ENV` should be pointing
-to its installation. Check that is the case with `$VIRTUAL_ENV`.
-
-And then do (change the target directories to your preference):
-
-```shell
-sudo mkdir -p /usr/local/lib/gomlx/pjrt
-sudo ln -sf ${VIRTUAL_ENV}/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so \
-  /usr/local/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so
-sudo ln -sf ${VIRTUAL_ENV}/lib/python3.12/site-packages/nvidia \
-  /usr/local/lib/gomlx/nvidia
-
-```
-
-#### Metal Mac
-
-Should be doable, in a similar way as but I don't own a Mac. Contributions would be most welcome.
 
 #### Plugins for other devices or platforms.
 
@@ -306,26 +257,6 @@ See [docs/devel.md](https://github.com/gomlx/gopjrt/blob/main/docs/devel.md#pjrt
 from OpenXLA/XLA sources.
 
 Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html) with the link and references to the Intel and Apple hardware plugins. 
-
-
-### Installing XlaBuilder C/C++ library (for Linux only for now)
-
-This is only required is the XlaBuilder library (`xlabuilder` package) is used.
-
-The release comes with a CPU plugin pre-compiled for the _linux/x86-64_ platform. The file is called
-`gomlx_xlabuilder-linux-amd64.tar.gz` and it includes two subdirectories `lib/` and `include/` with the files
-required to compile Go's `xlabuilder` package.
-
-The suggest location is to "untar" (decompress and unpackage) this file to `/usr/local`.
-Change the path to the file on the command below:
-
-```shell
-cd /usr/local
-sudo tar xzvf gomlx_xlabuilder-linux-amd64.tar.gz
-```
-
-Finally, you want to make sure that your environment variable `LD_LIBRARY_PATH` includes `/usr/local/lib`.
-Or that your system library paths in `/etc/ld.so.conf` include `/usr/local/lib`. 
 
 ## FAQ
 

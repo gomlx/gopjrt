@@ -1313,6 +1313,42 @@ func DecodeWhile(op *Op) (initialState *Op, condition, body *XlaComputation) {
 	return
 }
 
+// scalarStartIndices checks that startIndices are scalars, or 1 1-D vector, which is split into scalars.
+func scalarStartIndices(funcName string, startIndices []*Op) ([]*Op, error) {
+	if len(startIndices) == 0 {
+		return nil, errors.Errorf("%s() requires at least one element for startIndices, got 0", funcName)
+	} else if len(startIndices) > 1 {
+		for ii, startIndex := range startIndices {
+			if startIndex.Shape.Rank() != 0 {
+				return nil, errors.Errorf("%s() startIndices must be either a slice of scalar values or one 1D vector, got startIndex[%d].shape=%s",
+					funcName, ii, startIndex.Shape)
+			}
+		}
+	} else {
+		startIndex := startIndices[0]
+		if startIndex.Shape.Rank() > 1 {
+			return nil, errors.Errorf("%s() startIndices must be either a slice of scalar values or one 1D vector, got one startIndices={shape=%s}",
+				funcName, startIndex.Shape)
+		} else if startIndex.Shape.Rank() == 1 {
+			// We need to split the 1-D vector into a list of scalar values.
+			startIndices = make([]*Op, startIndex.Shape.Dimensions[0])
+			var err error
+			for ii := range startIndices {
+				startIndices[ii], err = Slice(startIndex, []int{ii}, []int{ii + 1}, nil)
+				if err != nil {
+					return nil, errors.WithMessagef(err, "%s() while splitting startIndices into a slice of scalar values", funcName)
+				}
+				// Convert to scalar.
+				startIndices[ii], err = Reshape(startIndices[ii])
+				if err != nil {
+					return nil, errors.WithMessagef(err, "%s() while splitting startIndices into a slice of scalar values", funcName)
+				}
+			}
+		}
+	}
+	return startIndices, nil
+}
+
 // DynamicSlice extracts a sub-array from the input array at dynamic start_indices.
 // The size of the slice in each axis is passed in sliceDims, which specify the slice
 // intervals for each axis: [start, start + size).
@@ -1321,10 +1357,15 @@ func DecodeWhile(op *Op) (initialState *Op, condition, body *XlaComputation) {
 // See description in https://openxla.org/xla/operation_semantics#dynamicslice
 func DynamicSlice(operand *Op, startIndices []*Op, sliceDims []int) (*Op, error) {
 	builder := operand.builder
+	var err error
+	startIndices, err = scalarStartIndices("DynamicSlice", startIndices)
+	if err != nil {
+		return nil, err
+	}
 	allOps := append([]*Op{operand}, startIndices...)
 	op := newOp(DynamicSliceOp, allOps...)
 	op.IntsArg = sliceDims
-	err := builder.addOp(op)
+	err = builder.addOp(op)
 	if err != nil {
 		return nil, err
 	}
@@ -1350,9 +1391,14 @@ func DynamicUpdateSlice(operand, update *Op, startIndices []*Op) (*Op, error) {
 	if operand.Shape.DType != update.Shape.DType {
 		return nil, errors.Errorf("operand and update dtypes (%s and %s) don't match for DynamicUpdateSlice", operand.Shape.DType, update.Shape.DType)
 	}
+	var err error
+	startIndices, err = scalarStartIndices("DynamicSlice", startIndices)
+	if err != nil {
+		return nil, err
+	}
 	allOps := append([]*Op{operand, update}, startIndices...)
 	op := newOp(DynamicUpdateSliceOp, allOps...)
-	err := builder.addOp(op)
+	err = builder.addOp(op)
 	if err != nil {
 		return nil, err
 	}

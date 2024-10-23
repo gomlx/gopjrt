@@ -79,16 +79,16 @@ func TestIota(t *testing.T) {
 	client := getPJRTClient(t)
 	builder := New(t.Name())
 
-	iotaOp := capture(Iota(builder, MakeShape(dtypes.F64, 3, 2), 0)).Test(t)
+	iotaOp := capture(Iota(builder, MakeShape(dtypes.Float32, 3, 2), 0)).Test(t)
 	exec := compile(t, client, capture(builder.Build(iotaOp)).Test(t))
-	got, dims := execArrayOutput[float64](t, client, exec)
-	require.Equal(t, []float64{0, 0, 1, 1, 2, 2}, got)
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, []float32{0, 0, 1, 1, 2, 2}, got)
 	require.Equal(t, []int{3, 2}, dims)
 
-	iotaOp = capture(Iota(builder, MakeShape(dtypes.F64, 2, 3), 1)).Test(t)
+	iotaOp = capture(Iota(builder, MakeShape(dtypes.Float32, 2, 3), 1)).Test(t)
 	exec = compile(t, client, capture(builder.Build(iotaOp)).Test(t))
-	got, dims = execArrayOutput[float64](t, client, exec)
-	require.Equal(t, []float64{0, 1, 2, 0, 1, 2}, got)
+	got, dims = execArrayOutput[float32](t, client, exec)
+	require.Equal(t, []float32{0, 1, 2, 0, 1, 2}, got)
 	require.Equal(t, []int{2, 3}, dims)
 
 }
@@ -633,9 +633,40 @@ func TestDynamicSlice(t *testing.T) {
 	dtype := dtypes.Float64
 	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
 	operand = capture(Reshape(operand, 3, 4)).Test(t)
-	startIndices := capture(Constant(builder, mustNewArrayLiteral(t, []int32{1, 1}, 2))).Test(t)
-	output := capture(DynamicSlice(operand, []*Op{startIndices}, []int{2, 2})).Test(t)
-	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	startIndices := []*Op{
+		capture(Constant(builder, NewScalarLiteral(int32(1)))).Test(t),
+		capture(Constant(builder, NewScalarLiteral(int32(1)))).Test(t),
+	}
+	output := capture(DynamicSlice(operand, startIndices, []int{2, 2})).Test(t)
+	computation := capture(builder.Build(output)).Test(t)
+	if client.Plugin().UseStableHLO {
+		stableHLO, err := computation.TextStableHLO()
+		require.NoError(t, err)
+		fmt.Printf("DynamicSlice StableHLO code:\n%s\n", stableHLO)
+	}
+	exec := compile(t, client, computation)
+	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
+	require.Equal(t, []int{2, 2}, gotDims)
+	require.Equal(t, []float64{5, 6, 9, 10}, gotFlat)
+}
+
+func TestDynamicSlice1DStartIndices(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+	dtype := dtypes.Float64
+	operand := capture(Iota(builder, MakeShape(dtype, 3*4), 0)).Test(t)
+	operand = capture(Reshape(operand, 3, 4)).Test(t)
+	startIndices := []*Op{
+		capture(Constant(builder, mustNewArrayLiteral(t, []int32{1, 1}, 2))).Test(t),
+	}
+	output := capture(DynamicSlice(operand, startIndices, []int{2, 2})).Test(t)
+	computation := capture(builder.Build(output)).Test(t)
+	if client.Plugin().UseStableHLO {
+		stableHLO, err := computation.TextStableHLO()
+		require.NoError(t, err)
+		fmt.Printf("DynamicSlice StableHLO code:\n%s\n", stableHLO)
+	}
+	exec := compile(t, client, computation)
 	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []int{2, 2}, gotDims)
 	require.Equal(t, []float64{5, 6, 9, 10}, gotFlat)

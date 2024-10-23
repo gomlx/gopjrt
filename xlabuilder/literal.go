@@ -64,6 +64,15 @@ func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) (*Literal,
 	return l, nil
 }
 
+// Data calls accessFn with data pointing to the bytes (C++ allocated) of the literal.
+//
+// The ownership of the data is maintained by the Literal, and it is guaranteed to be live (not GC'ed) until
+// the end of the current function call, at least.
+func (l *Literal) Data(accessFn func(data []byte)) {
+	defer runtime.KeepAlive(l)
+	accessFn(unsafe.Slice((*byte)(unsafe.Pointer(l.cLiteral.data)), int(l.cLiteral.size_bytes)))
+}
+
 // NewScalarLiteral creates a scalar Literal initialized with the given value.
 func NewScalarLiteral[T dtypes.Supported](value T) *Literal {
 	shape := MakeShape(dtypes.FromGenericsType[T]())

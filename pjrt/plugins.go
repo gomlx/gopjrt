@@ -10,6 +10,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"os"
 	"unsafe"
 )
 
@@ -26,6 +27,18 @@ type Plugin struct {
 	api        *C.PJRT_Api
 	dllHandle  dllHandleWrapper
 	attributes NamedValuesMap
+
+	// UseStableHLO configures the plugin clients to convert XlaBuilder programs from "HLO" to "StableHLO"
+	// before compilation. The "StableHLO" (encoded as MLIR) is the more recent
+	// "intermediary representation" program language.
+	//
+	// Setting to true incurs in a conversion step from "HLO" to "StableHLO" during compilation. But some
+	// PJRT will only support "StableHLO" (namely Apple Metal PJRT).
+	//
+	// Default is true, but it can be changed by setting the environment variable "GOPJRT_NO_STABLE_HLO=1"
+	//
+	// Most people don't need to worry about this, it should be an implementation detail.
+	UseStableHLO bool
 }
 
 // pjrtPluginInitialize calls C.PJRT_Plugin_Initialize.
@@ -52,7 +65,13 @@ func pjrtPluginAttributes(plugin *Plugin) (NamedValuesMap, error) {
 // newPlugin creates a new plugin from the api pointer.
 // Internal: use GetPlugin instead.
 func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrapper) (*Plugin, error) {
-	plugin := &Plugin{name: name, path: pluginPath, api: api, dllHandle: dllHandle}
+	plugin := &Plugin{
+		name:         name,
+		path:         pluginPath,
+		api:          api,
+		dllHandle:    dllHandle,
+		UseStableHLO: os.Getenv("GOPJRT_NO_STABLE_HLO") == "",
+	}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)

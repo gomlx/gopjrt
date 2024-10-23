@@ -21,6 +21,21 @@ gomlx_xlabuilder_deps = [
     "@xla//xla/hlo/builder/lib:math",
 ]
 
+# StableHLO dependencies
+stablehlo_deps = [
+    # StableHLO/MLIR conversion
+    "@llvm-project//mlir:BytecodeWriter",
+    "@llvm-project//mlir:IR",
+    "@stablehlo//:register",
+    "@stablehlo//:stablehlo_serialization",
+    "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
+ ]
+
+config_setting(
+    name = "use_stablehlo",
+    values = {"define": "use_stablehlo=true"},
+)
+
 cc_library(
     name = "xlabuilder",
     srcs = glob(["*.cpp"]),
@@ -30,33 +45,27 @@ cc_library(
     # lead to spurious logging by XLA library at startup up.
     # defines = ["SKIP_ABSL_INITIALIZE_LOG"],
     linkopts = ["-shared"],
-    deps = gomlx_xlabuilder_deps,
+    defines = select({
+        ":use_stablehlo": ["USE_STABLEHLO"],
+        "//conditions:default": [],
+    }),
+    deps = gomlx_xlabuilder_deps + select({
+             ":use_stablehlo": stablehlo_deps,
+             "//conditions:default": [],
+    }),
     alwayslink = True,
 )
 
-cc_binary(
-    name = "libgomlx_xlabuilder.so",
-    linkopts = [
-        "-shared",
-    ],
-    # Setting linkshared=1 and linkstatic=1 should try to link everything (except system libraries) statically
-    # but generate a dynamically linked library -- needed to link it to other languages, Go in this case.
-    # At least that's what I understood from reading the docs in
-    # https://bazel.build/reference/be/c-cpp#cc_binary.linkshared
-    linkshared = 1,
-    linkstatic = 1,
+# Waiting for Bazel 7.4.0:
+cc_static_library(
+    name = "gomlx_xlabuilder",
     deps = gomlx_xlabuilder_deps + [
         ":xlabuilder",
-    ],
+    ] + select({
+             ":use_stablehlo": stablehlo_deps,
+             "//conditions:default": [],
+    }),
 )
-
-# Waiting for Bazel 7.4.0:
-#cc_static_library(
-#    name = "libgomlx_xlabuilder.a",
-#    deps = gomlx_xlabuilder_deps + [
-#        ":xlabuilder",
-#    ],
-#)
 
 filegroup(
     name = "headers",

@@ -1,3 +1,5 @@
+workspace(name = "gopjrt")
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Bazel Skylib, required by llvm.
@@ -19,35 +21,15 @@ http_archive(
 # Notice bazel.sh scrape the line below for the OpenXLA version, the format
 # of the line should remain the same (the hash in between quotes), or bazel.sh
 # must be changed accordingly.
-# = "0d9a1dbc2b02a316afbae3e3c9b4083dc16b894b"  # From 2023-03-30
-# = "cf0515f724bdbd693b86c5c5b3e01e91eb6ef6be"  # From 2023-04-28
-# = "2fc2bc05cc8aa04c0902555ab2f9f817c41886c3"  # From 2023-07-10
-# = "4f8381651977dff16b1d86bb4b198eb733c5f478"  # From 2023-10-22
-# = "5c3f21721d921751f3c64451f9be3b59f9cac8c7" # From 2024-04-16
-# OPENXLA_XLA_COMMIT_HASH = "782b73d746ab5ad6698025f91a349c21b2eceba0"  # From 2024-06-15
-OPENXLA_XLA_COMMIT_HASH = "0f30f33b7b7456cc6778fa47e57fc518d54fee3d"  # From 2024-09-28
+OPENXLA_XLA_COMMIT_HASH = "5389d1b4b97942d71f8b598e88d4a6d4648229d8" # From 2024-10-18
 http_archive(
     name = "xla",
-    # sha256 = "c86b68ce16b08ba1287c641b9790f5ba7944ebbfe7218710f11827c2a65569f4",  # From 2023-03-30
-    # sha256 = "e05e41cd1d968d0bbacf32f9c2ccee6b5f783a7597b6e6668756953282cf90b9",  # From 2023-04-28
-    # sha256 = "a2c905c02d2e9fa44109d163b7e8adedbb56b2f241a2bd95a962d549834f161e",  # From 2023-07-10
-    # sha256 = "980e86702bd5a7722ec3ccd2412714ab62dbf0e2d58251af86ec60e1d832579c",  # From 2023-10-22
-    # sha256 = "dd5f731b3de37c798bbd2f91ce7a5b99793f5ec07e75cfd680ecb3b9036c285b",  # From 2024-04-16
-    # sha256 = "22747c91ac1154196d463f971b91cfe91f85c99a6e7e9a49c1c8c28a6c2d1729",  # From 2024-06-15
-    sha256 = "14c80eac39f992d23575c1558acfc005799f2235e2286ee1629180389f490951",  # From 2024-09-28
+    sha256 = "01556591a05a802ead29e67e5366d2056c3eafb27ed2f0abf7ce7978f1f4a32e",  # From 2024-10-18
     strip_prefix = "xla-" + OPENXLA_XLA_COMMIT_HASH,
     urls = [
         "https://github.com/openxla/xla/archive/{hash}.zip".format(hash = OPENXLA_XLA_COMMIT_HASH),
     ],
 )
-
-# Create @tsl repository.
-#load("@xla//third_party:repo.bzl", "tf_vendored")
-
-#tf_vendored(
-#    name = "tsl",
-#    relpath = "third_party/tsl",
-#)
 
 # Initialize the XLA repository and all dependencies.
 

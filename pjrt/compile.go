@@ -164,8 +164,11 @@ type XlaComputation interface {
 	// SerializedHLO exports the computation as a serialized `HloModuleProto`.
 	SerializedHLO() *cbuffer.CBuffer
 
+	// HasStableHLO returns whether StableHLO is supported.
+	HasStableHLO() bool
+
 	// SerializedStableHLO exports the computation as a StableHLO as an `mlir:ModuleOp`.
-	SerializedStableHLO() *cbuffer.CBuffer
+	SerializedStableHLO() (*cbuffer.CBuffer, error)
 }
 
 // WithComputation configures the program to the xlabuilder.XlaComputation -- see xlabuilder package.
@@ -187,10 +190,17 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 	}
 
 	// Get HLO program from computation.
-	if cc.plugin.UseStableHLO {
-		cc.cbufferToFree = computation.SerializedStableHLO()
+	if cc.plugin.UseStableHLO && computation.HasStableHLO() {
+		// Convert computation graph to StableHLO
+		var err error
+		cc.cbufferToFree, err = computation.SerializedStableHLO()
+		if err != nil {
+			cc.err = err
+			return cc
+		}
 		cc.WithStableHLO(cc.cbufferToFree.Bytes())
 	} else {
+		// Use XlaBuilder HLO:
 		cc.cbufferToFree = computation.SerializedHLO()
 		cc.WithHLO(cc.cbufferToFree.Bytes())
 	}

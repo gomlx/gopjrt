@@ -7,6 +7,7 @@ import (
 	"github.com/gomlx/gopjrt/pjrt"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"k8s.io/klog/v2"
 	"os"
 	"testing"
 )
@@ -41,7 +42,10 @@ func getPJRTClient(t *testing.T) *pjrt.Client {
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
 	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
-	plugin.UseStableHLO = *flagUseStableHLO
+	plugin.UseStableHLO = *flagUseStableHLO && HasStableHLO()
+	if *flagUseStableHLO && !HasStableHLO() {
+		klog.Warning("StableHLO disabled because it's not available in build")
+	}
 	fmt.Printf("Loaded PJRT plugin %s\n", plugin)
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
@@ -155,6 +159,11 @@ func TestXlaBuilder(t *testing.T) {
 }
 
 func TestStableHLO(t *testing.T) {
+	if !HasStableHLO() {
+		fmt.Println("Skipping TestStableHLO: StableHLO not included in build.")
+		return
+	}
+
 	// f(x) = x^2
 	builder := New("x*x")
 	fmt.Printf("XlaBuilder %q:\n", builder.Name())
@@ -178,10 +187,9 @@ func TestStableHLO(t *testing.T) {
 	require.Contains(t, stableHLO, want)
 
 	// Convert to StableHLO (binary):
-	require.NotPanics(t, func() {
-		data := comp.SerializedStableHLO()
-		data.Free()
-	})
+	data, err := comp.SerializedStableHLO()
+	require.NoError(t, err)
+	data.Free()
 }
 
 func TestMismatches(t *testing.T) {

@@ -19,13 +19,21 @@ gomlx_xlabuilder_deps = [
     "@xla//xla/hlo/builder:xla_builder",
     "@xla//xla/hlo/builder:xla_computation",
     "@xla//xla/hlo/builder/lib:math",
+]
 
+# StableHLO dependencies
+stablehlo_deps = [
     # StableHLO/MLIR conversion
     "@llvm-project//mlir:BytecodeWriter",
-    "@stablehlo//:register",
-    "@stablehlo//:stablehlo_serialization",
-    "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
-]
+     "@stablehlo//:register",
+     "@stablehlo//:stablehlo_serialization",
+     "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
+ ]
+
+config_setting(
+    name = "use_stablehlo",
+    values = {"define": "use_stablehlo=true"},
+)
 
 cc_library(
     name = "xlabuilder",
@@ -36,6 +44,10 @@ cc_library(
     # lead to spurious logging by XLA library at startup up.
     # defines = ["SKIP_ABSL_INITIALIZE_LOG"],
     linkopts = ["-shared"],
+    defines = select({
+        ":use_stablehlo": ["USE_STABLEHLO"],
+        "//conditions:default": [],
+    }),
     deps = gomlx_xlabuilder_deps,
     alwayslink = True,
 )
@@ -45,7 +57,10 @@ cc_static_library(
     name = "gomlx_xlabuilder",
     deps = gomlx_xlabuilder_deps + [
         ":xlabuilder",
-    ],
+    ] + select({
+             ":use_stablehlo": stablehlo_deps,
+             "//conditions:default": [],
+    }),
 )
 
 filegroup(

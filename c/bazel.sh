@@ -94,9 +94,19 @@ STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${OS_NAME}.bazelrc"
 # bazel build flags
 BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
 if [[ "$OS_NAME" == "linux" ]]; then
-  BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"  # Linux only for now.
+  ######################################
+  # Linux
+  ######################################
+  BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"
+
 elif [[ "$OS_NAME" == "darwin" ]]; then
-  BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"  # Linux only for now.
+  ######################################
+  # Darwin
+  ######################################
+  BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
+
+  # Apple/Metal PJRT only works with StableHLO, so we link it along.
+  BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=true"
 fi
 
 if ((DEBUG)) ; then

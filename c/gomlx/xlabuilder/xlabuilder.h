@@ -90,6 +90,10 @@ extern VectorData* XlaComputationSerializedHLO(XlaComputation *xla_comp);
 // XlaComputationTextHLO returns the HloModule proto converted to text form for debugging and testing.
 extern char* XlaComputationTextHLO(XlaComputation *xla_comp);
 
+// HasStableHLO returns whether StableHLO support was included in the build -- it's very large, so by default
+// it is not.
+extern const bool HasStableHLO;
+
 // XlaComputationSerializedStableHLO returns the serialized `mlir::ModuleOp` object (with the StableHLO program),
 // that can be used by PJRT with the program type set to "mlir".
 //

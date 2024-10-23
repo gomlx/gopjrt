@@ -80,21 +80,38 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
 }
 
+// HasStableHLO returns whether StableHLO support was included in the build -- it's very large, so by default it is not.
+func HasStableHLO() bool {
+	return bool(C.HasStableHLO)
+}
+
+// HasStableHLO returns whether StableHLO support was included in the build -- it's very large, so by default it is not.
+func (comp *XlaComputation) HasStableHLO() bool {
+	return HasStableHLO()
+}
+
 // SerializedStableHLO exports the computation as a StableHLO as an `mlir:ModuleOp`.
 //
 // It does that by converting the `HLOModule` proto to an `mlir:ModuleOp`.
-func (comp *XlaComputation) SerializedStableHLO() *cbuffer.CBuffer {
+//
+// This functionality is not included by default -- linking StableHLO will include LLVM and make the XlaBuilder
+// library literally 10 times larger. If not included, it will return an error.
+func (comp *XlaComputation) SerializedStableHLO() (*cbuffer.CBuffer, error) {
 	if comp.IsNil() {
 		panicf("XlaComputation is nil, maybe it has already been destroyed?")
 	}
+	if !HasStableHLO() {
+		return nil, errors.New("StableHLO support was not included in this build")
+	}
+
 	defer runtime.KeepAlive(comp)
 	var vectorData *C.VectorData
 	statusOr := C.XlaComputationSerializedStableHLO(unsafe.Pointer(comp.cXlaComputation))
 	vectorData, err := pointerOrError[C.VectorData](statusOr)
 	if err != nil {
-		panicf("while converting XlaComputation to StableHLO: %v", err)
+		return nil, errors.Wrapf(err, "while converting XlaComputation to StableHLO")
 	}
-	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
+	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true), nil
 }
 
 // TextHLO generates the HLO program as a <serialized HLOModule proto> and returns its text representation.
@@ -116,6 +133,9 @@ func (comp *XlaComputation) TextHLO() string {
 func (comp *XlaComputation) TextStableHLO() (string, error) {
 	if comp.IsNil() {
 		return "", errors.New("XlaComputation is nil, maybe it has already been destroyed?")
+	}
+	if !HasStableHLO() {
+		return "", errors.New("StableHLO support was not included in this build")
 	}
 	defer runtime.KeepAlive(comp)
 

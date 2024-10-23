@@ -1,10 +1,12 @@
 # Next
 
 * GoMLX XlaBuilder C library is now linked as a static library (`.a` instead of `.so`).
-* Added C-wrapper compilation for darwin-arm64.
-* Added converter from HLO to StableHLO -- it greatly increases the size of libgomlx_builder.a, since it has to
-  include the whole LLVM :(
-  * Enables Apple Metal PJRT -- it only supports StableHLO/MLIR programs (and not the simpler HLO).
+* **darwin-arm64** support:
+  * Added C-wrapper compilation for darwin-arm64.
+  * Added converter from HLO to StableHLO -- it greatly increases the size of libgomlx_builder.a, since it has to
+    include the whole LLVM :(
+    * Enables Apple Metal PJRT -- it only supports StableHLO/MLIR programs (and not the simpler HLO).
+    * Only enabled for Darwin
 * Updated XLA dependency; Updated PJRT for linux/amd64 CPU.
 * Added `Literal.Data()`
 

@@ -1,14 +1,16 @@
-#include <stdlib.h>
 #include <string>
-#include <string.h>
+#include <stdlib.h>
 
 #include "xlabuilder.h"
-
 #include "gomlx/xlabuilder/utils.h"
-
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 
+
+
+#ifdef USE_STABLEHLO
+
+// StableHLO will be linked in.
 #include "xla/hlo/builder/xla_computation.h"
 #include "xla/hlo/translate/hlo_to_mhlo/hlo_to_mlir_hlo.h"
 #include "xla/mlir_hlo/mhlo/transforms/passes.h"
@@ -29,6 +31,8 @@
 #include "llvm/Support/raw_ostream.h"
 
 using namespace std;
+
+const bool HasStableHLO = true;
 
 // LoadHloDialects to the context: apparently not needed -- earlier I was having an error in Dialect.
 static void LoadHloDialects(mlir::MLIRContext& context) {
@@ -161,3 +165,25 @@ StatusOr XlaComputationStableHLOText(XlaComputation *xla_comp) {
     r.value = c_str(PrintMLIRModule(mlir_or.value().get()));
     return r;
 }
+
+#else   // USE_STABLEHLO
+
+static const char *_NOT_INCLUDED = "StableHLO support was not included in this build";
+
+const bool HasStableHLO = false;
+
+// XlaComputation -> StableHLO -> Text
+// Not implemented version.
+StatusOr XlaComputationStableHLOText(XlaComputation *xla_comp) {
+    StatusOr r{0, 0};
+    r.status = FromStatus(absl::Status(absl::StatusCode::kUnimplemented, _NOT_INCLUDED));
+    return r;
+}
+
+// XlaComputation -> StableHLO -> Serialized bytes
+StatusOr XlaComputationSerializedStableHLO(XlaComputation *xla_comp) {
+    StatusOr r{0, 0};
+    r.status = FromStatus(absl::Status(absl::StatusCode::kUnimplemented, _NOT_INCLUDED));
+    return r;
+}
+#endif  // USE_STABLEHLO

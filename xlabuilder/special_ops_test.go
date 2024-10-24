@@ -36,7 +36,7 @@ func TestGetTupleElement(t *testing.T) {
 	builder := New(t.Name())
 
 	x0 := capture(Constant(builder, NewScalarLiteral(int32(7)))).Test(t)
-	x1 := capture(Constant(builder, mustNewArrayLiteral(t, []complex64{11, 15}))).Test(t)
+	x1 := capture(Constant(builder, mustNewArrayLiteral(t, []complex64{11, 15}, 2))).Test(t)
 	x2 := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
 	tuple := capture(Tuple(x0, x1, x2)).Test(t)
 	output := capture(GetTupleElement(tuple, 1)).Test(t)

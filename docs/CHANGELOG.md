@@ -1,3 +1,10 @@
+# v0.4.4 - 2024-10-24
+
+* Package `pjrt`: 
+  * Fixed some API documentation issues with Buffer transfers from host.
+* Package `xlabuilder`:
+  * Fixed `NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int)` to create a scalar if no dimensions are passed.
+
 # v0.4.3 - 2024-10-23
 
 * GoMLX XlaBuilder C library is now linked as a static library (`.a` instead of `.so`).

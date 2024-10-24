@@ -55,6 +55,18 @@ func testTransfersImpl[T interface {
 	require.NoError(t, err)
 	fmt.Printf("\t> got %v\n", to)
 	require.Equal(t, from, to)
+
+	// ArrayToBuffer can also be used to transfer a scalar.
+	from = T(19)
+	fmt.Printf("From %T(%v)\n", from, from)
+	buffer, err = ArrayToBuffer(client, []T{from})
+	require.NoError(t, err)
+
+	flatValues, dimensions, err := BufferToArray[T](buffer) // Check that it actually returns a scalar.
+	require.NoError(t, err)
+	require.Len(t, dimensions, 0) // That means, it is a scalar.
+	fmt.Printf("\t> got %v\n", flatValues[0])
+	require.Equal(t, from, flatValues[0])
 }
 
 func TestTransfers(t *testing.T) {

@@ -135,10 +135,14 @@ func (b *Buffer) Client() *Client {
 }
 
 // BufferFromHostConfig is used to configure the transfer from a buffer from host memory to on-device memory, it is
-// created with Client.CreateBufferFromHost.
+// created with Client.BufferFromHost.
 //
-// The host data source must be configured with either HostRawData or HostFlatData. All other configurations
-// are optional.
+// The data to transfer from host can be set up with one of the following methods:
+//
+// - FromRawData: it takes as inputs the bytes and shape (dtype and dimensions).
+// - FromFlatDataWithDimensions: it takes as inputs a flat slice and shape (dtype and dimensions).
+//
+// The device defaults to 0, but it can be configured with BufferFromHostConfig.ToDevice or BufferFromHostConfig.ToDeviceNum.
 //
 // At the end call BufferFromHostConfig.Done to actually initiate the transfer.
 //

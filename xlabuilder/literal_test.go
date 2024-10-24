@@ -27,7 +27,15 @@ func TestLiterals(t *testing.T) {
 	require.NoError(t, err)
 	l.Destroy()
 
-	// Check that various literals get correcly interpreted in PRJT.
+	// Error expected:
+	// 1. Creating scalar with more than one value.
+	l, err = NewArrayLiteralFromAny([]float64{1, 2}) // len(dimensions)==0 -> scalar
+	require.Error(t, err)
+	// 2. Wrong number of elements.
+	l, err = NewArrayLiteralFromAny([]float64{1, 2}, 3) // len(dimensions)==0 -> scalar
+	require.Error(t, err)
+
+	// Check that various literals get correctly interpreted in PRJT.
 	client := getPJRTClient(t)
 	builder := New(t.Name())
 	output := capture(Constant(builder, NewScalarLiteral(int16(3)))).Test(t)

@@ -44,11 +44,10 @@ func NewLiteralFromShape(shape Shape) (*Literal, error) {
 }
 
 // NewArrayLiteral creates a Literal initialized from the array flat data (a slice) and the dimensions of the array.
-//
-// If dimensions is omitted, it is assumed to represent a 1D-array of the length given.
 func NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int) (*Literal, error) {
-	if len(dimensions) == 0 {
-		dimensions = []int{len(flat)}
+	if len(dimensions) == 0 && len(flat) != 1 {
+		return nil, errors.Errorf("NewArrayLiteral got a slice of length %d, but a scalar shape (len(dimensions)==0)",
+			len(flat))
 	}
 	shape := MakeShape(dtypes.FromGenericsType[T](), dimensions...)
 	if shape.Size() != len(flat) {

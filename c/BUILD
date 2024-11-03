@@ -1,4 +1,5 @@
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("gomlx_xlabuilder.bzl", "gomlx_xlabuilder_genrule")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -31,49 +32,7 @@ genrule(
     """,
 )
 
-# Tar packaging: notice we force date/time and ordering to be deterministic, to generate the
-# always same archive, if the contents are the same. See https://reproducible-builds.org/docs/archives/.
-genrule(
-    name = "gomlx_xlabuilder",
-    srcs = [
-        ":gomlx_xlabuilder_headers_include",
-        ":gomlx_xlabuilder_static_lib",
-    ],
-    outs = ["gomlx_xlabuilder.tar.gz"],
-    cmd_bash = """
-    tt="$$(mktemp -d)"
-    echo "tt=$${tt}"
-    build_dir="$$(pwd)/$(@D)"
-    echo "build_dir=$${build_dir}"
-    files="lib include"
-    for ii in $${files} ; do
-        ln -sf "$${build_dir}/$${ii}" "$${tt}"
-    done
-    echo "files=$${files}"
-    TAR=tar
-    if [[ "$$OSTYPE" == "darwin"* ]]; then
-        if ! command -v gtar &> /dev/null; then
-            echo -e "\\033[1;31mgtar (gnu-tar) cannot not be found. gnu-tar can be installed using:\nbrew install gnu-tar"
-        exit
-        fi
-        TAR=gtar
-    fi
-    $$TAR --create --dereference --directory="$${tt}" \
-        --sort=name --owner=0 --group=0 --numeric-owner --format=gnu \
-        --gzip --file "$@" $${files}
-    rm -rf "$${tt}"
-    """,
-)
-
-# Dummy meta-rule that simply compile gomlx_xlabuilder but doesnt' package it.
-genrule(
-    name = "gomlx_xlabuilder_quick",
-    srcs = [
-        ":gomlx_xlabuilder_headers_include",
-        ":gomlx_xlabuilder_lib",
-    ],
-    outs = ["gomlx_xlabuilder_quick.txt"],
-    cmd = """
-    touch "$@"
-    """,
-)
+# Generate genrules for each supported platform.
+gomlx_xlabuilder_genrule("linux_amd64")
+gomlx_xlabuilder_genrule("linux_arm64")
+gomlx_xlabuilder_genrule("darwin_arm64")

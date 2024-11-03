@@ -166,10 +166,6 @@ build:macos --features=archive_param_file
 build:macos_arm64 --cpu=darwin_arm64
 build:macos_arm64 --macos_minimum_os=11.0
 
-# Settings for macOS on AMD CPUs (Intel architecture).
-build:macos_amd64 --cpu=darwin_x86_64
-build:macos_amd64 --macos_minimum_os=10.15
-
 # iOS configs for each architecture and the fat binary builds.
 build:ios --apple_platform_type=ios
 build:ios --apple_bitcode=embedded --copt=-fembed-bitcode
@@ -689,14 +685,6 @@ build:release_macos_arm64 --define=tensorflow_mkldnn_contraction_kernel=0
 build:release_macos_arm64 --macos_minimum_os=12.0
 build:release_macos_arm64 --action_env MACOSX_DEPLOYMENT_TARGET=12.0
 
-# Build configs for macOS AMD64
-build:release_macos_amd64 --config=release_macos_base
-build:release_macos_amd64 --cpu=darwin_x86_64
-build:release_macos_amd64 --define=tensorflow_mkldnn_contraction_kernel=0
-# Target Moneterey as the minimum compatible OS version
-build:release_macos_amd64 --macos_minimum_os=12.0
-build:release_macos_amd64 --action_env MACOSX_DEPLOYMENT_TARGET=12.0
-
 # Base test configs for macOS
 test:release_macos_base --verbose_failures=true --local_test_jobs=HOST_CPUS
 test:release_macos_base --test_timeout=300,450,1200,3600 --test_output=errors
@@ -708,8 +696,6 @@ test:release_macos_x86 --config=release_macos_base
 
 # Test configs for macOS Arm64
 test:release_macos_arm64 --config=release_macos_base
-# Test configs for macOS AMD64
-test:release_macos_amd64 --config=release_macos_base
 
 # Ensure release_base is set on windows
 build:release_cpu_windows --config=release_base

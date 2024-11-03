@@ -47,7 +47,8 @@ set -vex
 
 BAZEL=${BAZEL:-bazel}  # Bazel version > 5.
 PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
-declare -l OS_NAME="$(uname -s)"
+OS_NAME="$(uname -s)"
+OS_NAME=$(echo "$OS_NAME" | tr '[:upper:]' '[:lower:]')
 echo "Building for ${OS_NAME}"
 
 # Some environment variables used for XLA configure script, but set here anyway:
@@ -101,11 +102,17 @@ if [[ "$OS_NAME" == "linux" ]]; then
   BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"
 
 elif [[ "$OS_NAME" == "darwin" ]]; then
-  ######################################
-  # Darwin
-  ######################################
-  BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
-
+  ARCHITECTURE="$(uname -m)"
+  if [[ "$ARCHITECTURE" == "x86_64" ]]; then
+    # macOS on Intel (amd64)
+    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_amd64"
+  elif [[ "$ARCHITECTURE" == "arm64" ]]; then
+    # macOS on Apple Silicon (arm64)
+    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
+  else
+    echo "Architecture not supported: $ARCHITECTURE"
+    exit 1
+  fi
   # Apple/Metal PJRT only works with StableHLO, so we link it along.
   BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=true"
 fi

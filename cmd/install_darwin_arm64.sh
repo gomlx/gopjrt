@@ -30,7 +30,7 @@ curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
   > ${download_urls}
 
 # Download XlaBuilder C wrapper library.
-url="$(grep gomlx_xlabuilder-darwin-arm64.tar.gz "${download_urls}" | head -n 1)"
+url="$(grep gomlx_xlabuilder_darwin_arm64.tar.gz "${download_urls}" | head -n 1)"
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
 
 if [[ "${_SUDO}" != "" ]] ; then

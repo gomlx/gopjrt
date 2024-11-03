@@ -1,3 +1,8 @@
+# v0.4.5 
+
+* Added experimental support for MacOS (darwin) on Intel (amd64).
+* Normalized names of prebuilt-binaries.
+
 # v0.4.4 - 2024-10-24
 
 * Package `pjrt`: 

@@ -1,7 +1,10 @@
 # v0.4.5 
 
-* Added experimental support for MacOS (darwin) on Intel (amd64).
+* Fixes to experimental/GPU MacOS (darwin) on arm64.
+* XlaBuilder works on Darwin/X86_64 (darwin_amd64) but OpenXLA/XLA PJRT CPU does not work (yet?).
 * Normalized names of prebuilt-binaries.
+* Test `TestEndToEnd` only test first device by default, because CPU PJRT seems to falsely advertise more than one addressable device.
+  * Added `--alldevices` to loop over all devices during the test.
 
 # v0.4.4 - 2024-10-24
 
@@ -9,8 +12,6 @@
   * Fixed some API documentation issues with Buffer transfers from host.
 * Package `xlabuilder`:
   * Fixed `NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int)` to create a scalar if no dimensions are passed.
-* Test `TestEndToEnd` only test first device by default, because CPU PJRT seems to falsely advertise more than one addressable device.
-  * Added `--alldevices` to loop over all devices during the test.
 
 # v0.4.3 - 2024-10-23
 

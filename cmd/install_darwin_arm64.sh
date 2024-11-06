@@ -47,8 +47,9 @@ rm -f "${download_urls}"
 #
 # Download PJRT Metal plugin from the "jax-metal" pip package
 #
-PJRT_NAME="pjrt_c_api_cpu_plugin.dylib"
+PJRT_NAME="pjrt_c_api_metal_plugin.dylib"
 PJRT_PATH="${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt/${PJRT_NAME}"
+PJRT_CPU_PATH="${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt/pjrt_c_api_cpu_plugin.dylib"
 
 # Create a new virtual environment for Python (if one is not given).
 if [[ "${JAX_VENV_DIR}" == "" ]] ; then
@@ -72,6 +73,11 @@ ${_SUDO} rm -f "${PJRT_PATH}"
 ${_SUDO} cp -f "${JAX_VENV_DIR}/lib/python3."*"/site-packages/jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" "${PJRT_PATH}"
 ls -lh "${PJRT_PATH}"
 deactivate
+
+# If there are no CPU PJRT, link it to the Metal (GPU) one, since "cpu" is the default.
+if [[ ! -e "${PJRT_CPU_PATH}" ]] ; then
+  ln -sf "${PJRT_PATH}" "${PJRT_CPU_PATH}"
+fi
 
 # Clean up and finish.
 if [[ "${tmp_venv_dir}" != "" ]] ; then

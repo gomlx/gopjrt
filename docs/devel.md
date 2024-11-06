@@ -40,10 +40,6 @@ and the user won't need to do anything.
     will JIT-compile the computation graph (using LLVM) to the same code in the end. I tested, just to be sure, using
     the GNN example, both has the same median training step speed.
 
-Released build (v0.4.4):  732.48ms
-CLANG: 733.65ms
-GCC: 
-
 ## Updating `coverage.out` file
 
 This is not done as a github actions because it would take too long to download the datasets, etc.

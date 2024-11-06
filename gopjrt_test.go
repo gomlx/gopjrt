@@ -10,7 +10,10 @@ import (
 	"testing"
 )
 
-var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path")
+var (
+	flagPluginName     = flag.String("plugin", "cpu", "PRJT plugin name or full path")
+	flagTestAllDevices = flag.Bool("alldevices", false, "Test all devices. Defaults to false because CPU PJRT seems to falsely advertise more than one device")
+)
 
 // TestEndToEnd builds, compiles and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
 // and pjrt to compile and execute it.
@@ -63,7 +66,13 @@ func TestEndToEnd(t *testing.T) {
 	fmt.Printf("f(x) = x^2 + 1:\n")
 	for ii, input := range inputs {
 		for deviceNum := range addressableDevices {
-			// Transfer input to a on-device buffer.
+			if deviceNum > 0 {
+				if !*flagTestAllDevices {
+					break
+				}
+				fmt.Printf("\t*** Warning: if using a CPU PJRT, it is known to fail on devices > 0: it seems to falsely advertise it has more than one device\n")
+			}
+			// Transfer input to an on-device buffer.
 			inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
 			require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
 
@@ -81,11 +90,6 @@ func TestEndToEnd(t *testing.T) {
 
 			// Release inputBuffer -- and don't wait for the GC.
 			require.NoError(t, inputBuffer.Destroy())
-
-			if *flagPluginName == "cpu" {
-				fmt.Println("\t*** Skipping other device numbers: XLA's \"cpu\" plugin only work on first device number, despite what it advertises")
-				break
-			}
 		}
 	}
 

@@ -207,3 +207,9 @@ func TestMismatches(t *testing.T) {
 	fmt.Printf("Expected error when comparing ops from different builders: %v\n", err)
 	require.Error(t, err)
 }
+
+// TestHasStableHLO just checks that the CGO call doesn't crash or anything.
+// Also handy for debugging in some platform, to check if StableHLO converter was linked.
+func TestHasStableHLO(t *testing.T) {
+	fmt.Printf("HasStableHLO=%v\n", HasStableHLO())
+}

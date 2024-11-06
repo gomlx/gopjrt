@@ -192,10 +192,10 @@ and execution with `PJRT` for comparison, with some benchmarks.
 
 **gopjrt** requires a C library installed and a plugin module. 
 
-*For Linux or Windows+WSL*, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh)) to install under `/usr/local/{lib,include}`:
+*For Linux or Windows+WSL*, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh)) to install under `/usr/local/{lib,include}`:
 
 ```bash
-curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux.sh | bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux_amd64.sh | bash
 ```
 
 For Linux (or Windows+WSL)+CUDA (NVidia GPU) support, in addition also run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)):
@@ -204,12 +204,13 @@ For Linux (or Windows+WSL)+CUDA (NVidia GPU) support, in addition also run ([see
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
 
-For Darwin/arm64 (M1, M2), run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)) to install under `/usr/local/{lib,include}`:
+For Darwin/arm64 (M1, M2) GPU support, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh)) to install under `/usr/local/{lib,include}`:
 
-* **EXPERIMENTAL**, just a subset of the operations and types supported (`float64` doesn't work). See https://developer.apple.com/metal/jax/.
+* **VERY EXPERIMENTAL**: only a subset of the operations and types supported (`float64` doesn't work). See https://developer.apple.com/metal/jax/. 
+  And the CPU version of XLA is not working either. More of a `gopjrt` developer version.
 
 ```bash
-curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin.sh | bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_arm64.sh | bash
 ```
 
 **TODO(Darwin)**: Create a Homebrew version.
@@ -218,8 +219,9 @@ curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin
 
 ### More details
 
-The the install scripts [`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
-[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and [`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)
+The the install scripts [`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amnd64.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and
+[`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh)
 can be controlled to install in any arbitrary directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` 
 (by setting `GOPJRT_NOSUDO`). 
 You many need to fiddle with `LD_LIBRARY_PATH` if the installation directory is not standard, and the `PJRT_PLUGIN_LIBRARY_PATH`
@@ -228,25 +230,29 @@ to tell gopjrt where to find the plugins.
 There are two parts that needs installing: (1) XLA Builder library (it's a C++ wrapper); (2) PJRT plugins for the
 accelerator devices you want to support.
 
-The releases come with a prebuilt (1) XLA Builder library for _linux/amd64_ (or Windows WSL) and 
-_darwin/arm64_ (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
-and (2) the PJRT for CPU only for _linux/amd64_. 
+The releases come with a prebuilt:
 
-The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 PJRT from the corresponding Jax pip package.
+1. XLA Builder library for _linux/amd64_ (or Windows WSL), 
+   _darwin/arm64_ and _darwin/amd64_. Both MacOS/Darwin releases are **EXPERIMENTAL** and have somewhat limited
+   functionality (on the PJRT side), see https://developer.apple.com/metal/jax/.
+2. The PJRT for CPU only for _linux/amd64_. 
+
+The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 and Darwin/amd64 PJRT from the corresponding Jax pip package.
 
 ### Installing XLA Builder
 
 If you have any questions, or want a custom installation of hte XLA Builder library, check and modify
-[`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
-[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or 
-[`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh) (**EXPERIMENTAL**, see https://developer.apple.com/metal/jax/),
+[`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or
+[`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) (**VERY EXPERIMENTAL, GPU ONLY**)
 they are self-explaining.
 
 ### Installing PJRT plugins
 
 The recommended location for plugins is `/usr/local/lib/gomlx/pjrt`, and that's where the installation scripts
-[`cmd/install_linux.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux.sh),
-[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and [`cmd/install_darwin.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin.sh)
+[`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh),
+[`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and 
+[`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh)
 install them.
 
 But **gopjrt** will automatically search for PJRT plugins in all standard library locations (configured in `/etc/ld.so.conf` in Linux).

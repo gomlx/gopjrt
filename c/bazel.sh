@@ -1,22 +1,18 @@
 #
 # The following environment variables and flags can be defined:
 #
+# * TARGET_OS and TARGET_ARCH: they are set automatically to the running machine OS/ARCH, but can be set for
+#   cross-compilation (experimental).
 # * STARTUP_FLAGS and BUILD_FLAGS: passed as `bazel ${STARTUP_FLAGS} build <build_target> ${BUILD_FLAGS}.
 # * --debug: Compile in debug mode, with symbols for gdb.
 # * --output <dir>: Directory passed to `bazel --output_base`. Unfortunately, not sure why, bazel still outputs things
 #   to $TEST_TMPDIR and /.cache.
-# * <build_target>: Default is ":gomlx_xlabuilder".
-
-BUILD_TARGET=":gomlx_xlabuilder"
-
+# * <build_target>: Default is ":gomlx_xlabuilder_${TARGET_OS}_${TARGET_ARCH}".
 
 # Versions 8 and above don't work. They seem to require blzmod (and the compatibility --enable_workspace build option
 # doesn't seem to work the same):
 # export USE_BAZEL_VERSION=last_green
-# export USE_BAZEL_VERSION=8.0.0-pre.20240911.1
-# export USE_BAZEL_VERSION=7.3.1  # Latest as of this writing.
-# export USE_BAZEL_VERSION=7.4.0rc1  # First version allowing cc_static_library rule.
-export USE_BAZEL_VERSION=7.4.0
+export USE_BAZEL_VERSION=7.4.0  # First version allowing cc_static_library rule.
 
 DEBUG=0
 OUTPUT_DIR=""
@@ -43,29 +39,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-set -vex
+set -e
 
-BAZEL=${BAZEL:-bazel}  # Bazel version > 5.
+BAZEL=${BAZEL:-bazel}  # Bazel version > 7.4.
 PYTHON=${PYTHON:-python}  # Python, version should be > 3.7.
-OS_NAME="$(uname -s)"
-OS_NAME=$(echo "$OS_NAME" | tr '[:upper:]' '[:lower:]')
-echo "Building for ${OS_NAME}"
-
-# Some environment variables used for XLA configure script, but set here anyway:
-#if ((USE_GPU)) ; then
-#  export TF_NEED_CUDA=1
-#  export TF_CUDA_VERSION=12.3
-#  export CUDA_VERSION=12.3
-#  export TF_NEED_ROCM=0
-#  export TF_CUDA_COMPUTE_CAPABILITIES="6.1,9.0"
-#else
-#  unset TF_NEED_CUDA
-#fi
-#export USE_DEFAULT_PYTHON_LIB_PATH=1
-#export PYTHON_BIN_PATH=/usr/bin/python3
-#export TF_CUDA_CLANG=0
-#export GCC_HOST_COMPILER_PATH=/usr/bin/gcc
-#export CC_OPT_FLAGS=-Wno-sign-compare
 
 # Check the OpenXLA version (commit hash) changed, and if so, download an
 # updated `openxla_xla_bazelrc` file from github.
@@ -91,32 +68,58 @@ fi
 
 STARTUP_FLAGS="${STARTUP_FLAGS} ${OUTPUT_DIR}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=${OPENXLA_BAZELRC}"
-STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${OS_NAME}.bazelrc"
-
-# bazel build flags
 BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
-if [[ "$OS_NAME" == "linux" ]]; then
-  ######################################
-  # Linux
-  ######################################
-  BUILD_FLAGS="${BUILD_FLAGS} --config=${OS_NAME}"
 
-elif [[ "$OS_NAME" == "darwin" ]]; then
-  ARCHITECTURE="$(uname -m)"
-  if [[ "$ARCHITECTURE" == "x86_64" ]]; then
-    # macOS on Intel (amd64)
-    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_amd64"
-  elif [[ "$ARCHITECTURE" == "arm64" ]]; then
-    # macOS on Apple Silicon (arm64)
-    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
-  else
-    echo "Architecture not supported: $ARCHITECTURE"
-    exit 1
-  fi
-  # Apple/Metal PJRT only works with StableHLO, so we link it along.
-  BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=true"
+# TARGET_OS and TARGET_ARCH defaults to current OS and architecture, but allows user to override the target platform
+# (for cross-compilation).
+if [[ -z "${TARGET_OS}" ]] ; then
+  TARGET_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 fi
+if [[ -z "${TARGET_ARCH}" ]] ; then
+  TARGET_ARCH="$(uname -m)"
+  if [[ "$TARGET_ARCH" == "x86_64" ]]; then
+    TARGET_ARCH="amd64"
+  elif [[ "$TARGET_ARCH" == "aarch64" ]]; then
+    TARGET_ARCH="arm64"
+  fi
+fi
+export TARGET_PLATFORM="${TARGET_OS}_${TARGET_ARCH}"
+BUILD_TARGET="${BUILD_TARGET:-:gomlx_xlabuilder_${TARGET_PLATFORM}}"
+BUILD_FLAGS="${BUILD_FLAGS} --action_env=TARGET_PLATFORM=${TARGET_PLATFORM} --define=TARGET_PLATFORM=${TARGET_PLATFORM}"
+STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${TARGET_PLATFORM}.bazelrc"
 
+# Switch statement for TARGET_PLATFORM.
+case "${TARGET_PLATFORM}" in
+  "linux_amd64")
+    echo "Building for Linux amd64"
+    BUILD_FLAGS="${BUILD_FLAGS} --config=linux"
+    ;;
+
+  "darwin_amd64")
+    echo "Building for macOS amd64"
+    STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=custom_darwin_amd64.bazelrc"
+    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_amd64"
+    # Apple/Metal PJRT only works with StableHLO, so we link it along.
+    BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=false"
+    ;;
+
+  "darwin_arm64")
+    echo "Building for macOS arm64"
+    BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
+    # Apple/Metal PJRT only works with StableHLO, so we link it along.
+    BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=true"
+    ;;
+
+  *)
+    echo "Unsupported TARGET_PLATFORM: ${TARGET_PLATFORM}"
+    exit 1
+    ;;
+esac
+
+echo "TARGET_PLATFORM auto-detected: ${TARGET_PLATFORM}"
+echo "Building for ${TARGET_PLATFORM}"
+
+# Debug flags.
 if ((DEBUG)) ; then
   BUILD_FLAGS="${BUILD_FLAGS} --config=dbg"
 fi
@@ -149,4 +152,5 @@ BUILD_FLAGS="${BUILD_FLAGS} --cxxopt=-Wno-macro-redefined"
 export HERMETIC_PYTHON_VERSION=3.11
 
 # Invoke bazel build
+set -vx
 time "${BAZEL}" ${STARTUP_FLAGS} build ${BUILD_TARGET} ${BUILD_FLAGS} --build_tag_filters=-tfdistributed

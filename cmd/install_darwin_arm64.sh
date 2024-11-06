@@ -1,19 +1,21 @@
 #!/bin/bash
 
-# This script will install the XlaBuilder C wrapper library and the latest PJRT plugin for gopjrt for DarwinOS/amd64
+# This script will install the XlaBuilder C wrapper library and the latest PJRT plugin for gopjrt for DarwinOS/arm64
 # platform. This should be all one need to use it.
 #
 # Arguments (environment variables):
 #
-# GOPJRT_INSTALL_DIR: if not empty, defines the directory where to install the library. If empty, it installs into `/usr/local`.
+# GOPJRT_INSTALL_DIR: if not empty, defines the directory where to install the library. If empty, it install into `/usr/local`.
 # GOPJRT_NOSUDO: if not empty, prevent using sudo to install.
 #
 # To execute this without cloning the repository, one can do:
 #
-# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_amd.sh | bash
+# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin.sh | bash
 #
 # See: https://github.com/gomlx/gopjrt?#installing
 set -e
+
+PLATFORM="darwin_arm64"
 
 # Base installation directory:
 GOPJRT_INSTALL_DIR="${GOPJRT_INSTALL_DIR:-/usr/local}"
@@ -23,14 +25,14 @@ if [[ "${GOPJRT_NOSUDO}" != "" ]] ; then
 fi
 
 # Fetch address of resources for latest release:
-download_urls=$(mktemp -t gopjrt_urls.XXXXXXXX)
+download_urls=$(mktemp --tmpdir gopjrt_urls.XXXXXXXX)
 curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
   | grep "browser_download_url" \
   | egrep -wo "https.*gz" \
   > ${download_urls}
 
 # Download XlaBuilder C wrapper library.
-url="$(grep gomlx_xlabuilder-darwin-amd64.tar.gz "${download_urls}" | head -n 1)"
+url="$(grep gomlx_xlabuilder_${PLATFORM}.tar.gz "${download_urls}" | head -n 1)"
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
 
 if [[ "${_SUDO}" != "" ]] ; then
@@ -45,14 +47,15 @@ popd
 rm -f "${download_urls}"
 
 #
-# Download PJRT plugin (specific to macOS/amd64)
+# Download PJRT Metal plugin from the "jax-metal" pip package
 #
-PJRT_NAME="pjrt_c_api_cpu_plugin.dylib"
+PJRT_NAME="pjrt_c_api_metal_plugin.dylib"
 PJRT_PATH="${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt/${PJRT_NAME}"
+PJRT_CPU_PATH="${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt/pjrt_c_api_cpu_plugin.dylib"
 
 # Create a new virtual environment for Python (if one is not given).
 if [[ "${JAX_VENV_DIR}" == "" ]] ; then
-  tmp_venv_dir="$(mktemp -d -t gopjrt_venv.XXXXXXXX)"
+  tmp_venv_dir="$(mktemp -d --tmpdir gopjrt_cuda_venv.XXXXXXXX)"
   JAX_VENV_DIR="${tmp_venv_dir}/jax"
   python3 -m venv "${JAX_VENV_DIR}"
 fi
@@ -62,7 +65,7 @@ source "${JAX_VENV_DIR}/bin/activate"
 printf "\nInstalling jax-metal in ${JAX_VENV_DIR}:\n"
 pip install "jax-metal"
 
-# Copy over PJRT CPU plugin:
+# Copy over PJRT CUDA plugin:
 if [[ "${_SUDO}" != "" ]] ; then
   echo "Checking sudo authorization for installation"
   ${_SUDO} printf "\tsudo authorized\n"
@@ -72,6 +75,11 @@ ${_SUDO} rm -f "${PJRT_PATH}"
 ${_SUDO} cp -f "${JAX_VENV_DIR}/lib/python3."*"/site-packages/jax_plugins/metal_plugin/pjrt_plugin_metal_14.dylib" "${PJRT_PATH}"
 ls -lh "${PJRT_PATH}"
 deactivate
+
+# If there are no CPU PJRT, link it to the Metal (GPU) one, since "cpu" is the default.
+if [[ ! -e "${PJRT_CPU_PATH}" ]] ; then
+  ln -sf "${PJRT_PATH}" "${PJRT_CPU_PATH}"
+fi
 
 # Clean up and finish.
 if [[ "${tmp_venv_dir}" != "" ]] ; then

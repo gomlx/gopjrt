@@ -1,3 +1,11 @@
+# v0.4.5 
+
+* Fixes to experimental/GPU MacOS (darwin) on arm64.
+* XlaBuilder works on Darwin/X86_64 (darwin_amd64) but OpenXLA/XLA PJRT CPU does not work (yet?).
+* Normalized names of prebuilt-binaries.
+* Test `TestEndToEnd` only test first device by default, because CPU PJRT seems to falsely advertise more than one addressable device.
+  * Added `--alldevices` to loop over all devices during the test.
+
 # v0.4.4 - 2024-10-24
 
 * Package `pjrt`: 

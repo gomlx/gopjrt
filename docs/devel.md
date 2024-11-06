@@ -32,7 +32,13 @@ and the user won't need to do anything.
 ## PJRT Plugins
 
 * A prebuilt CUDA (GPU) plugin is  [distributed with Jax (pypi wheel)](https://pypi.org/project/jax-cuda12-pjrt/) (albeit with a [non-standard naming](https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit#heading=h.l9ksu371j9wz))
+* There is a prebuilt Apple Arm64+GPU metal plugin in [the jax-metal (pypi wheel)](https://pypi.org/project/jax-metal/) used by the installation script.
+  It is lacking support for some functionality (including `float64`).
 * The CPU plugin can be built from the XLA sources: after running `configure.py`, build `bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so`.
+  * On a successful build, you can find the PJRT CPU plugin in `bazel-bin/xla/pjrt/c/pjrt_c_api_cpu_plugin.so`
+  * Using GCC or CLANG won't matter much in terms of performance, because we are only building the JIT-compiler. Both
+    will JIT-compile the computation graph (using LLVM) to the same code in the end. I tested, just to be sure, using
+    the GNN example, both has the same median training step speed.
 
 ## Updating `coverage.out` file
 

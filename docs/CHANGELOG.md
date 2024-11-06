@@ -9,6 +9,8 @@
   * Fixed some API documentation issues with Buffer transfers from host.
 * Package `xlabuilder`:
   * Fixed `NewArrayLiteral[T dtypes.Supported](flat []T, dimensions ...int)` to create a scalar if no dimensions are passed.
+* Test `TestEndToEnd` only test first device by default, because CPU PJRT seems to falsely advertise more than one addressable device.
+  * Added `--alldevices` to loop over all devices during the test.
 
 # v0.4.3 - 2024-10-23
 

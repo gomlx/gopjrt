@@ -17,6 +17,8 @@
 # See: https://github.com/gomlx/gopjrt?#installing
 set -e
 
+PLATFORM="linux_amd64"
+
 # Base installation directory:
 GOPJRT_INSTALL_DIR="${GOPJRT_INSTALL_DIR:-/usr/local}"
 _SUDO="sudo"
@@ -32,7 +34,7 @@ curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
   > ${download_urls}
 
 # Download XlaBuilder C wrapper library.
-url="$(grep gomlx_xlabuilder_linux_amd64.tar.gz "${download_urls}" | head -n 1)"
+url="$(grep gomlx_xlabuilder_${PLATFORM}.tar.gz "${download_urls}" | head -n 1)"
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
 
 if [[ "${_SUDO}" != "" ]] ; then
@@ -48,7 +50,7 @@ sudo rm -f "lib/libgomlx_xlabuilder.so"
 popd
 
 # Download PJRT CPU plugin
-url="$(grep pjrt_c_api_cpu_plugin.so.gz "${download_urls}" | head -n 1)"
+url="$(grep pjrt_c_api_cpu_plugin.so.${PLATFORM}.gz "${download_urls}" | head -n 1)"
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
 if [[ "${_SUDO}" != "" ]] ; then
   ${_SUDO} printf "\tsudo authorized\n"

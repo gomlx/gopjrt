@@ -46,7 +46,7 @@ pushd "${GOPJRT_INSTALL_DIR}"
 curl -L "${url}" | ${_SUDO} tar xzv
 ls -lh "lib/libgomlx_xlabuilder.a"
 # Remove older version using dynamically linked library -- it would pick up on this otherwise and fail to link.
-sudo rm -f "lib/libgomlx_xlabuilder.so"
+${_SUDO} rm -f "lib/libgomlx_xlabuilder.so"
 popd
 
 # Download PJRT CPU plugin

@@ -44,7 +44,7 @@ jobs:
       with:
         go-version: "1.22.x"
 
-    - name: Install GoMLX shared libraries
+    - name: Install Gopjrt C library gomlx_xlabuilder and PJRT plugin
       shell: bash
       run: |
         curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
@@ -55,6 +55,7 @@ jobs:
         wget --quiet --output-document=- $(cat /tmp/gopjrt_latest_release_url.txt) \
           | (mkdir release ; cd release ; sudo tar -xvz)
         sudo cp release/lib/libgomlx_xlabuilder.a /usr/lib/x86_64-linux-gnu
+        ls -lh /usr/lib/x86_64-linux-gnu/libgomlx*
         export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
         sudo cp -r release/include/gomlx /usr/include
         curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
@@ -66,7 +67,7 @@ jobs:
           > release/pjrt_c_api_cpu_plugin.so.gz
         gzip -d release/pjrt_c_api_cpu_plugin.so.gz
         sudo mv release/pjrt_c_api_cpu_plugin.so /usr/lib/x86_64-linux-gnu/
-        ls -lh /usr/lib/x86_64-linux-gnu/
+        ls -lh /usr/lib/x86_64-linux-gnu/pjrt_c_api*
     - name: PreTest
       run: |
         go test . -test.v

@@ -48,7 +48,7 @@ jobs:
       shell: bash
       run: |
         curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
-          | grep "gomlx_xlabuilder-linux-amd64.tar.gz" | grep "download_url" \
+          | grep "gomlx_xlabuilder_linux_amd64.tar.gz" | grep "download_url" \
           | sed 's/.*"\(https.*\)"/\1/' \
           > /tmp/gopjrt_latest_release_url.txt
         cat /tmp/gopjrt_latest_release_url.txt

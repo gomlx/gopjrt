@@ -1,3 +1,8 @@
+# Next
+
+* Fix to installation script: missing `sudo` to remove old library, not observing the GOPJRT_NOSUDO request.
+* Fixed github test action `go.yaml`.
+
 # v0.4.5 
 
 * Fixes to experimental/GPU MacOS (darwin) on arm64.

@@ -56,7 +56,7 @@ jobs:
           | (mkdir release ; cd release ; sudo tar -xvz)
         echo "Untar-ed files:"
         find release/
-        sudo cp release/lib/libgomlx_xlabuilder.so /usr/lib/x86_64-linux-gnu
+        sudo cp release/lib/libgomlx_xlabuilder.a /usr/lib/x86_64-linux-gnu
         export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
         sudo cp -r release/include/gomlx /usr/include
         curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \

@@ -54,13 +54,11 @@ jobs:
         cat /tmp/gopjrt_latest_release_url.txt
         wget --quiet --output-document=- $(cat /tmp/gopjrt_latest_release_url.txt) \
           | (mkdir release ; cd release ; sudo tar -xvz)
-        echo "Untar-ed files:"
-        find release/
         sudo cp release/lib/libgomlx_xlabuilder.a /usr/lib/x86_64-linux-gnu
         export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
         sudo cp -r release/include/gomlx /usr/include
         curl -s "https://api.github.com/repos/gomlx/gopjrt/releases/latest" \
-          | grep "pjrt_c_api_cpu_plugin.so.gz" | grep "download_url" \
+          | grep "pjrt_c_api_cpu_plugin.so.linux_amd64.gz" | grep "download_url" \
           | sed 's/.*"\(https.*\)"/\1/' \
           > /tmp/gopjrt_latest_release_cpu_plugin_url.txt
         cat /tmp/gopjrt_latest_release_cpu_plugin_url.txt

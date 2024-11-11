@@ -387,6 +387,11 @@ func (dtype DType) IsInt() bool {
 		dtype == Uint8 || dtype == Uint16 || dtype == Uint32 || dtype == Uint64
 }
 
+// IsUnsigned returns whether dtype is one of the unsigned (only int for now) types.
+func (dtype DType) IsUnsigned() bool {
+	return dtype == Uint8 || dtype == Uint16 || dtype == Uint32 || dtype == Uint64
+}
+
 // IsSupported returns whether dtype is supported by `gopjrt`.
 func (dtype DType) IsSupported() bool {
 	return dtype == Bool || dtype == Float16 || dtype == BFloat16 || dtype == Float32 || dtype == Float64 || dtype == Int64 || dtype == Int32 || dtype == Int16 || dtype == Int8 || dtype == Uint32 || dtype == Uint16 || dtype == Uint8 || dtype == Complex64 || dtype == Complex128

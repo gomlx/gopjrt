@@ -1248,6 +1248,15 @@ func DecodeFFT(op *Op) (operand *Op, fftType xla_data.FftType, fftLength []int) 
 	return
 }
 
+// RngAlgorithm is an enum of the types of algorithms supported by XLA. We use Philox for now.
+type RngAlgorithm int
+
+const (
+	RngAlgorithmDefault  RngAlgorithm = 0
+	RngAlgorithmThreeFry RngAlgorithm = 1
+	RngAlgorithmPhilox   RngAlgorithm = 2
+)
+
 // RngBitGenerator generates the given shape filled with random bits.
 // It takes as input the current random number generator (RNG) state, see RngState or RngStateFromSeed.
 // The algorithm is hard-coded to use Philox algorithm for now.
@@ -1257,6 +1266,7 @@ func RngBitGenerator(state *Op, shape Shape) (newState, values *Op, err error) {
 	builder := state.builder
 	op := newOp(RngBitGeneratorOp, state)
 	op.ShapeArg = shape
+	op.IntArg = int(RngAlgorithmPhilox) // Algorithm.
 	err = builder.addOp(op)
 	if err != nil {
 		return

@@ -2,7 +2,7 @@
 
 * Fix to installation script: missing `sudo` to remove old library, not observing the GOPJRT_NOSUDO request.
 * Fixed github test action `go.yaml`.
-* Added dtypes.IsUnsigned.
+* Explicitly set the random algorithm to Philox when using RngBitGenerator.
 
 # v0.4.5 
 

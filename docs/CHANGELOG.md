@@ -1,4 +1,4 @@
-# Next
+# v0.4.6
 
 * Fix to installation script: missing `sudo` to remove old library, not observing the GOPJRT_NOSUDO request.
 * Fixed github test action `go.yaml`.

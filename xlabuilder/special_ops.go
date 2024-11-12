@@ -1257,12 +1257,20 @@ const (
 	RngAlgorithmPhilox   RngAlgorithm = 2
 )
 
+var RngStateShape = MakeShape(dtypes.U64, 3)
+
 // RngBitGenerator generates the given shape filled with random bits.
 // It takes as input the current random number generator (RNG) state, see RngState or RngStateFromSeed.
 // The algorithm is hard-coded to use Philox algorithm for now.
 //
+// The state should be `[3]uint64` for Philox, see https://openxla.org/xla/operation_semantics#rngbitgenerator.
+//
 // It returns the new state of the RNG and the generated values (with random bits) with the given shape.
 func RngBitGenerator(state *Op, shape Shape) (newState, values *Op, err error) {
+	if !state.Shape.Equal(RngStateShape) {
+		return nil, nil, errors.Errorf("invalid state shape %s: RngBitGenerator uses the Philox algorithm which uses as random state a tensor shaped %s",
+			state.Shape, RngStateShape)
+	}
 	builder := state.builder
 	op := newOp(RngBitGeneratorOp, state)
 	op.ShapeArg = shape

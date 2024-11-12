@@ -163,3 +163,18 @@ func shapeFromCShape(cShape *C.Shape) (shape Shape) {
 	}
 	return
 }
+
+// Equal returns whether two shapes are the same.
+func (s Shape) Equal(s2 Shape) bool {
+	if s.DType != s2.DType {
+		return false
+	}
+	if s.Rank() != s2.Rank() {
+		return false
+	}
+	if s.IsScalar() {
+		return true
+	}
+	// For normal shapes just compare dimensions.
+	return slices.Equal(s.Dimensions, s2.Dimensions)
+}

@@ -4,6 +4,7 @@
 * Fixed github test action `go.yaml`.
 * Explicitly set the random algorithm to Philox when using RngBitGenerator. Also improved documentation and added
   check on the validity of the random state shape.
+* Added `dtype.DType.IsUnsigned()`
 
 # v0.4.5 
 

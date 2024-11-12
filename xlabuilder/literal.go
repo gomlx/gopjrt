@@ -121,6 +121,9 @@ func NewScalarLiteralFromFloat64(value float64, dtype dtypes.DType) (*Literal, e
 // It uses reflection to inspect the type.
 func NewScalarLiteralFromAny(value any) (*Literal, error) {
 	valueOf := reflect.ValueOf(value)
+	if valueOf.Kind() == reflect.Slice || valueOf.Kind() == reflect.Map {
+		return nil, errors.Errorf("NewScalarLiteralFromAny requires a **scalar** value, it can't use slices/maps (%T given)", value)
+	}
 	dtype := dtypes.FromGoType(valueOf.Type())
 	if dtype == dtypes.InvalidDType {
 		return nil, errors.Errorf("Go type %T has no equivalent dtype", value)
@@ -134,7 +137,7 @@ func NewScalarLiteralFromAny(value any) (*Literal, error) {
 	return l, nil
 }
 
-// NewArrayLiteralFromAny creates a scalar Literal with the given dynamically typed flat values and its underlying dimensions.
+// NewArrayLiteralFromAny creates a slice Literal with the given dynamically typed flat values and its underlying dimensions.
 // It uses reflection to inspect the type.
 func NewArrayLiteralFromAny(flatAny any, dimensions ...int) (*Literal, error) {
 	flatV := reflect.ValueOf(flatAny)

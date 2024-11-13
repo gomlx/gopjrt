@@ -1,0 +1,6 @@
+internal/protos
+LICENSE
+.gitignore
+.idea
+protos/
+gen_*

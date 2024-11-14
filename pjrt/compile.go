@@ -134,7 +134,7 @@ func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
 	return cc
 }
 
-// WithStableHLO configures the program with a StableHLO program, encoded as a sereialized `mlir.ModuleOp` object.
+// WithStableHLO configures the program with a StableHLO program, encoded as a serialized `mlir.ModuleOp` object.
 // The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
 // call to Done is returned.
 //

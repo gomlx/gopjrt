@@ -90,6 +90,7 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	programPtr := unsafe.SliceData(cc.program)
 	pinner.Pin(programPtr)
 	defer pinner.Unpin()
+	pinner.Pin(cc)
 
 	// Get options and pin it.
 	binOptions, err := proto.Marshal(cc.options)

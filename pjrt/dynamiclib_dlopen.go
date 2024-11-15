@@ -128,7 +128,7 @@ func loadPlugin(pluginPath string) (handleWrapper dllHandleWrapper, err error) {
 
 	nameC := C.CString(pluginPath)
 	klog.V(2).Infof("trying to load library %s\n", pluginPath)
-	handle := C.dlopen(nameC, C.RTLD_LAZY)
+	handle := C.dlopen(nameC, C.RTLD_LAZY|C.RTLD_LOCAL)
 	cFree(nameC)
 	if handle == nil {
 		msg := C.GoString(C.dlerror())

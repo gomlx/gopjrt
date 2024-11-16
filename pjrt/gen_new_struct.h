@@ -278,6 +278,9 @@ extern PJRT_Buffer_Delete_Args* new_PJRT_Buffer_Delete_Args();
 // new_PJRT_Buffer_IsDeleted_Args allocates a zero-initialized C.PJRT_Buffer_IsDeleted_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Buffer_IsDeleted_Args* new_PJRT_Buffer_IsDeleted_Args();
 
+// new_PJRT_Buffer_CopyRawToHost_Args allocates a zero-initialized C.PJRT_Buffer_CopyRawToHost_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Buffer_CopyRawToHost_Args* new_PJRT_Buffer_CopyRawToHost_Args();
+
 // new_PJRT_Buffer_CopyToDevice_Args allocates a zero-initialized C.PJRT_Buffer_CopyToDevice_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Buffer_CopyToDevice_Args* new_PJRT_Buffer_CopyToDevice_Args();
 

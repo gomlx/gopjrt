@@ -707,6 +707,14 @@ PJRT_Buffer_IsDeleted_Args* new_PJRT_Buffer_IsDeleted_Args() {
 	return p;
 }
 
+// new_PJRT_Buffer_CopyRawToHost_Args allocates a zero-initialized C.PJRT_Buffer_CopyRawToHost_Args structure, sets its .struct_size, and returns it.
+PJRT_Buffer_CopyRawToHost_Args* new_PJRT_Buffer_CopyRawToHost_Args() {
+	PJRT_Buffer_CopyRawToHost_Args* p = malloc(sizeof(PJRT_Buffer_CopyRawToHost_Args));
+	memset(p, 0, sizeof(PJRT_Buffer_CopyRawToHost_Args));
+	p->struct_size = PJRT_Buffer_CopyRawToHost_Args_STRUCT_SIZE;
+	return p;
+}
+
 // new_PJRT_Buffer_CopyToDevice_Args allocates a zero-initialized C.PJRT_Buffer_CopyToDevice_Args structure, sets its .struct_size, and returns it.
 PJRT_Buffer_CopyToDevice_Args* new_PJRT_Buffer_CopyToDevice_Args() {
 	PJRT_Buffer_CopyToDevice_Args* p = malloc(sizeof(PJRT_Buffer_CopyToDevice_Args));

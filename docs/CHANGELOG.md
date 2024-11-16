@@ -3,10 +3,12 @@
 * Sync'ed with updated proto definitions from OpenXLA/XLA project.
 * TestEndToEnd: added `klog` flags; list devices before trying to compile. 
 * Renamed deprecated xla::Status to absl::Status.
-* Waiting for PJRT API breakage introduced in https://github.com/openxla/xla/commit/590b36f89d8cb038e9e3929aeaea6e60451ef3fc#r149134910
+* Update to XLA and PJRT v0.57
   * Updated XLA dependency.
   * Updated PJRT CPU plugin.
-  * TODO: update pjrt_c_api.h.
+  * Updated `pjrt_c_api.h`: copying over from XLA source is now part of the generate program.
+  * Note: PJRT v0.56 was broken for a few days, and the version was skipped.
+    (breakage here https://github.com/openxla/xla/commit/590b36f89d8cb038e9e3929aeaea6e60451ef3fc#r149134910)
 
 # v0.4.6
 

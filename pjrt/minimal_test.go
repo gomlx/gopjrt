@@ -33,15 +33,18 @@ var hloText = `name:"x*x+1.5" entry_computation_name:"x*x+1.5" entry_computation
 func TestMinimal(t *testing.T) {
 	// Load HLO program.
 	var hloSerialized []byte
+	var hloModule hlo.HloModuleProto
 	if *flagLoadHLO != "" {
+		fmt.Printf("Loading HLO program from %s...\n", *flagLoadHLO)
 		hloSerialized = must.M1(os.ReadFile(*flagLoadHLO))
+		must.M(proto.Unmarshal(hloSerialized, &hloModule))
 	} else {
 		// Serialize HLO program from hloText:
 		var hloModule hlo.HloModuleProto
 		must.M(prototext.Unmarshal([]byte(hloText), &hloModule))
-		fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
 		hloSerialized = must.M1(proto.Marshal(&hloModule))
 	}
+	fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
 
 	// `dlopen` PJRT plugin.
 	plugin := must.M1(GetPlugin("cpu"))

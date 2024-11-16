@@ -24,6 +24,22 @@ var flagLoadHLO = flag.String("loadhlo", "", "Load HLO to test from file (as opp
 //		constant.3 = f32[] constant(1)
 //		ROOT add.4 = f32[] add(multiply.2, constant.3)
 //	}
+//
+// In JAX, a similar HLO program can be generated with:
+//
+//	import jax
+//	from jax import numpy as jnp
+//
+//	def f(x):
+//		return x**2 + 1
+//
+//	x = jnp.array(0.1, dtype=jnp.float32)
+//	ir1 = jax.jit(f).lower(x)
+//	ir2 = ir1.compiler_ir("hlo")
+//	serializedHLO = ir2.as_serialized_hlo_module_proto()
+//
+//	with open("/tmp/hlo.pb", "wb") as f:
+//		f.write(serializedHLO)
 var hloText = `name:"x*x+1.5" entry_computation_name:"x*x+1.5" entry_computation_id:5 computations:{name:"x*x+1.5" ` +
 	`instructions:{name:"x.1" opcode:"parameter" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:1 frontend_attributes:{}} instructions:{name:"multiply.2" opcode:"multiply" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:2 operand_ids:1 operand_ids:1 frontend_attributes:{}} instructions:{name:"constant.3" opcode:"constant" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} literal:{shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} f32s:1} id:3 frontend_attributes:{}} instructions:{name:"add.4" opcode:"add" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:4 operand_ids:2 operand_ids:3 frontend_attributes:{}} program_shape:{parameters:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} result:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} parameter_names:"x"} id:5 root_id:4} host_program_shape:{parameters:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} result:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} parameter_names:"x"} id:5`
 
@@ -40,7 +56,6 @@ func TestMinimal(t *testing.T) {
 		must.M(proto.Unmarshal(hloSerialized, &hloModule))
 	} else {
 		// Serialize HLO program from hloText:
-		var hloModule hlo.HloModuleProto
 		must.M(prototext.Unmarshal([]byte(hloText), &hloModule))
 		hloSerialized = must.M1(proto.Marshal(&hloModule))
 	}

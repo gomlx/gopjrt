@@ -1,15 +1,19 @@
 package pjrt
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gomlx/gopjrt/protos/hlo"
 	"github.com/janpfeifer/must"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
+	"os"
 	"runtime"
 	"testing"
 )
+
+var flagLoadHLO = flag.String("loadhlo", "", "Load HLO to test from file (as opposed to the one created with XlaBuilder.")
 
 // hloText describes the following program:
 //
@@ -28,10 +32,16 @@ var hloText = `name:"x*x+1.5" entry_computation_name:"x*x+1.5" entry_computation
 // Set (export) XLA_FLAGS=--xla_dump_to=/tmp/xla_dump to get details of its compilation.
 func TestMinimal(t *testing.T) {
 	// Load HLO program.
-	var hloModule hlo.HloModuleProto
-	must.M(prototext.Unmarshal([]byte(hloText), &hloModule))
-	fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
-	hloSerialized := must.M1(proto.Marshal(&hloModule))
+	var hloSerialized []byte
+	if *flagLoadHLO != "" {
+		hloSerialized = must.M1(os.ReadFile(*flagLoadHLO))
+	} else {
+		// Serialize HLO program from hloText:
+		var hloModule hlo.HloModuleProto
+		must.M(prototext.Unmarshal([]byte(hloText), &hloModule))
+		fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
+		hloSerialized = must.M1(proto.Marshal(&hloModule))
+	}
 
 	// `dlopen` PJRT plugin.
 	plugin := must.M1(GetPlugin("cpu"))

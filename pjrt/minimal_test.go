@@ -33,7 +33,7 @@ func TestMinimal(t *testing.T) {
 	fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
 	hloSerialized := must.M1(proto.Marshal(&hloModule))
 
-	// `dlload` PJRT plugin.
+	// `dlopen` PJRT plugin.
 	plugin := must.M1(GetPlugin("cpu"))
 	defer runtime.KeepAlive(plugin)
 	fmt.Printf("PJRT: %s\n", plugin.String())

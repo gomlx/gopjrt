@@ -24,6 +24,8 @@ var hloText = `name:"x*x+1.5" entry_computation_name:"x*x+1.5" entry_computation
 	`instructions:{name:"x.1" opcode:"parameter" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:1 frontend_attributes:{}} instructions:{name:"multiply.2" opcode:"multiply" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:2 operand_ids:1 operand_ids:1 frontend_attributes:{}} instructions:{name:"constant.3" opcode:"constant" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} literal:{shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} f32s:1} id:3 frontend_attributes:{}} instructions:{name:"add.4" opcode:"add" shape:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} metadata:{} id:4 operand_ids:2 operand_ids:3 frontend_attributes:{}} program_shape:{parameters:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} result:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} parameter_names:"x"} id:5 root_id:4} host_program_shape:{parameters:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} result:{element_type:F32 layout:{tail_padding_alignment_in_elements:1}} parameter_names:"x"} id:5`
 
 // TestMinimal is a minimal end-to-end test of loading, compiling and executing a small program using PJRT.
+//
+// Set (export) XLA_FLAGS=--xla_dump_to=/tmp/xla_dump to get details of its compilation.
 func TestMinimal(t *testing.T) {
 	// Load HLO program.
 	var hloModule hlo.HloModuleProto
@@ -46,6 +48,7 @@ func TestMinimal(t *testing.T) {
 	}
 
 	// Compile.
+	defer runtime.KeepAlive(hloSerialized)
 	loadedExec := must.M1(client.Compile().WithHLO(hloSerialized).Done())
 	defer runtime.KeepAlive(loadedExec)
 	fmt.Printf("\t- program compiled successfully.\n")

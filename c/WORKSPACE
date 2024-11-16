@@ -24,7 +24,7 @@ http_archive(
 OPENXLA_XLA_COMMIT_HASH = "9ab7d704d7fe7e73fc3976adc2ccec070bc9a2ea" # From 2024-11-16
 http_archive(
     name = "xla",
-    sha256 = "31e066891ca858cc2b55e02f69fbcdceaf1d56040801459a68656f46d2ef76c0",  # From 2024-11-15
+    sha256 = "29e3e69bbbcce846d4f18564870629e4680c46789b8ddcaceea1b0f25c233468",  # From 2024-11-16
     strip_prefix = "xla-" + OPENXLA_XLA_COMMIT_HASH,
     urls = [
         "https://github.com/openxla/xla/archive/{hash}.zip".format(hash = OPENXLA_XLA_COMMIT_HASH),

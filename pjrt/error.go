@@ -10,6 +10,7 @@ package pjrt
 import "C"
 import (
 	"github.com/pkg/errors"
+	"unsafe"
 )
 
 // pjrtErrorDestroy calls C.PJRT_Error_Destroy.
@@ -20,13 +21,15 @@ func pjrtErrorDestroy(plugin *Plugin, pErr *C.PJRT_Error) {
 	C.call_PJRT_Error_Destroy(plugin.api, args)
 }
 
-// pjrtErrorMessage calls C.PJRT_Error_Message.
+// pjrtErrorMessage calls C.PJRT_Error_Message and returns the message from an error structure.
 func pjrtErrorMessage(plugin *Plugin, pErr *C.PJRT_Error) string {
 	args := C.new_PJRT_Error_Message_Args()
 	defer cFree(args)
 	args.error = pErr
 	C.call_PJRT_Error_Message(plugin.api, args)
-	msg := C.GoString(args.message) // I'm guessing the C-message memory is still owned by the PJRT_Error structure, so I'm not freeing it.
+	msg := string(unsafe.Slice((*byte)(unsafe.Pointer(args.message)), int(args.message_size))) // Notice bytes are copied.
+	// I'm guessing the C-message memory is still owned by the PJRT_Error structure, so I'm not freeing it.
+	// The C++ PJRT Client library also doesn't free the message.
 	return msg
 }
 

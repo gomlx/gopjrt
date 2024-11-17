@@ -340,6 +340,7 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 
 // Size returns the size in bytes if required for the buffer to be transferred with ToHost.
 func (b *Buffer) Size() (int, error) {
+	defer runtime.KeepAlive(b)
 	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed ?
 		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
@@ -362,6 +363,7 @@ func (b *Buffer) Size() (int, error) {
 // This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
 // reorganize the layout.
 func (b *Buffer) ToHost(dst []byte) error {
+	defer runtime.KeepAlive(b)
 	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
 		// Already destroyed ?
 		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
@@ -518,6 +520,7 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 //
 // Similar to the generic BufferToArray[T], but this returns an anonymous typed (`any`) flat slice instead of using generics.
 func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err error) {
+	defer runtime.KeepAlive(b)
 	var dtype dtypes.DType
 	dtype, err = b.DType()
 	if err != nil {

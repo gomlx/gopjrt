@@ -7,13 +7,21 @@ import (
 	"github.com/gomlx/gopjrt/pjrt"
 	"github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"k8s.io/klog/v2"
+	"os"
 	"testing"
 )
 
 var (
 	flagPluginName     = flag.String("plugin", "cpu", "PRJT plugin name or full path")
 	flagTestAllDevices = flag.Bool("alldevices", false, "Test all devices. Defaults to false because CPU PJRT seems to falsely advertise more than one device")
+	flagSaveHLO        = flag.String("savehlo", "", "Save HLO to file. If empty, do not save.")
+	flagLoadHLO        = flag.String("loadhlo", "", "Load HLO to test from file (as opposed to the one created with XlaBuilder.")
 )
+
+func init() {
+	klog.InitFlags(nil)
+}
 
 // TestEndToEnd builds, compiles and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
 // and pjrt to compile and execute it.
@@ -32,7 +40,12 @@ func TestEndToEnd(t *testing.T) {
 	// Get computation created.
 	comp, err := builder.Build(fX)
 	require.NoError(t, err, "Failed to build XlaComputation from ops.")
-	//fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+	if *flagSaveHLO != "" {
+		cBuffer := comp.SerializedHLO()
+		err := os.WriteFile(*flagSaveHLO, cBuffer.Bytes(), 0644)
+		require.NoError(t, err)
+	}
 
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
@@ -41,11 +54,6 @@ func TestEndToEnd(t *testing.T) {
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
 	fmt.Printf("	client: %s\n", client)
-
-	// Compile program.
-	loadedExec, err := client.Compile().WithComputation(comp).Done()
-	require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
-	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
 	// List devices.
 	addressableDevices := client.AddressableDevices()
@@ -59,6 +67,19 @@ func TestEndToEnd(t *testing.T) {
 		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
 	}
 	fmt.Println()
+
+	// Compile program.
+	var loadedExec *pjrt.LoadedExecutable
+	if *flagLoadHLO == "" {
+		loadedExec, err = client.Compile().WithComputation(comp).Done()
+		require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
+	} else {
+		hloProgram, err := os.ReadFile(*flagLoadHLO)
+		require.NoErrorf(t, err, "Failed to load HLO from file %q", *flagLoadHLO)
+		loadedExec, err = client.Compile().WithHLO(hloProgram).Done()
+		require.NoErrorf(t, err, "Failed to compile HLO program loaded from %q", *flagLoadHLO)
+	}
+	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
 	// Test values:
 	inputs := []float32{0.1, 1, 3, 4, 5}

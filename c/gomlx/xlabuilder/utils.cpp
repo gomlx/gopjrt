@@ -44,8 +44,8 @@ int initCall = initSetTfLogs();
 int xla_wrapper_version() { return XlaWrapperVersion; }
 
 // Cast C pointer type to C++ object pointer.
-xla::Status *XlaStatusCast(XlaStatus *s) {
-  return static_cast<xla::Status *>(s);
+absl::Status *XlaStatusCast(XlaStatus *s) {
+  return static_cast<absl::Status *>(s);
 }
 
 char *c_str(const std::string &s) { return strdup(s.c_str()); }
@@ -82,8 +82,8 @@ int XlaStatusCode(XlaStatus *status) {
   return int(XlaStatusCast(status)->code());
 }
 
-XlaStatus *FromStatus(const xla::Status &status) {
-  return static_cast<XlaStatus *>(new xla::Status(status));
+XlaStatus *FromStatus(const absl::Status &status) {
+  return static_cast<XlaStatus *>(new absl::Status(status));
 }
 
 void XlaStatusFree(XlaStatus *xla_status) {

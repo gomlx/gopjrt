@@ -46,13 +46,22 @@ type CompileConfig struct {
 
 func newCompileConfig(client *Client) (cc *CompileConfig) {
 	cc = &CompileConfig{
-		plugin:  client.plugin,
-		client:  client,
-		options: &compile_options.CompileOptionsProto{},
+		plugin: client.plugin,
+		client: client,
+		options: &compile_options.CompileOptionsProto{
+			ArgumentLayouts:            nil,
+			ParameterIsTupledArguments: false,
+			ExecutableBuildOptions:     nil,
+			CompilePortableExecutable:  true,
+			ProfileVersion:             0,
+			SerializedMultiSliceConfig: nil,
+			EnvOptionOverrides:         nil,
+			TargetConfig:               nil,
+		},
 	}
 	// Default values specified in the comments of the proto (but not as proper proto defaults).
 	cc.options.ExecutableBuildOptions = &compile_options.ExecutableBuildOptionsProto{
-		DeviceOrdinal: -1,
+		DeviceOrdinal: -1, // -1 means not set.
 		NumReplicas:   1,
 		NumPartitions: 1,
 	}
@@ -90,6 +99,7 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	programPtr := unsafe.SliceData(cc.program)
 	pinner.Pin(programPtr)
 	defer pinner.Unpin()
+	pinner.Pin(cc)
 
 	// Get options and pin it.
 	binOptions, err := proto.Marshal(cc.options)

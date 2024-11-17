@@ -241,7 +241,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     // Create the update computation: only Add supported for now.
     auto shape_or = builder->GetShape(*inputs[0]);
     if (!shape_or.ok()) {
-      return new xla::Status(std::move(shape_or.status()));
+      return new absl::Status(std::move(shape_or.status()));
     }
     xla::PrimitiveType primitive_type = shape_or.value().element_type();
     auto update_computation =
@@ -619,7 +619,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     break;
 
   default:
-    return new xla::Status(
+    return new absl::Status(
         absl::StatusCode::kInvalidArgument,
         absl::StrFormat("unknown op_type=%d for XlaBuilderAddOp",
                         serialized_op->op_type));
@@ -627,9 +627,9 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   if (!op.valid()) {
     auto status = builder->first_error();
     if (!status.ok()) {
-      return new xla::Status(status);
+      return new absl::Status(status);
     }
-    return new xla::Status(
+    return new absl::Status(
         absl::StatusCode::kInvalidArgument,
         absl::StrFormat("failed to convert serialized_op to XLA: op_type=%d",
                         serialized_op->op_type));

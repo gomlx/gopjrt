@@ -419,6 +419,9 @@ extern PJRT_Error* call_PJRT_Buffer_Delete(const PJRT_Api *api, PJRT_Buffer_Dele
 // True if and only if PJRT_Buffer_Delete has previously been called.
 extern PJRT_Error* call_PJRT_Buffer_IsDeleted(const PJRT_Api *api, PJRT_Buffer_IsDeleted_Args* args);
 
+// call_PJRT_Buffer_CopyRawToHost calls the corresponding PJRT API method.
+extern PJRT_Error* call_PJRT_Buffer_CopyRawToHost(const PJRT_Api *api, PJRT_Buffer_CopyRawToHost_Args* args);
+
 // call_PJRT_Buffer_CopyToDevice calls the corresponding PJRT API method.
 // Copies the buffer to device `dst_device` within the same client. Caller is
 // responsible for freeing returned `dst_buffer` with PJRT_Buffer_Destroy.

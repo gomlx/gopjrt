@@ -16,6 +16,7 @@ export USE_BAZEL_VERSION=7.4.0  # First version allowing cc_static_library rule.
 
 DEBUG=0
 OUTPUT_DIR=""
+USE_STABLEHLO="false"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --debug)
@@ -26,6 +27,11 @@ while [[ $# -gt 0 ]]; do
       shift
       echo "Output directory set to $1"
       OUTPUT_DIR="--output_base=$1"
+      shift
+      ;;
+    --stablehlo)
+      echo "Linking StableHLO support."
+      USE_STABLEHLO="true"
       shift
       ;;
     -*|--*)
@@ -99,15 +105,15 @@ case "${TARGET_PLATFORM}" in
     echo "Building for macOS amd64"
     STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=custom_darwin_amd64.bazelrc"
     BUILD_FLAGS="${BUILD_FLAGS} --config=macos_amd64"
-    # Apple/Metal PJRT only works with StableHLO, so we link it along.
-    BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=false"
+    if [[ "$USE_TABLE_HLO" == "false" ]] ; then
+      echo "*** Apple/Metal PJRT (maintained by Apple) only works with StableHLO, consider adding --USE_STABLEHLO"
+    fi
     ;;
 
   "darwin_arm64")
     echo "Building for macOS arm64"
     BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
     # Apple/Metal PJRT only works with StableHLO, so we link it along.
-    BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=true"
     ;;
 
   *)
@@ -130,6 +136,9 @@ BUILD_FLAGS="${BUILD_FLAGS} --define tsl_protobuf_header_only=false"
 # We need the dependencies to be linked statically -- they won't come from some external .so:
 BUILD_FLAGS="${BUILD_FLAGS} --define framework_shared_object=false"
 
+# Link-in StableHLO support: this multiplies by 8 the size of the gomlx_xlabuilder library, because
+# it links in LLVM. But it's required for the Apple/Metal support.
+BUILD_FLAGS="${BUILD_FLAGS} --define use_stablehlo=${USE_STABLEHLO}"
 
 # XLA rules weren't meant to be exported, so we overrule their visibility
 # constraints.

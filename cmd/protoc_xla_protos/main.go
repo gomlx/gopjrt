@@ -11,6 +11,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -30,6 +32,7 @@ var protos = []string{
 	"xla/autotuning.proto",
 	"xla/pjrt/compile_options.proto",
 	"xla/service/hlo.proto",
+	"xla/service/metrics.proto",
 	"xla/stream_executor/device_description.proto",
 	"xla/xla.proto",
 	"xla/xla_data.proto",
@@ -38,8 +41,7 @@ var protos = []string{
 func main() {
 	xlaSrc := os.Getenv(xlaSrcEnvVar)
 	if xlaSrc == "" {
-		fmt.Fprintf(os.Stderr, "Please set %s to the directory containing the cloned github.com/openxla/xla repository.\n", xlaSrcEnvVar)
-		os.Exit(1)
+		log.Fatalf("Please set %s to the directory containing the cloned github.com/openxla/xla repository.\n", xlaSrcEnvVar)
 	}
 
 	// Generate the --go_opt=M... flags
@@ -54,14 +56,12 @@ func main() {
 		packageName := protoPackage(proto)
 		err := os.Mkdir(packageName, 0755)
 		if err != nil && !os.IsExist(err) {
-			fmt.Fprintf(os.Stderr, "Failed to create sub-directory %q: %+v", packageName, err)
-			os.Exit(1)
+			log.Fatalf("Failed to create sub-directory %q: %+v", packageName, err)
 		}
 		// Remove go_package options from the proto file
 		protoPath := filepath.Join(xlaSrc, proto)
 		if err := removeGoPackageOption(protoPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Error removing go_package option from %s: %v\n", proto, err)
-			os.Exit(1)
+			log.Fatalf("Error removing go_package option from %s: %v\n", proto, err)
 		}
 
 		// Construct the protoc command
@@ -79,9 +79,17 @@ func main() {
 		cmd.Stderr = os.Stderr
 
 		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error executing protoc for %s: %v\n", proto, err)
-			fmt.Fprintf(os.Stderr, "Command:\n%s\n", cmd)
-			os.Exit(1)
+			log.Printf("Command:\n%s\n", cmd)
+			log.Fatalf("Error executing protoc for %s: %v\n", proto, err)
+		}
+
+		currentDir, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Failed to get current directory: %v", err)
+		}
+		localCopyPath := path.Join(currentDir, path.Base(protoPath))
+		if err := copyFile(localCopyPath, protoPath); err != nil {
+			log.Fatalf("Failed to copy file: %v", err)
 		}
 	}
 }
@@ -102,4 +110,19 @@ func removeGoPackageOption(protoPath string) error {
 	newContent := re.ReplaceAll(content, []byte{})
 
 	return os.WriteFile(protoPath, newContent, 0644)
+}
+
+func copyFile(dst, src string) error {
+	// Read all content of src to data, may cause OOM for a large file.
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read %q", src)
+	}
+
+	// Write data to dst
+	err = os.WriteFile(dst, data, 0644)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read %q", src)
+	}
+	return nil
 }

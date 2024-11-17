@@ -11,8 +11,6 @@ computations (with large data) from Go using various [backends supported by Open
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
-**NEW**: Experimental, and somewhat limited **Apple/Metal support**.
-
 And because Jax, TensorFlow and [optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA,
 it is possible to run Jax functions in Go with `gopjrt`, and probably TensorFlow and PyTorch as well.
 See example 2 below.
@@ -204,16 +202,7 @@ For Linux (or Windows+WSL)+CUDA (NVidia GPU) support, in addition also run ([see
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
 
-For Darwin/arm64 (M1, M2) GPU support, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh)) to install under `/usr/local/{lib,include}`:
-
-* **VERY EXPERIMENTAL**: only a subset of the operations and types supported (`float64` doesn't work). See https://developer.apple.com/metal/jax/. 
-  And the CPU version of XLA is not working either. More of a `gopjrt` developer version.
-
-```bash
-curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_arm64.sh | bash
-```
-
-**TODO(Darwin)**: Create a Homebrew version.
+* ** 🚧🛠️ Mac (Darwin) support currently broken  🛠🚧️**: follow discussion in [XLA's issue #19152](https://github.com/openxla/xla/issues/19152) (and on XLA's discord channels)
 
 **That's it**. The next sections explains in more details for those interested in special cases.
 
@@ -244,7 +233,7 @@ The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 and Da
 If you have any questions, or want a custom installation of hte XLA Builder library, check and modify
 [`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh),
 [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) or
-[`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) (**VERY EXPERIMENTAL, GPU ONLY**)
+[`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) (🚧🛠️ **broken see note above** 🛠🚧️)
 they are self-explaining.
 
 ### Installing PJRT plugins

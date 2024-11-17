@@ -16,13 +16,13 @@
 
 // utils.h holds several small C/Go connector tools:
 //
-// - handling of xla::Status and xla::StatusOr.
+// - handling of absl::Status and xla::StatusOr.
 // - C definitions of VectorPointers and VectorData
 // - Memory stats, usage and heap checker for leaks.
 
 #ifndef _GOMLX_XLABUILDER_STATUS_H
 #define _GOMLX_XLABUILDER_STATUS_H
-// utils.h holds the simplified C interface to xla::Status and xla::StatusOr
+// utils.h holds the simplified C interface to absl::Status and xla::StatusOr
 // objects.
 #include <stdlib.h>
 
@@ -35,7 +35,7 @@ typedef _Bool bool;
 extern "C" {
 #endif
 
-// XlaStatus behind the scenes is a xla::Status type.
+// XlaStatus is an *absl::Status cast to void* (is used to be `xla::Status`, now `absl::Status`).
 typedef void XlaStatus;
 
 // StatusOr contains status or the value from the C++ StatusOr.
@@ -75,7 +75,7 @@ typedef struct {
 #include <string>
 #include <vector>
 
-#include "xla/status.h"
+#include "absl/status/status.h"
 #include "xla/statusor.h"
 // #include "xla/xla/shape_util.h"
 
@@ -113,12 +113,12 @@ extern VectorPointers *c_vector_str(const std::vector<std::string> &v);
 
 // FromStatus creates a dynamically allocated status (aliased to *XlaStatus)
 // from the given one -- contents are transferred.
-XlaStatus *FromStatus(const xla::Status &status);
+XlaStatus *FromStatus(const absl::Status &status);
 
 template <typename T> StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &status_or) {
   StatusOr r;
   r.status =
-      static_cast<XlaStatus *>(new xla::Status(std::move(status_or.status())));
+      static_cast<XlaStatus *>(new absl::Status(std::move(status_or.status())));
   if (status_or.ok()) {
     r.value = static_cast<void *>(status_or->get());
     status_or->release(); // Ownership should go to StatusOr.
@@ -129,7 +129,7 @@ template <typename T> StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &s
 template <typename T> StatusOr FromStatusOr(xla::StatusOr<T *> &status_or) {
   StatusOr r;
   r.status =
-      static_cast<XlaStatus *>(new xla::Status(std::move(status_or.status())));
+      static_cast<XlaStatus *>(new absl::Status(std::move(status_or.status())));
   if (status_or.ok()) {
     r.value = static_cast<void *>(status_or.Value());
   }

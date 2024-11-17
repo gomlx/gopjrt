@@ -21,10 +21,10 @@ http_archive(
 # Notice bazel.sh scrape the line below for the OpenXLA version, the format
 # of the line should remain the same (the hash in between quotes), or bazel.sh
 # must be changed accordingly.
-OPENXLA_XLA_COMMIT_HASH = "5389d1b4b97942d71f8b598e88d4a6d4648229d8" # From 2024-10-18
+OPENXLA_XLA_COMMIT_HASH = "9ab7d704d7fe7e73fc3976adc2ccec070bc9a2ea" # From 2024-11-16
 http_archive(
     name = "xla",
-    sha256 = "01556591a05a802ead29e67e5366d2056c3eafb27ed2f0abf7ce7978f1f4a32e",  # From 2024-10-18
+    sha256 = "29e3e69bbbcce846d4f18564870629e4680c46789b8ddcaceea1b0f25c233468",  # From 2024-11-16
     strip_prefix = "xla-" + OPENXLA_XLA_COMMIT_HASH,
     urls = [
         "https://github.com/openxla/xla/archive/{hash}.zip".format(hash = OPENXLA_XLA_COMMIT_HASH),

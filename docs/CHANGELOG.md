@@ -1,3 +1,17 @@
+# v0.4.7 - 2024-11-17
+
+* Sync'ed with updated proto definitions from OpenXLA/XLA project.
+* TestEndToEnd: added `klog` flags; list devices before trying to compile. 
+* Renamed deprecated xla::Status to absl::Status.
+* Update to XLA and PJRT v0.57
+  * Updated XLA dependency.
+  * Updated PJRT CPU plugin.
+  * Updated `pjrt_c_api.h`: copying over from XLA source is now part of the generate program.
+  * Note: PJRT v0.56 was broken for a few days, and the version was skipped.
+    (breakage here https://github.com/openxla/xla/commit/590b36f89d8cb038e9e3929aeaea6e60451ef3fc#r149134910)
+* **Mac version broken** :( : Following up on https://github.com/openxla/xla/issues/19152. Since it's
+  outside our control, not blocking the release here.
+
 # v0.4.6
 
 * Fix to installation script: missing `sudo` to remove old library, not observing the GOPJRT_NOSUDO request.

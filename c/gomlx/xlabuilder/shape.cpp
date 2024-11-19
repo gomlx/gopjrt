@@ -21,11 +21,8 @@
 
 #include "gomlx/xlabuilder/literal.h"
 #include "gomlx/xlabuilder/utils.h"
-
 #include "xla/literal.h"
-#include "xla/statusor.h"
 #include "xla/types.h"
-// #include "xla/xla_data.pb.h"
 
 using namespace std;
 

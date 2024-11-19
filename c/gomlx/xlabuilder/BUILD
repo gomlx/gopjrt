@@ -8,10 +8,10 @@ gomlx_xlabuilder_deps = [
     "@com_google_absl//absl/base:log_severity",
     "@com_google_absl//absl/log:initialize",
     "@com_google_absl//absl/status",
+    "@com_google_absl//absl/status:statusor",
     "@xla//xla:comparison_util",
     "@xla//xla:literal",
     "@xla//xla:shape_util",
-    "@xla//xla:statusor",
     "@xla//xla:types",
     "@xla//xla:util",
     "@xla//xla:xla_data_proto_cc",
@@ -29,7 +29,7 @@ stablehlo_deps = [
     "@stablehlo//:register",
     "@stablehlo//:stablehlo_serialization",
     "@xla//xla/hlo/translate/hlo_to_mhlo:hlo_to_mlir_hlo",
- ]
+]
 
 config_setting(
     name = "use_stablehlo",
@@ -40,18 +40,18 @@ cc_library(
     name = "xlabuilder",
     srcs = glob(["*.cpp"]),
     hdrs = glob(["*.h"]),
+    defines = select({
+        ":use_stablehlo": ["USE_STABLEHLO"],
+        "//conditions:default": [],
+    }),
     # SKIP_ABSL_INITIALIZE_LOG: this will trigger skipping of the call to `absl::InitializeLog()`
     # to prevent double-calling, in case whoever is linking GoMLX also calls it. Setting it may
     # lead to spurious logging by XLA library at startup up.
     # defines = ["SKIP_ABSL_INITIALIZE_LOG"],
     linkopts = ["-shared"],
-    defines = select({
-        ":use_stablehlo": ["USE_STABLEHLO"],
-        "//conditions:default": [],
-    }),
     deps = gomlx_xlabuilder_deps + select({
-             ":use_stablehlo": stablehlo_deps,
-             "//conditions:default": [],
+        ":use_stablehlo": stablehlo_deps,
+        "//conditions:default": [],
     }),
     alwayslink = True,
 )
@@ -62,8 +62,8 @@ cc_static_library(
     deps = gomlx_xlabuilder_deps + [
         ":xlabuilder",
     ] + select({
-             ":use_stablehlo": stablehlo_deps,
-             "//conditions:default": [],
+        ":use_stablehlo": stablehlo_deps,
+        "//conditions:default": [],
     }),
 )
 

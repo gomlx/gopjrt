@@ -30,7 +30,6 @@
 #include "xla/hlo/builder/xla_computation.h"
 #include "xla/hlo/builder/lib/arithmetic.h"
 #include "xla/literal.h"
-#include "xla/statusor.h"
 #include "xla/types.h"
 #include "xla/xla_data.pb.h"
 

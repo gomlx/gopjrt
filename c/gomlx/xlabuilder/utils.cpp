@@ -19,7 +19,6 @@
 #include <string.h>
 
 #include "absl/log/initialize.h"
-#include "xla/statusor.h"
 
 const char *TF_LOG_LEVEL_ENV = "TF_CPP_MIN_LOG_LEVEL";
 

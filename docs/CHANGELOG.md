@@ -1,4 +1,4 @@
-# Next
+# v0.4.8 - 2024-11-19
 
 * Replaced C++ `xla::StatusOr` by `absl::StatusOr` (the former was already an alias to the later).
 

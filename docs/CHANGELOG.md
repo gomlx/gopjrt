@@ -1,3 +1,7 @@
+# Next
+
+* Replaced C++ `xla::StatusOr` by `absl::StatusOr` (the former was already an alias to the later).
+
 # v0.4.7 - 2024-11-17
 
 * Sync'ed with updated proto definitions from OpenXLA/XLA project.

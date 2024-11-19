@@ -16,13 +16,13 @@
 
 // utils.h holds several small C/Go connector tools:
 //
-// - handling of absl::Status and xla::StatusOr.
+// - handling of absl::Status and absl::StatusOr.
 // - C definitions of VectorPointers and VectorData
 // - Memory stats, usage and heap checker for leaks.
 
 #ifndef _GOMLX_XLABUILDER_STATUS_H
 #define _GOMLX_XLABUILDER_STATUS_H
-// utils.h holds the simplified C interface to absl::Status and xla::StatusOr
+// utils.h holds the simplified C interface to absl::Status and absl::StatusOr
 // objects.
 #include <stdlib.h>
 
@@ -76,8 +76,7 @@ typedef struct {
 #include <vector>
 
 #include "absl/status/status.h"
-#include "xla/statusor.h"
-// #include "xla/xla/shape_util.h"
+#include "absl/status/statusor.h"
 
 // Malloc is a convenience allocation of individual items or arrays (for n>1)
 // using C malloc, needed to interface in Go.
@@ -115,7 +114,8 @@ extern VectorPointers *c_vector_str(const std::vector<std::string> &v);
 // from the given one -- contents are transferred.
 XlaStatus *FromStatus(const absl::Status &status);
 
-template <typename T> StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &status_or) {
+// FromStatusOr with a unique_prt<T>: takes ownership of the pointer, returning it in the new StatusOr.
+template <typename T> StatusOr FromStatusOr(absl::StatusOr<std::unique_ptr<T>> &status_or) {
   StatusOr r;
   r.status =
       static_cast<XlaStatus *>(new absl::Status(std::move(status_or.status())));
@@ -126,7 +126,8 @@ template <typename T> StatusOr FromStatusOr(xla::StatusOr<std::unique_ptr<T>> &s
   return r;
 }
 
-template <typename T> StatusOr FromStatusOr(xla::StatusOr<T *> &status_or) {
+// FromStatusOr with a *T pointer.
+template <typename T> StatusOr FromStatusOr(absl::StatusOr<T *> &status_or) {
   StatusOr r;
   r.status =
       static_cast<XlaStatus *>(new absl::Status(std::move(status_or.status())));

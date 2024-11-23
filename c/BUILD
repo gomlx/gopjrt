@@ -7,7 +7,9 @@ package(default_visibility = ["//visibility:private"])
 # map headers into a directory structure
 genrule(
     name = "gomlx_xlabuilder_headers_include",
-    srcs = ["//gomlx/xlabuilder:headers"],
+    srcs = [
+        "//gomlx/xlabuilder:headers",
+    ],
     outs = ["include/gomlx/xlabuilder/xlabuilder.h"],  # We list only one, because it's hard to keep all the list in sync.
     cmd = """
     mkdir -p "$(@D)"

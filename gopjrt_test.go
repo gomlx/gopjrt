@@ -10,6 +10,9 @@ import (
 	"k8s.io/klog/v2"
 	"os"
 	"testing"
+
+	// Link CPU PJRT statically: slower but works on Mac.
+	_ "github.com/gomlx/gopjrt/pjrt/static"
 )
 
 var (

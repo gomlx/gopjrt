@@ -7,7 +7,7 @@
 // And calls to pjrt.GetPlugin("cpu") will return the statically linked one.
 package static
 
-// #cgo LDFLAGS: -lpjrt_c_api_cpu -lstdc++ -lm
+// #cgo LDFLAGS: -lpjrt_c_api_cpu_static -lstdc++ -lm
 /*
 typedef void PJRT_Api;
 
@@ -25,7 +25,7 @@ func init() {
 	if pjrtAPI == 0 {
 		klog.Fatal("Failed to get PJRT API pointer when initializing static PJRT (github.com/gomlx/gopjrt/pjrt/static).")
 	}
-	err := pjrt.RegisterStaticPlugin("cpu", pjrtAPI)
+	err := pjrt.RegisterPreloadedPlugin("cpu", pjrtAPI)
 	if err != nil {
 		klog.Fatalf("Failed to register static PJRT plugin for CPU (github.com/gomlx/gopjrt/pjrt/static): %+v", err)
 	}

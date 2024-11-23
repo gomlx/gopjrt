@@ -1,3 +1,8 @@
+# Next
+
+* Added optional `github.com/gomlx/gopjrt/pjrt/static` that statically links the PJRT CPU plugin. 
+  It includes the corresponding C BUILD rule to build the static library (`libpjrt_c_api_cpu.a`)
+
 # v0.4.8 - 2024-11-19
 
 * Replaced C++ `xla::StatusOr` by `absl::StatusOr` (the former was already an alias to the later).

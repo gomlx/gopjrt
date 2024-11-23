@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DTypeName = "InvalidDTypeBoolInt8Int16Int32Int64Uint8Uint16Uint32Uint64Float16Float32Float64BFloat16Complex64Complex128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2"
+const _DTypeName = "InvalidDTypeBoolInt8Int16Int32Int64Uint8Uint16Uint32Uint64Float16Float32Float64BFloat16Complex64Complex128F8E5M2F8E4M3FNF8E4M3B11FNUZF8E5M2FNUZF8E4M3FNUZS4U4TOKENS2U2F8E4M3F8E3M4"
 
-var _DTypeIndex = [...]uint8{0, 12, 16, 20, 25, 30, 35, 40, 46, 52, 58, 65, 72, 79, 87, 96, 106, 112, 120, 133, 143, 153, 155, 157, 162, 164, 166}
+var _DTypeIndex = [...]uint8{0, 12, 16, 20, 25, 30, 35, 40, 46, 52, 58, 65, 72, 79, 87, 96, 106, 112, 120, 133, 143, 153, 155, 157, 162, 164, 166, 172, 178}
 
-const _DTypeLowerName = "invaliddtypeboolint8int16int32int64uint8uint16uint32uint64float16float32float64bfloat16complex64complex128f8e5m2f8e4m3fnf8e4m3b11fnuzf8e5m2fnuzf8e4m3fnuzs4u4tokens2u2"
+const _DTypeLowerName = "invaliddtypeboolint8int16int32int64uint8uint16uint32uint64float16float32float64bfloat16complex64complex128f8e5m2f8e4m3fnf8e4m3b11fnuzf8e5m2fnuzf8e4m3fnuzs4u4tokens2u2f8e4m3f8e3m4"
 
 func (i DType) String() string {
 	if i < 0 || i >= DType(len(_DTypeIndex)-1) {
@@ -55,9 +55,11 @@ func _DTypeNoOp() {
 	_ = x[TOKEN-(23)]
 	_ = x[S2-(24)]
 	_ = x[U2-(25)]
+	_ = x[F8E4M3-(26)]
+	_ = x[F8E3M4-(27)]
 }
 
-var _DTypeValues = []DType{InvalidDType, Bool, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Float16, Float32, Float64, BFloat16, Complex64, Complex128, F8E5M2, F8E4M3FN, F8E4M3B11FNUZ, F8E5M2FNUZ, F8E4M3FNUZ, S4, U4, TOKEN, S2, U2}
+var _DTypeValues = []DType{InvalidDType, Bool, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Float16, Float32, Float64, BFloat16, Complex64, Complex128, F8E5M2, F8E4M3FN, F8E4M3B11FNUZ, F8E5M2FNUZ, F8E4M3FNUZ, S4, U4, TOKEN, S2, U2, F8E4M3, F8E3M4}
 
 var _DTypeNameToValueMap = map[string]DType{
 	_DTypeName[0:12]:         InvalidDType,
@@ -112,6 +114,10 @@ var _DTypeNameToValueMap = map[string]DType{
 	_DTypeLowerName[162:164]: S2,
 	_DTypeName[164:166]:      U2,
 	_DTypeLowerName[164:166]: U2,
+	_DTypeName[166:172]:      F8E4M3,
+	_DTypeLowerName[166:172]: F8E4M3,
+	_DTypeName[172:178]:      F8E3M4,
+	_DTypeLowerName[172:178]: F8E3M4,
 }
 
 var _DTypeNames = []string{
@@ -141,6 +147,8 @@ var _DTypeNames = []string{
 	_DTypeName[157:162],
 	_DTypeName[162:164],
 	_DTypeName[164:166],
+	_DTypeName[166:172],
+	_DTypeName[172:178],
 }
 
 // DTypeString retrieves an enum value from the enum constants string name.

@@ -10,6 +10,8 @@ def gomlx_xlabuilder_genrule(target_platform):
         srcs = [
             ":gomlx_xlabuilder_headers_include",
             ":gomlx_xlabuilder_static_lib",
+            ":pjrt_cpu_static_lib",
+            ":pjrt_cpu_dynamic_lib",
         ],
         outs = ["gomlx_xlabuilder_" + target_platform + ".tar.gz"],
         cmd_bash = """

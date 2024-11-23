@@ -28,11 +28,11 @@ echo "Root GoMLX path is ${GOPJRT_DIR}"
 export CGO_CFLAGS="-I${GOPJRT_DIR}/c/bazel-bin"
 export CGO_CPPFLAGS="-I${GOPJRT_DIR}/c/bazel-bin"
 export CGO_CXXFLAGS="-I${GOPJRT_DIR}/c/bazel-bin"
-export CGO_LDFLAGS="-L${GOPJRT_DIR}/c/bazel-bin/gomlx/xlabuilder -L${GOPJRT_DIR}/c/bazel-bin/gomlx/pjrt"
+export CGO_LDFLAGS="-L${GOPJRT_DIR}/c/bazel-bin/lib"
 
 # Makes sure the developer library is in the path for dynamic linking
 # when the program is run.
-export LD_LIBRARY_PATH="${GOPJRT_DIR}/c/bazel-bin/gomlx/xlabuilder:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${GOPJRT_DIR}/c/bazel-bin/lib:${LD_LIBRARY_PATH}"
 
 # Disable verbose, often useless and generally annoying TF info logs
 #export TF_CPP_MIN_LOG_LEVEL=2

@@ -21,7 +21,7 @@ genrule(
     """,
 )
 
-# Waiting for cc_static_library.
+# XlaBuilder static library.
 genrule(
     name = "gomlx_xlabuilder_static_lib",
     srcs = [
@@ -31,6 +31,34 @@ genrule(
     cmd = """
     mkdir -p "$(@D)"
     ln $(location //gomlx/xlabuilder:gomlx_xlabuilder) "$@"
+    """,
+)
+
+# PJRT static library.
+genrule(
+    name = "pjrt_cpu_static_lib",
+    srcs = [
+        "//gomlx/pjrt:pjrt_c_api_cpu_static",
+    ],
+    outs = ["lib/libpjrt_c_api_cpu_static.a"],
+    cmd = """
+    mkdir -p "$(@D)"
+    ln $(location //gomlx/pjrt:pjrt_c_api_cpu_static) "$@"
+    """,
+)
+
+# PJRT static library.
+genrule(
+    name = "pjrt_cpu_dynamic_lib",
+    srcs = [
+        "@xla//xla/pjrt/c:pjrt_c_api_cpu_plugin.so",
+    ],
+    outs = ["lib/libpjrt_c_api_cpu_dynamic.so"],
+    cmd = """
+    mkdir -p "$(@D)/gomlx/pjrt/"
+    ln "$(location @xla//xla/pjrt/c:pjrt_c_api_cpu_plugin.so)" "$(@D)/gomlx/pjrt/pjrt_c_api_cpu_plugin.so"
+    mkdir -p "$(@D)"
+    ln -sf "gomlx/pjrt/pjrt_c_api_cpu_plugin.so" "$@"
     """,
 )
 

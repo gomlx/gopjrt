@@ -15,14 +15,13 @@ And because Jax, TensorFlow and [optionally PyTorch](https://pytorch.org/xla/rel
 it is possible to run Jax functions in Go with `gopjrt`, and probably TensorFlow and PyTorch as well.
 See example 2 below.
 
-(*) Not tested yet, pls let me know if it works for you, or if you can lend access to these hardware (a virtual machine)
-so that I can use (a virtual machine) for a while, I would love to try to verify and make sure it works there.
+(*) Not tested or partially supported by the hardware vendor.
 
 `gopjrt` aims to be minimalist and robust: it provides well maintained, extensible Go wrappers for
 [OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/client/xla_builder.h) libraries.
 
-It is not very ergonomic (error handling everywhere), and the expectation is that others will create a 
-friendlier API on top of `gopjrt` -- the same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API
+`gopjrt` is not very ergonomic (error handling everywhere), but it's expected to be a stable building block for
+other projects to create a friendlier API on top. The same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API
 on top of XLA/PJRT.
 
 One such friendlier API is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx), but `gopjrt` may be used as a standalone, 
@@ -56,6 +55,12 @@ provided in the Jax distributed binaries -- both for linux/x86-64 architecture (
 But there are instructions to build your own CPU plugin (e.g.: for a different
 architecture), or GPU (XLA seems to have code to support ROCm, but I'm not sure of the status). 
 And it should work with binary plugins provided by others -- see plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
+
+By default, plugins are loaded after the program is started  (using `dlopen`), but if one of the packages 
+`github.com/gomlx/gopjrt/pjrt/cpu/static` or  `github.com/gomlx/gopjrt/pjrt/cpu/dynamic`, the CPU plugin is
+linked directly (statically or dynamically). This is slower to build, but in particular the static version
+allows for a more convenient self-contained binary (except to the `libc` and `libstdc++` libraries, but those
+are usually present everywhere).
 
 
 ## `github.com/gomlx/gopjrt/xlabuilder`
@@ -224,7 +229,8 @@ The releases come with a prebuilt:
 1. XLA Builder library for _linux/amd64_ (or Windows WSL), 
    _darwin/arm64_ and _darwin/amd64_. Both MacOS/Darwin releases are **EXPERIMENTAL** and have somewhat limited
    functionality (on the PJRT side), see https://developer.apple.com/metal/jax/.
-2. The PJRT for CPU only for _linux/amd64_. 
+2. The PJRT for CPU as a standalone dynamic library (can be preloaded/prelinked or loaded on the fly with `dlopen`; and
+   as a static library, that can be prelinked: slower but more convenient for deployment. 
 
 The installation scripts download the Linux/CUDA PJRT or the Darwin/arm64 and Darwin/amd64 PJRT from the corresponding Jax pip package.
 
@@ -285,6 +291,15 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
 * [PJRT C API README.md](https://github.com/openxla/xla/blob/main/xla/pjrt/c/README.md): a collection of links to other documents.
 * [Public Design Document](https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit).
 * [Gemini](https://gemini.google.com) helped quite a bit parsing/understanding things -- despite the hallucinations -- other AIs may help as well.
+
+## Running Tests
+
+All tests support the following build tags (select at most one of them):
+
+* `--tags pjrt_cpu_static`: link (preload) the CPU PJRT plugin from the static library (`.a`) version. 
+  Slowest to build (but executes the same speed).
+* `--tags pjrt_cpu_dynamic`: link (preload) the CPU PJRT plugin from the dynamic library (`.so`) version. 
+  Faster to build, but deployments require deploying the `libpjrt_c_api_cpu_dynamic.so` file along.
 
 ## Acknowledgements
 This project utilizes the following components from the [OpenXLA project](https://openxla.org/):

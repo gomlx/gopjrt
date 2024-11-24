@@ -56,7 +56,8 @@ But there are instructions to build your own CPU plugin (e.g.: for a different
 architecture), or GPU (XLA seems to have code to support ROCm, but I'm not sure of the status). 
 And it should work with binary plugins provided by others -- see plugins references in [PJRT blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html).
 
-By default, plugins are loaded after the program is started  (using `dlopen`), but if one of the packages 
+
+PJRT plugins by default are loaded after the program is started  (using `dlopen`). But if one imports one of the packages 
 `github.com/gomlx/gopjrt/pjrt/cpu/static` or  `github.com/gomlx/gopjrt/pjrt/cpu/dynamic`, the CPU plugin is
 linked directly (statically or dynamically). This is slower to build, but in particular the static version
 allows for a more convenient self-contained binary (except to the `libc` and `libstdc++` libraries, but those
@@ -213,7 +214,7 @@ curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.s
 
 ### More details
 
-The the install scripts [`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amnd64.sh),
+The install scripts [`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh),
 [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh) and
 [`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh)
 can be controlled to install in any arbitrary directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` 
@@ -253,6 +254,8 @@ install them.
 But **gopjrt** will automatically search for PJRT plugins in all standard library locations (configured in `/etc/ld.so.conf` in Linux).
 Alternatively, one can set the directory(ies) to search for plugins setting the environment variable
 `PJRT_PLUGIN_LIBRARY_PATH`.
+
+There is always the option to pre-link (statically or dynamically) the CPU PJRT when building the Go program. See above.
 
 #### Plugins for other devices or platforms.
 
@@ -294,7 +297,7 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
 
 ## Running Tests
 
-All tests support the following build tags (select at most one of them):
+All tests support the following build tags to pre-link the CPU plugin (as opposed to `dlopen` the plugin) -- select at most one of them:  
 
 * `--tags pjrt_cpu_static`: link (preload) the CPU PJRT plugin from the static library (`.a`) version. 
   Slowest to build (but executes the same speed).

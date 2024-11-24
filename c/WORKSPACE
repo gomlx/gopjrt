@@ -3,13 +3,13 @@ workspace(name = "gopjrt")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Bazel Skylib, required by llvm.
-# SKYLIB_VERSION = "1.3.0"
-SKYLIB_VERSION = "1.5.0"
+#SKYLIB_VERSION = "1.5.0"
+SKYLIB_VERSION = "1.7.1"
 
 http_archive(
     name = "bazel_skylib",
-    # sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",  # 1.3.0
-    sha256 = "cd55a062e763b9349921f0f5db8c3933288dc8ba4f76dd9416aac68acee3cb94",  # 1.5.0
+    # sha256 = "cd55a062e763b9349921f0f5db8c3933288dc8ba4f76dd9416aac68acee3cb94",  # 1.5.0
+    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",  # 1.7.1
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = SKYLIB_VERSION),
         "https://github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = SKYLIB_VERSION),
@@ -21,10 +21,11 @@ http_archive(
 # Notice bazel.sh scrape the line below for the OpenXLA version, the format
 # of the line should remain the same (the hash in between quotes), or bazel.sh
 # must be changed accordingly.
-OPENXLA_XLA_COMMIT_HASH = "9ab7d704d7fe7e73fc3976adc2ccec070bc9a2ea" # From 2024-11-16
+OPENXLA_XLA_COMMIT_HASH = "90af2896ab4992ff14a1cd2a75ce02e43f46c090"  # From 2024-11-24
+
 http_archive(
     name = "xla",
-    sha256 = "29e3e69bbbcce846d4f18564870629e4680c46789b8ddcaceea1b0f25c233468",  # From 2024-11-16
+    sha256 = "a910124d546bc79edb685612edaa3d56153f0e0927f967e8defaf312b833d404",  # From 2024-11-24
     strip_prefix = "xla-" + OPENXLA_XLA_COMMIT_HASH,
     urls = [
         "https://github.com/openxla/xla/archive/{hash}.zip".format(hash = OPENXLA_XLA_COMMIT_HASH),

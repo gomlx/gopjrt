@@ -44,21 +44,9 @@ fi
 mkdir -p "${GOPJRT_INSTALL_DIR}"
 pushd "${GOPJRT_INSTALL_DIR}"
 curl -L "${url}" | ${_SUDO} tar xzv
-ls -lh "lib/libgomlx_xlabuilder.a"
+ls -lh "lib/libgomlx_xlabuilder.a" "libpjrt_c_api_cpu_static.a" "libpjrt_c_api_cpu_dynamic.a" "gomlx/pjrt/pjrt_c_api_cpu_plugin.so"
 # Remove older version using dynamically linked library -- it would pick up on this otherwise and fail to link.
 ${_SUDO} rm -f "lib/libgomlx_xlabuilder.so"
-popd
-
-# Download PJRT CPU plugin
-url="$(grep pjrt_c_api_cpu_plugin.so.${PLATFORM}.gz "${download_urls}" | head -n 1)"
-printf "\nDownloading PJRT CPU plugin from ${url}\n"
-if [[ "${_SUDO}" != "" ]] ; then
-  ${_SUDO} printf "\tsudo authorized\n"
-fi
-${_SUDO} mkdir -p "${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt"
-pushd "${GOPJRT_INSTALL_DIR}/lib/gomlx/pjrt"
-curl -L "${url}" | gunzip | ${_SUDO} bash -c 'cat > pjrt_c_api_cpu_plugin.so'
-ls -lh pjrt_c_api_cpu_plugin.so
 popd
 
 echo "Done."

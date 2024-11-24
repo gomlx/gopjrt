@@ -208,7 +208,12 @@ For Linux (or Windows+WSL)+CUDA (NVidia GPU) support, in addition also run ([see
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
 
-* ** 🚧🛠️ Mac (Darwin) support currently broken  🛠🚧️**: follow discussion in [XLA's issue #19152](https://github.com/openxla/xla/issues/19152) (and on XLA's discord channels)
+Currently for Darwin (MacOS) 🚧🛠 it only works with statically linked CPU plugin 🛠🚧️ so that is the default (see issue in [XLA's issue #19152](https://github.com/openxla/xla/issues/19152) and on XLA's discord channels).
+**Experimental**.
+
+```bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_arm64.sh | bash
+```
 
 **That's it**. The next sections explains in more details for those interested in special cases.
 
@@ -303,6 +308,8 @@ All tests support the following build tags to pre-link the CPU plugin (as oppose
   Slowest to build (but executes the same speed).
 * `--tags pjrt_cpu_dynamic`: link (preload) the CPU PJRT plugin from the dynamic library (`.so`) version. 
   Faster to build, but deployments require deploying the `libpjrt_c_api_cpu_dynamic.so` file along.
+
+For Darwin (MacOS), for the time being it's hardcoded with static linking, so avoid using these tags. 
 
 ## Acknowledgements
 This project utilizes the following components from the [OpenXLA project](https://openxla.org/):

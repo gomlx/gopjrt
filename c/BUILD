@@ -55,10 +55,12 @@ genrule(
     ],
     outs = ["lib/libpjrt_c_api_cpu_dynamic.so"],
     cmd = """
-    mkdir -p "$(@D)/gomlx/pjrt/"
-    ln "$(location @xla//xla/pjrt/c:pjrt_c_api_cpu_plugin.so)" "$(@D)/gomlx/pjrt/pjrt_c_api_cpu_plugin.so"
-    mkdir -p "$(@D)"
-    ln -sf "gomlx/pjrt/pjrt_c_api_cpu_plugin.so" "$@"
+    mkdir -p "$(@D)/gomlx/pjrt/" ;
+    ln -f "$(location @xla//xla/pjrt/c:pjrt_c_api_cpu_plugin.so)" "$(@D)/gomlx/pjrt/pjrt_c_api_cpu_plugin.so" ;
+    pushd "$(@D)" ;
+    ln -sf "gomlx/pjrt/pjrt_c_api_cpu_plugin.so" "libpjrt_c_api_cpu_dynamic.so" ;
+    ln -sf "gomlx/pjrt/pjrt_c_api_cpu_plugin.so" "pjrt_c_api_cpu_plugin.so" ;
+    popd
     """,
 )
 

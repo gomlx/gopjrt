@@ -92,7 +92,7 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrap
 // See sub-packages `cpu/static` and `cpu/dynamic` for examples of usage.
 func RegisterPreloadedPlugin(name string, api uintptr) error {
 	plugin, err := newPlugin(name, "_preloaded_", (*C.PJRT_Api)(unsafe.Pointer(api)), nil)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	loadedPlugins[name] = plugin

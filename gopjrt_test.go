@@ -40,7 +40,7 @@ func TestEndToEnd(t *testing.T) {
 	// Get computation created.
 	comp, err := builder.Build(fX)
 	require.NoError(t, err, "Failed to build XlaComputation from ops.")
-	fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
+	//fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
 	if *flagSaveHLO != "" {
 		cBuffer := comp.SerializedHLO()
 		err := os.WriteFile(*flagSaveHLO, cBuffer.Bytes(), 0644)

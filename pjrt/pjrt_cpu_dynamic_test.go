@@ -3,6 +3,7 @@
 package pjrt
 
 import (
+	"github.com/gomlx/gopjrt/pjrt/internal/cpudynamictest"
 	"k8s.io/klog/v2"
 )
 

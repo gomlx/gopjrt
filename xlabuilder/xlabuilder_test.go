@@ -26,6 +26,10 @@ type errTester[T any] struct {
 	err   error
 }
 
+func init() {
+	klog.InitFlags(nil)
+}
+
 // capture is a shortcut to test that there is no error and return the value.
 func capture[T any](value T, err error) errTester[T] {
 	return errTester[T]{value, err}

@@ -1,6 +1,7 @@
 build --action_env CLANG_COMPILER_PATH=/usr/bin/clang
 build --repo_env CC=/usr/bin/clang
 build --repo_env BAZEL_COMPILER=/usr/bin/clang
+build --linkopt --ld-path=/opt/homebrew/bin/ld64.lld
 build --action_env PYTHON_BIN_PATH=/opt/homebrew/opt/python@3.13/bin/python3.13
 build --python_path /opt/homebrew/opt/python@3.13/bin/python3.13
 test --test_env LD_LIBRARY_PATH

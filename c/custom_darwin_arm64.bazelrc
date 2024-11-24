@@ -1,0 +1,7 @@
+# Settings for macOS
+
+# Set target platform:
+# build:macos --linkopt="--target=arm64-apple-macosx14.4"
+
+# Compile without undefined symbols errors, but then fails to link once loaded:
+# build:macos --linkopt="-undefineddynamic_lookup"

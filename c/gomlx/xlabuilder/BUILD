@@ -56,7 +56,9 @@ cc_library(
     alwayslink = True,
 )
 
-# Waiting for Bazel 7.4.0:
+# Static version of the gomlx_xlabuilder library.
+#
+# Note: cc_static_library only available in bazel >= 7.4.0:
 cc_static_library(
     name = "gomlx_xlabuilder",
     deps = gomlx_xlabuilder_deps + [

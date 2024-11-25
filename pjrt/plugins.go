@@ -83,6 +83,22 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrap
 	return plugin, nil
 }
 
+// RegisterPreloadedPlugin can be used to register a PJRT plugin that has been pre-linked (dynamically or statically)
+// with the binary -- as opposed to the usual loadPlugin using `dlopen` after the program has started.
+//
+// It takes as input the name to be associated with the plugin and an unsafe pointer (uintptr) to the API table
+// returned by the plugin's C.GetPjrtApi().
+//
+// See sub-packages `cpu/static` and `cpu/dynamic` for examples of usage.
+func RegisterPreloadedPlugin(name string, api uintptr) error {
+	plugin, err := newPlugin(name, "_preloaded_", (*C.PJRT_Api)(unsafe.Pointer(api)), nil)
+	if err != nil {
+		return err
+	}
+	loadedPlugins[name] = plugin
+	return nil
+}
+
 // GetPlugin returns the plugin with the given name -- typically it reflect the platform, e.g: "cpu" or "gpu".
 // But one can also give the full path to the `.so` file with the plugin.
 //

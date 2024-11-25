@@ -10,17 +10,14 @@ def gomlx_xlabuilder_genrule(target_platform):
         srcs = [
             ":gomlx_xlabuilder_headers_include",
             ":gomlx_xlabuilder_static_lib",
+            ":pjrt_cpu_static_lib",
+            ":pjrt_cpu_dynamic_lib",
         ],
         outs = ["gomlx_xlabuilder_" + target_platform + ".tar.gz"],
         cmd_bash = """
-        tt="$$(mktemp -d)"
-        echo "tt=$${tt}"
         build_dir="$$(pwd)/$(@D)"
         echo "build_dir=$${build_dir}"
         files="lib include"
-        for ii in $${files} ; do
-            ln -sf "$${build_dir}/$${ii}" "$${tt}"
-        done
         echo "files=$${files}"
         TAR=tar
         if [[ "$$OSTYPE" == "darwin"* ]]; then
@@ -30,9 +27,8 @@ def gomlx_xlabuilder_genrule(target_platform):
             fi
             TAR=gtar
         fi
-        $$TAR --create --dereference --directory="$${tt}" \
+        $$TAR --create --directory="$${build_dir}" \
             --sort=name --owner=0 --group=0 --numeric-owner --format=gnu \
             --gzip --file "$@" $${files}
-        rm -rf "$${tt}"
         """,
     )

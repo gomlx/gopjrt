@@ -10,7 +10,7 @@ test --test_size_filters small,medium
 build --copt -Wno-sign-compare
 build --copt -Wno-error=unused-command-line-argument
 build --copt -Wno-gnu-offsetof-extensions
-build --build_tag_filters -no_oss,-no_mac,-gpu
-build --test_tag_filters -no_oss,-no_mac,-gpu
-test --build_tag_filters -no_oss,-no_mac,-gpu
-test --test_tag_filters -no_oss,-no_mac,-gpu
+build --build_tag_filters -no_oss,-gpu
+build --test_tag_filters -no_oss,-gpu
+test --build_tag_filters -no_oss,-gpu
+test --test_tag_filters -no_oss,-gpu

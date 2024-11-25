@@ -1,5 +1,8 @@
 //go:build darwin
 
+// While dynamic loading says it loads the `.so` (or `.dylib`) correctly, whenever it JIT-compiles, it
+// crashes. Use the statically or dynamically pre-linked CPU plugin for now.
+
 package pjrt
 
 // This file handles management of loading dynamic libraries for linux
@@ -23,6 +26,7 @@ package pjrt
 import "C"
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"os"
@@ -61,6 +65,9 @@ func loadPlugin(pluginPath string) (handleWrapper dllHandleWrapper, err error) {
 		err = errors.Errorf("plugin path %q is a directory!?", pluginPath)
 		return
 	}
+
+	fmt.Printf("*** Attempting to dynamically load plugin %q: this is currently broken in Mac -- JIT compilation hangs or crashes! "+
+		"Please use static linking of the CPU plugin for now (the default) ***", pluginPath)
 
 	nameC := C.CString(pluginPath)
 	klog.V(2).Infof("trying to load library %s\n", pluginPath)

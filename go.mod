@@ -3,8 +3,8 @@ module github.com/gomlx/gopjrt
 go 1.23
 
 require (
-	github.com/chewxy/math32 v1.10.1
-	github.com/janpfeifer/gonb v0.10.1
+	github.com/chewxy/math32 v1.11.1
+	github.com/janpfeifer/gonb v0.10.6
 	github.com/janpfeifer/must v0.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
@@ -18,6 +18,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

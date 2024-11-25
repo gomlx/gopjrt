@@ -1,3 +1,8 @@
+//go:build !pjrt_cpu_dynamic && !pjrt_cpu_static && !darwin
+
+// Test doesn't work if plugin is pre-linked into binary.
+// In Macs loading plugins after the program start (dlopen) doesn't work.
+
 /*
  *	Copyright 2024 Jan Pfeifer
  *

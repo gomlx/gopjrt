@@ -112,6 +112,7 @@ case "${TARGET_PLATFORM}" in
 
   "darwin_arm64")
     echo "Building for macOS arm64"
+    STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=custom_darwin_arm64.bazelrc"
     BUILD_FLAGS="${BUILD_FLAGS} --config=macos_arm64"
     # Apple/Metal PJRT only works with StableHLO, so we link it along.
     ;;

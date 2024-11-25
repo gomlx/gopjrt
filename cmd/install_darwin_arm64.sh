@@ -39,22 +39,22 @@ curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
   | egrep -wo "https.*gz" \
   > ${download_urls}
 
-# Download XlaBuilder C wrapper library.
+# Download XlaBuilder C wrapper library and PJRT CPU plugin.
 url="$(grep gomlx_xlabuilder_${PLATFORM}.tar.gz "${download_urls}" | head -n 1)"
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
+
+mkdir -p "${GOPJRT_INSTALL_DIR}"
+pushd "${GOPJRT_INSTALL_DIR}"
+
+tar_file=$(mktemp --tmpdir gopjrt_${PLATFORM}.XXXXXXXX)
+curl -L "${url}" > "${tar_file}"
 
 if [[ "${_SUDO}" != "" ]] ; then
   echo "Checking sudo authorization for installation"
   ${_SUDO} printf "\tsudo authorized\n"
 fi
-mkdir -p "${GOPJRT_INSTALL_DIR}"
-pushd "${GOPJRT_INSTALL_DIR}"
-curl -L "${url}" | ${_SUDO} tar xzv
-ls -lh "lib/libgomlx_xlabuilder.a" "libpjrt_c_api_cpu_static.a" "libpjrt_c_api_cpu_dynamic.a" "gomlx/pjrt/pjrt_c_api_cpu_plugin.so"
-
-# Remove older version using dynamically linked library -- it would be picked up on this otherwise and fail to link.
-# (Remove these lines after v0.5.x).
-${_SUDO} rm -f "lib/libgomlx_xlabuilder.so"
+sudo tar xvzf "${tar_file}"
+rm -f "${tar_file}"
 
 popd
 rm -f "${download_urls}"

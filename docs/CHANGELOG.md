@@ -1,4 +1,4 @@
-# Next
+# v0.4.9 - 2024-11-25
 
 * Optional preloading CPU PJRT plugin:
   * `github.com/gomlx/gopjrt/pjrt/cpu/static` that statically links the PJRT CPU plugin: easy to deploy binary. 
@@ -6,6 +6,7 @@
   * `github.com/gomlx/gopjrt/pjrt/cpu/dynamic` that dynamically links (and preloads) the PJRT CPU plugin.
 * `pjrt_c_api_cpu.so` now compiled directly from `gopjrt`, and doesn't require cloning `xla` separately. It will
   be distributed in the same `tar.gz` file.
+* Added MacOS support by statically linking the CPU PJRT plugin.
 
 # v0.4.8 - 2024-11-19
 

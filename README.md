@@ -246,6 +246,8 @@ Currently, Darwin (MacOS) 🚧🛠 it only works with statically linked PJR CPU 
 It's slower to build (it adds a couple of seconds) but your program is statically linked and can more
 easily be distributed (without needing to install the PJRT plugin).
 
+To install run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh))):
+
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_arm64.sh | bash
 ```
@@ -257,6 +259,8 @@ Currently, Darwin (MacOS) 🚧🛠 it only works with statically linked PJR CPU 
 
 It's slower to build (it adds some seconds) but your program is statically linked and can more
 easily be distributed (without needing to install the PJRT plugin).
+
+To install run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh))):
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_amd64.sh | bash

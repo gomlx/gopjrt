@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script will install the libraries needed by gopjrt for Linux/amd64 OS/Platform (also works in Windows+WSL)
+# This script will install the libraries needed by gopjrt for Darwin/amd64 (aka. darwin i86_64):
 #
 # - XlaBuilder C wrapper library (and corresponding .h files)
 # - CPU PJRT plugin for gopjrt, the thing that actually does the JIT-compilation.
@@ -11,16 +11,14 @@
 #   Notice that ${GOPJRT_INSTALL_DIR}/lib must be set in your LD_LIBRARY_CONF -- `/usr/local/lib` usually is included in the path.
 # - GOPJRT_NOSUDO: if not empty, it prevents using sudo to install.
 #
-# Check install_cuda.sh to additionally install the PJRT plugin for CUDA -- for NVidia GPU support.
-#
 # To execute this without cloning the repository, one can do:
 #
-# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux_amd64.sh | bash
+# curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin_amd64.sh | bash
 #
 # See: https://github.com/gomlx/gopjrt?#installing
 set -e
 
-PLATFORM="linux_amd64"
+PLATFORM="darwin_amd64"
 
 # Base installation directory:
 GOPJRT_INSTALL_DIR="${GOPJRT_INSTALL_DIR:-/usr/local}"
@@ -54,6 +52,6 @@ ls -lh "lib/libgomlx_xlabuilder.a" "libpjrt_c_api_cpu_static.a" "libpjrt_c_api_c
 ${_SUDO} rm -f "lib/libgomlx_xlabuilder.so"
 
 popd
-
-echo "Done."
 rm -f "${download_urls}"
+echo "Done."
+

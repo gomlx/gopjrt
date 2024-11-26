@@ -1,3 +1,7 @@
+# Next
+
+* Fixed installation scripts: s/sudo/$_SUDO. Also made them more verbose.
+
 # v0.4.9 - 2024-11-25
 
 * Optional preloading CPU PJRT plugin:

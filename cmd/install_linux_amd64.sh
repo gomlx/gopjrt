@@ -32,7 +32,7 @@ _SUDO="sudo"
 if [[ "${GOPJRT_NOSUDO}" != "" ]] ; then
   echo "  - Not using sudo during installation, disabled with GOPJRT_NOSUDO != ''."
   _SUDO=""
-elif command -v sudo ; then
+elif command -v sudo > /dev/null ; then
   echo "  - Using sudo when extracting files to final destination (Set GOPJRT_NOSUDO=1 if you don't want sudo to be used)"
 else
   echo "  - Not using sudo during installation, no program 'sudo' found in PATH."
@@ -60,9 +60,13 @@ if [[ "${_SUDO}" != "" ]] ; then
   echo "Checking sudo authorization for installation"
   ${_SUDO} printf "\tsudo authorized\n"
 fi
-set -o pipefail
-${_SUDO} tar xvzf "${tar_file}" | xargs ls -ldh
-rm -f "${tar_file}"
+
+list_files=$(mktemp --tmpdir gopjrt_list_files.XXXXXXXX)
+${_SUDO} tar xvzf "${tar_file}" > "${list_files}"
+ls -lhd $(cat "${list_files}")
+
+# Clean up temporary files.
+rm -f "${tar_file}" "${list_files}"
 
 # Remove older version using dynamically linked library -- it would be picked up on this otherwise and fail to link.
 # (Remove these lines after v0.5.x).

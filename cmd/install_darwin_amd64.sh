@@ -30,7 +30,7 @@ _SUDO="sudo"
 if [[ "${GOPJRT_NOSUDO}" != "" ]] ; then
   echo "  - Not using sudo during installation, disabled with GOPJRT_NOSUDO != ''."
   _SUDO=""
-elif command -v sudo ; then
+elif command -v sudo > /dev/null ; then
   echo "  - Using sudo when extracting files to final destination (Set GOPJRT_NOSUDO=1 if you don't want sudo to be used)"
 else
   echo "  - Not using sudo during installation, no program 'sudo' found in PATH."

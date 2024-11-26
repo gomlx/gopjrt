@@ -24,8 +24,18 @@ PLATFORM="linux_amd64"
 
 # Base installation directory:
 GOPJRT_INSTALL_DIR="${GOPJRT_INSTALL_DIR:-/usr/local}"
+echo "Installing GoPJRT C/C++ dependencies under ${GOPJRT_INSTALL_DIR} (lib/ and include/ sub-directories)"
+echo "  - Set GOPJRT_INSTALL_DIR if you want another directory."
+
+# Should it use 'sudo' while installing ?
 _SUDO="sudo"
 if [[ "${GOPJRT_NOSUDO}" != "" ]] ; then
+  echo "  - Not using sudo during installation, disabled with GOPJRT_NOSUDO != ''."
+  _SUDO=""
+elif command -v sudo ; then
+  echo "  - Using sudo when extracting files to final destination (Set GOPJRT_NOSUDO=1 if you don't want sudo to be used)"
+else
+  echo "  - Not using sudo during installation, no program 'sudo' found in PATH."
   _SUDO=""
 fi
 
@@ -50,7 +60,8 @@ if [[ "${_SUDO}" != "" ]] ; then
   echo "Checking sudo authorization for installation"
   ${_SUDO} printf "\tsudo authorized\n"
 fi
-sudo tar xvzf "${tar_file}" | xargs ls -ldh
+set -o pipefail
+${_SUDO} tar xvzf "${tar_file}" | xargs ls -ldh
 rm -f "${tar_file}"
 
 # Remove older version using dynamically linked library -- it would be picked up on this otherwise and fail to link.

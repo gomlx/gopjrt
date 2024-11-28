@@ -1,0 +1,22 @@
+FROM amazonlinux:latest
+
+# Install necessary tools
+RUN yum update -y && \
+    yum install -y gcc g++ make git wget tar gzip which python3.12 && \
+    yum clean all
+
+# Install bazelisk
+RUN wget https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 -O /usr/local/bin/bazelisk && \
+    chmod +x /usr/local/bin/bazelisk
+
+# Install protoc
+RUN wget https://github.com/protocolbuffers/protobuf/releases/latest/download/protoc-29.0-linux-x86_64.zip -O protoc.zip && \
+    unzip protoc.zip -d protoc && \
+    cp protoc/bin/* /usr/local/bin/ && \
+    rm -rf protoc.zip protoc
+
+# Set the working directory
+WORKDIR /root
+
+# Create a directory to be mounted:
+RUN mkdir /root/gopjrt

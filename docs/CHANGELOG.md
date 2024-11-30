@@ -1,5 +1,6 @@
 # Next
 
+* Added `install_linux_amd64_amazonlinux.sh` and pre-built libraries for amazonlinux (built using old glibc support).
 * Fixed installation scripts: s/sudo/$_SUDO. Also made them more verbose.
 * Removed dependency on `xargs` in installation script for Linux.
 

@@ -1,7 +1,7 @@
 # Tests only run with --short, since the full tests involve downloading datasets
-# and would be too costly for a Github actions.
+# and would be too costly for a GitHub actions.
 # Locally in the development box it works because the datasets are cached.
-name: "Tests" # The name of the workflow that will appear on Github
+name: "Tests" # The name of the workflow that will appear on GitHub
 permissions:
   # read|write|none
   actions: read
@@ -65,6 +65,7 @@ jobs:
         filename: docs/coverage.out
 
     - name: Commit README.md changes
+      if: github.ref == 'refs/heads/main'
       run: |
         if git diff --quiet -- 'README.md' ; then
           echo "README.md not modified."
@@ -76,6 +77,7 @@ jobs:
         fi
 
     - name: Push Changes
+      if: github.ref == 'refs/heads/main'
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ github.token }}

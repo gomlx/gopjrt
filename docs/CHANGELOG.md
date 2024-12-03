@@ -3,6 +3,9 @@
 * Added `install_linux_amd64_amazonlinux.sh` and pre-built libraries for amazonlinux (built using old glibc support).
 * Fixed installation scripts: s/sudo/$_SUDO. Also made them more verbose.
 * Removed dependency on `xargs` in installation script for Linux.
+* Improved documentation on Nvidia GPU card detection, and error message if not found. 
+* Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
+  `main` branch.
 
 # v0.4.9 - 2024-11-25
 

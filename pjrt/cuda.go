@@ -18,7 +18,9 @@ func isCuda(name string) bool {
 
 var hasNvidiaGPUCache *bool
 
-// hasNvidiaGPU tries to guess if there is an Nvidia GPU installed.
+// hasNvidiaGPU tries to guess if there is an actual Nvidia GPU installed (as opposed to only the drivers/PJRT
+// file installed, but no actual hardware).
+// It does that by checking for the presence of the device files in /dev/nvidia*.
 func hasNvidiaGPU() bool {
 	if hasNvidiaGPUCache != nil {
 		return *hasNvidiaGPUCache
@@ -29,6 +31,10 @@ func hasNvidiaGPU() bool {
 		return false
 	}
 	hasGPU := len(matches) > 0
+	if !hasGPU {
+		klog.Infof("No NVidia devices found matching \"/dev/nvidia*\", assuming there are no GPU cards installed in the system. " +
+			"To force the attempt to use the \"cuda\" PJRT, use its absolute path.")
+	}
 	hasNvidiaGPUCache = &hasGPU
 	return hasGPU
 }

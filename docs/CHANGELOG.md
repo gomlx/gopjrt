@@ -7,6 +7,7 @@
 * Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
   `main` branch.
 * Updated `Buffer.ToHost()` to use fewer CGO calls, speeding it up.
+* Added BufferToHost benchmarks.
 
 # v0.4.9 - 2024-11-25
 

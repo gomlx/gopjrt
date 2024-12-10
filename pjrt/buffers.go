@@ -4,10 +4,6 @@ package pjrt
 #include "pjrt_c_api.h"
 #include "gen_api_calls.h"
 #include "gen_new_struct.h"
-
-PJRT_Buffer_MemoryLayout_Tiled *GetTiledLayoutUnion(PJRT_Buffer_MemoryLayout *layout) {
-	return &(layout->tiled);
-}
 */
 import "C"
 import (
@@ -24,6 +20,9 @@ import (
 type Buffer struct {
 	cBuffer *C.PJRT_Buffer
 	client  *Client
+
+	dimsSet bool // Whether dims is set.
+	dims    []int
 	// DEBUG: creationStackTrace error
 }
 
@@ -69,10 +68,14 @@ func (b *Buffer) Destroy() error {
 }
 
 // Dimensions of the Buffer.
+// Returned slice is owned by the buffer, to avoid creating a copy. Don't change it.
 func (b *Buffer) Dimensions() (dims []int, err error) {
 	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
+	}
+	if b.dimsSet {
+		return b.dims, nil
 	}
 	defer runtime.KeepAlive(b)
 
@@ -86,8 +89,9 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	if args.num_dims == 0 {
 		return // dims = nil
 	}
-	dims = slices.Clone(cDataToSlice[int](unsafe.Pointer(args.dims), int(args.num_dims)))
-	return
+	b.dims = slices.Clone(cDataToSlice[int](unsafe.Pointer(args.dims), int(args.num_dims)))
+	b.dimsSet = true
+	return b.dims, nil
 }
 
 // DType of the Buffer (PJRT_Buffer_ElementType).
@@ -226,15 +230,13 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	if len(b.data) == 0 {
 		return nil, errors.New("BufferFromHost requires one to configure the host data to transfer, none was configured.")
 	}
+	defer runtime.KeepAlive(b)
 
 	// Makes sure program data is not moved around by the GC during the C/C++ call.
 	var pinner runtime.Pinner
+	defer pinner.Unpin()
 	dataPtr := unsafe.SliceData(b.data)
-	pinner.Pin(b)
 	pinner.Pin(dataPtr)
-	defer func() {
-		pinner.Unpin()
-	}()
 
 	// Set default device.
 	if b.device == nil {
@@ -244,12 +246,10 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 		}
 		b.device = devices[0]
 	}
-	pinner.Pin(b.device)
 
 	// Start the call.
 	args := C.new_PJRT_Client_BufferFromHostBuffer_Args()
 	defer cFree(args)
-	pinner.Pin(b.client)
 	args.client = b.client.client
 	args.data = unsafe.Pointer(dataPtr)
 	args._type = C.PJRT_Buffer_Type(b.dtype)
@@ -264,7 +264,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	}
 	args.host_buffer_semantics = C.PJRT_HostBufferSemantics(b.hostBufferSemantics)
 	args.device = b.device.cDevice
-	pinner.Pin(b.client.plugin)
+
 	err := toError(b.client.plugin, C.call_PJRT_Client_BufferFromHostBuffer(b.client.plugin.api, args))
 	if err != nil {
 		return nil, err
@@ -272,6 +272,8 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 
 	// We get a PJRT_Buffer even before it's fully transferred.
 	buffer := newBuffer(b.client, args.buffer)
+	buffer.dims = slices.Clone(b.dimensions)
+	buffer.dimsSet = true
 
 	// Await for transfer to finish.
 	doneEvent := newEvent(b.client.plugin, args.done_with_host_buffer)
@@ -355,73 +357,6 @@ func (b *Buffer) Size() (int, error) {
 		return 0, errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer for inquiring size of the buffer")
 	}
 	return int(args.dst_size), nil
-}
-
-// ToHost transfers the contents of buffer stored on device to the host.
-// The space in dst has to hold enough space (see Buffer.Size) to hold the required data, or an error is returned.
-//
-// This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
-// reorganize the layout.
-func (b *Buffer) ToHost(dst []byte) error {
-	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
-		// Already destroyed ?
-		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
-	}
-
-	// Make sure garbage collection doesn't free or move data before they are used by C/C++.
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(unsafe.SliceData(dst))
-	defer pinner.Unpin()
-
-	// We'll need the buffer rank to set up the layout.
-	dims, err := b.Dimensions()
-	if err != nil {
-		return err
-	}
-	rank := len(dims)
-
-	// Prepare arguments for the buffer-to-host call.
-	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
-	defer cFree(args)
-	args.src = b.cBuffer
-	args.dst = unsafe.Pointer(unsafe.SliceData(dst))
-	args.dst_size = C.size_t(len(dst))
-
-	// Layout argument.
-	layoutArgs := C.new_PJRT_Buffer_MemoryLayout()
-	defer cFree(layoutArgs)
-	args.host_layout = layoutArgs
-
-	// Tiled layout must be present, even if there are no tiles (tileArgs.num_tiles==0).
-	layoutArgs._type = C.PJRT_Buffer_MemoryLayout_Type_Tiled
-	tileArgs := C.GetTiledLayoutUnion(layoutArgs)
-
-	// Configure major-to-minor layout into tileArgs, if not scalar.
-	tileArgs.minor_to_major_size = C.size_t(rank)
-	if rank > 0 {
-		tileArgs.minor_to_major = cMallocArray[C.int64_t](rank)
-		minorToMajorMapping := unsafe.Slice(tileArgs.minor_to_major, rank)
-		defer cFree(tileArgs.minor_to_major)
-		for axisIdx := range len(dims) {
-			minorToMajorMapping[axisIdx] = C.int64_t(rank - axisIdx - 1)
-		}
-	}
-
-	err = toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
-	if err != nil {
-		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
-	}
-
-	// Await for transfer to finish.
-	doneEvent := newEvent(b.client.plugin, args.event)
-	defer func() { _ = doneEvent.Destroy() }()
-	err = doneEvent.Await()
-	if err != nil {
-		return errors.WithMessage(err, "Failed to wait Buffer.ToHost transfer to finish")
-	}
-	return nil
 }
 
 // BufferToScalar is a generic function that transfer a Buffer back to host as a scalar of the given type.

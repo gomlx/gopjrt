@@ -319,10 +319,14 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	args.execute_device = c.devices[0].cDevice
 
 	args.num_args = C.size_t(numInputs)
-	args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, c.inputs)
+	if args.num_args > 0 {
+		args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, c.inputs)
+	}
 
 	// For some reason the line below doesn't work. I think something is wrong with PJRT ... but I'm not sure.
-	args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, nil)
+	if numOutputs > 0 {
+		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputs, nil)
+	}
 
 	// We leave args.device_complete_events set to null, making this a synchronous call.
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)

@@ -1,6 +1,7 @@
 package pjrt
 
 import (
+	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/xlabuilder"
 	"runtime"
@@ -15,20 +16,56 @@ var testShapes = []xlabuilder.Shape{
 	xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
 }
 
-// BenchmarkClient_CGO tests a minimal CGO call.
+// BenchmarkCGO tests a minimal CGO call.
 //
 // Results on cpu:
 //
 //	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
-//	BenchmarkClient_CGO-24           8876160               129.3 ns/op
-func BenchmarkClient_CGO(b *testing.B) {
+//	BenchmarkCGO-24           8876160               129.3 ns/op
+func BenchmarkCGO(b *testing.B) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = must1(pjrtClientPlatformVersion(plugin, client))
+		dummyCGO(plugin)
+	}
+}
+
+// Benchmark tests a cMalloc[int] call and corresponding free.
+//
+// Results on cpu:
+//
+//	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
+//	BenchmarkClient_CGO-24           8876160               129.3 ns/op
+func BenchmarkMalloc(b *testing.B) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		values := cMalloc[int]()
+		cFree(values)
+	}
+}
+
+// Benchmark tests arena
+//
+// Results on cpu:
+//
+//	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
+//	BenchmarkClient_CGO-24           8876160               129.3 ns/op
+func BenchmarkArena(b *testing.B) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		values := cMallocArray[byte](1024)
+		cFree(values)
 	}
 }
 
@@ -118,6 +155,78 @@ func BenchmarkClient_BufferToHost(b *testing.B) {
 		buf := buffers[shapeIdx]
 		rawData := unsafe.Slice((*byte)(unsafe.Pointer(&inputData[shapeIdx][0])), len(inputData[shapeIdx])*int(unsafe.Sizeof(inputData[shapeIdx][0])))
 		must(buf.ToHost(rawData))
+	}
+
+	// Warmup for each shape
+	for shapeIdx := range testShapes {
+		for i := 0; i < 10; i++ {
+			benchShape(shapeIdx)
+		}
+	}
+
+	// Reset timer and start the actual benchmark
+	b.ResetTimer()
+
+	// Test each shape
+	for shapeIdx, s := range testShapes {
+		b.Run(s.String(), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				benchShape(shapeIdx)
+			}
+		})
+	}
+}
+
+// BenchmarkAdd1Execution benchmarks the execution time for a minimal program.
+//
+// Runtimes for cpu:
+//
+//	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
+//	BenchmarkAdd1Execution/(Float32)[1_1]-24                  476617              2497 ns/op
+//	BenchmarkAdd1Execution/(Float32)[10_10]-24                474399              2527 ns/op
+//	BenchmarkAdd1Execution/(Float32)[100_100]-24              280819              4256 ns/op
+//	BenchmarkAdd1Execution/(Float32)[1000_1000]-24             28591             39540 ns/op
+func BenchmarkAdd1Execution(b *testing.B) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// Prepare input data, the uploaded buffers and the executables.
+	numShapes := len(testShapes)
+	execs := make([]*LoadedExecutable, numShapes)
+	inputData := make([][]float32, numShapes)
+	buffers := make([]*Buffer, numShapes)
+	for shapeIdx, s := range testShapes {
+		inputData[shapeIdx] = make([]float32, s.Size())
+		for i := 0; i < s.Size(); i++ {
+			inputData[shapeIdx][i] = float32(i)
+		}
+		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
+
+		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
+		// f(x) = x + 1
+		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
+		one := must1(xlabuilder.ScalarOne(builder, s.DType))
+		add1 := must1(xlabuilder.Add(x, one))
+		comp := must1(builder.Build(add1))
+		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+	}
+	defer func() {
+		// Clean up -- and don't wait for the GC.
+		for shapeIdx := range numShapes {
+			must(buffers[shapeIdx].Destroy())
+			must(execs[shapeIdx].Destroy())
+		}
+	}()
+
+	// Run test for each shape
+	benchShape := func(shapeIdx int) {
+		buf := buffers[shapeIdx]
+		exec := execs[shapeIdx]
+		outputs := must1(exec.Execute(buf).Done())
+		for _, output := range outputs {
+			must(output.Destroy())
+		}
 	}
 
 	// Warmup for each shape

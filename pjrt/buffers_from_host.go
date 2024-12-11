@@ -23,6 +23,14 @@ PJRT_Error* BufferFromHostAndWait(const PJRT_Api *api, PJRT_Client_BufferFromHos
 	return err;
 }
 
+PJRT_Error *dummy_error;
+PJRT_Error *Dummy(const PJRT_Api *api) {
+	if (api == NULL) {
+		return NULL;
+	}
+	return dummy_error;
+}
+
 */
 import "C"
 import (
@@ -216,4 +224,10 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	buffer.dims = slices.Clone(b.dimensions)
 	buffer.dimsSet = true
 	return buffer, nil
+}
+
+// dummyCGO calls a minimal C function and doesn't do anything.
+// Here for the purpose of benchmarking CGO calls.
+func dummyCGO(plugin *Plugin) {
+	_ = C.Dummy(plugin.api)
 }

@@ -277,31 +277,54 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		c.devices = []*Device{devices[0]}
 	}
 
+	// Dimensions of inputs/outputs.
+	numInputs := len(c.inputs)
+	numOutputs := e.NumOutputs
+
+	// Allocations that will be used by CGO.
+	// Except if the number of inputs/outputs is very large, used the default arena size.
+	var arena *arenaContainer
+	minSize := (numInputs+numOutputs)*3*8 /*pointer size*/ + 1024
+	if minSize > arenaDefaultSize {
+		arena = newArena(arenaDefaultSize + minSize)
+		defer arena.Free()
+	} else {
+		arena = getArenaFromPool()
+		defer returnArenaToPool(arena)
+	}
+
 	// Create arguments structures for call to Execute.
-	args := C.new_PJRT_LoadedExecutable_Execute_Args()
-	defer cFree(args)
+	var args *C.PJRT_LoadedExecutable_Execute_Args
+	args = arenaAlloc[C.PJRT_LoadedExecutable_Execute_Args](arena)
+	args.struct_size = C.PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE
 	args.executable = e.cLoadedExecutable
-	options := C.new_PJRT_ExecuteOptions() // Like more args that for some reason(?) go on a separate struct.
-	defer cFree(options)
+
+	var options *C.PJRT_ExecuteOptions
+	options = arenaAlloc[C.PJRT_ExecuteOptions](arena) // Extra args that for some reason(?) go on a separate struct.
+	options.struct_size = C.PJRT_ExecuteOptions_STRUCT_SIZE
 	args.options = options
 
 	// Configure (non-)donatable inputs.
 	if len(c.nonDonatableInputs) > 0 {
 		options.num_non_donatable_input_indices = C.size_t(len(c.nonDonatableInputs))
-		options.non_donatable_input_indices = cMallocArrayAndSet[C.int64_t](len(c.nonDonatableInputs), func(ii int) C.int64_t {
-			return C.int64_t(c.nonDonatableInputs[ii])
-		})
-		defer cFree(options.non_donatable_input_indices)
+		nonDonatableIndices := arenaAllocSlice[C.int64_t](arena, len(c.nonDonatableInputs))
+		for ii := range nonDonatableIndices {
+			nonDonatableIndices[ii] = C.int64_t(c.nonDonatableInputs[ii])
+		}
+		options.non_donatable_input_indices = &nonDonatableIndices[0]
 	}
 
 	numDevices := 1
 	args.num_devices = C.size_t(numDevices)
 	args.execute_device = c.devices[0].cDevice
-	args.num_args = C.size_t(len(c.inputs))
-	args.argument_lists = allocatePerDeviceBufferList(numDevices, c.inputs)
-	defer freePerDeviceBufferList(args.argument_lists, numDevices)
-	args.output_lists = allocatePerDeviceBufferList(numDevices, make([]*Buffer, e.NumOutputs))
-	defer freePerDeviceBufferList(args.output_lists, numDevices)
+
+	args.num_args = C.size_t(numInputs)
+	args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, c.inputs)
+
+	// For some reason the line below doesn't work. I think something is wrong with PJRT ... but I'm not sure.
+	args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, nil)
+
+	// We leave args.device_complete_events set to null, making this a synchronous call.
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
 	//defer cFree(args.device_complete_events)
 
@@ -310,49 +333,35 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		return nil, err
 	}
 
-	perDevice := gatherPerDeviceBufferList(e.client, args.output_lists, numDevices, e.NumOutputs)
-	return perDevice[0], nil
+	// We only support one device for now, so we return the results from the first device.
+	outputs := make([]*Buffer, numOutputs)
+	outputBuffers := unsafe.Slice(*args.output_lists, numOutputs)
+	for ii := range outputs {
+		outputs[ii] = newBuffer(e.client, outputBuffers[ii])
+	}
+	return outputs, nil
 }
 
 // Allocate [numDevices][numBuffers]*Buffer C 2D-array to be used by PJRT C API, with the given Buffer pointers.
-func allocatePerDeviceBufferList(numDevices int, buffers []*Buffer) ***C.PJRT_Buffer {
+func allocatePerDeviceBufferListWithArena(arena *arenaContainer, numDevices int, numBuffers int, buffers []*Buffer) ***C.PJRT_Buffer {
 	// Top level:
-	perDevice := make([]**C.PJRT_Buffer, numDevices)
+	perDevice := arenaAllocSlice[**C.PJRT_Buffer](arena, numDevices)
 	for deviceIdx := range perDevice {
-		perDevice[deviceIdx] = cMallocArrayAndSet[*C.PJRT_Buffer](len(buffers), func(idxBuffer int) *C.PJRT_Buffer {
-			if buffers[idxBuffer] == nil {
-				// No buffer given for structure.
-				return nil
+		deviceBuffers := arenaAllocSlice[*C.PJRT_Buffer](arena, numBuffers)
+		perDevice[deviceIdx] = &deviceBuffers[0]
+		if buffers != nil {
+			for bufferIdx := range deviceBuffers {
+				if buffers[bufferIdx] == nil {
+					deviceBuffers[bufferIdx] = nil
+					continue
+				}
+				if buffers[bufferIdx].cBuffer == nil {
+					// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
+					panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", bufferIdx)
+				}
+				deviceBuffers[bufferIdx] = buffers[bufferIdx].cBuffer
 			}
-			if buffers[idxBuffer].cBuffer == nil {
-				// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
-				panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", idxBuffer)
-			}
-			return buffers[idxBuffer].cBuffer
-		})
-	}
-	return cMallocArrayFromSlice(perDevice)
-}
-
-// freePerDeviceBufferList frees the intermediary array pointers, but it doesn't touch the buffers themselves.
-func freePerDeviceBufferList(data ***C.PJRT_Buffer, numDevices int) {
-	perDevice := cDataToSlice[**C.PJRT_Buffer](unsafe.Pointer(data), numDevices)
-	for _, list := range perDevice {
-		cFree(list)
-	}
-	cFree(data)
-}
-
-// gatherPerDeviceBufferList returns a [numDevices][numBuffers]*Buffer given the C 2D array.
-func gatherPerDeviceBufferList(client *Client, data ***C.PJRT_Buffer, numDevices, numBuffers int) [][]*Buffer {
-	perDevice := make([][]*Buffer, numDevices)
-	cPerDevice := cDataToSlice[**C.PJRT_Buffer](unsafe.Pointer(data), numDevices)
-	for ii, cBufferListPtr := range cPerDevice {
-		perDevice[ii] = make([]*Buffer, numBuffers)
-		cBuffers := cDataToSlice[*C.PJRT_Buffer](unsafe.Pointer(cBufferListPtr), numBuffers)
-		for jj, cBuffer := range cBuffers {
-			perDevice[ii][jj] = newBuffer(client, cBuffer)
 		}
 	}
-	return perDevice
+	return &perDevice[0]
 }

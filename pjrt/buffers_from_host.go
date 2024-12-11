@@ -24,7 +24,7 @@ PJRT_Error* BufferFromHostAndWait(const PJRT_Api *api, PJRT_Client_BufferFromHos
 }
 
 PJRT_Error *dummy_error;
-PJRT_Error *Dummy(const PJRT_Api *api) {
+PJRT_Error *Dummy(void *api) {
 	if (api == NULL) {
 		return NULL;
 	}
@@ -228,6 +228,6 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 
 // dummyCGO calls a minimal C function and doesn't do anything.
 // Here for the purpose of benchmarking CGO calls.
-func dummyCGO(plugin *Plugin) {
-	_ = C.Dummy(plugin.api)
+func dummyCGO(pointer unsafe.Pointer) {
+	_ = C.Dummy(pointer)
 }

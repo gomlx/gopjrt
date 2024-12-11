@@ -29,7 +29,7 @@ func BenchmarkCGO(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		dummyCGO(plugin)
+		dummyCGO(unsafe.Pointer(plugin))
 	}
 }
 
@@ -63,9 +63,48 @@ func BenchmarkArena(b *testing.B) {
 	defer runtime.KeepAlive(client)
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
-		values := cMallocArray[byte](1024)
-		cFree(values)
+	numAllocationsList := []int{1, 5, 10, 100}
+	allocations := make([]*int, 100)
+	for _, allocType := range []string{"arena", "arenaPool", "malloc", "go+pinner"} {
+		for _, numAllocations := range numAllocationsList {
+			b.Run(fmt.Sprintf("%s/%d", allocType, numAllocations), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					switch allocType {
+					case "arena":
+						arena := newArena(1024)
+						for idx := range numAllocations {
+							allocations[idx] = arenaAlloc[int](arena)
+						}
+						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
+						arena.Free()
+					case "arenaPool":
+						arena := getArenaFromPool()
+						for idx := range numAllocations {
+							allocations[idx] = arenaAlloc[int](arena)
+						}
+						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
+						returnArenaToPool(arena)
+					case "malloc":
+						for idx := range numAllocations {
+							allocations[idx] = cMalloc[int]()
+						}
+						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
+						for idx := range numAllocations {
+							cFree(allocations[idx])
+						}
+					case "go+pinner":
+						var pinner runtime.Pinner
+						for idx := range numAllocations {
+							v := idx
+							allocations[idx] = &v
+							pinner.Pin(allocations[idx])
+						}
+						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
+						pinner.Unpin()
+					}
+				}
+			})
+		}
 	}
 }
 
@@ -182,10 +221,10 @@ func BenchmarkClient_BufferToHost(b *testing.B) {
 // Runtimes for cpu:
 //
 //	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
-//	BenchmarkAdd1Execution/(Float32)[1_1]-24                  476617              2497 ns/op
-//	BenchmarkAdd1Execution/(Float32)[10_10]-24                474399              2527 ns/op
-//	BenchmarkAdd1Execution/(Float32)[100_100]-24              280819              4256 ns/op
-//	BenchmarkAdd1Execution/(Float32)[1000_1000]-24             28591             39540 ns/op
+//	BenchmarkAdd1Execution/(Float32)[1_1]-24                  606991              1718 ns/op
+//	BenchmarkAdd1Execution/(Float32)[10_10]-24                721738              1681 ns/op
+//	BenchmarkAdd1Execution/(Float32)[100_100]-24              356961              3376 ns/op
+//	BenchmarkAdd1Execution/(Float32)[1000_1000]-24             28839             41270 ns/op
 func BenchmarkAdd1Execution(b *testing.B) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))

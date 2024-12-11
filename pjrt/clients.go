@@ -276,6 +276,6 @@ func (c *Client) BufferFromHost() *BufferFromHostConfig {
 	return &BufferFromHostConfig{
 		client:              c,
 		device:              nil,
-		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableOnlyDuringCall,
+		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableUntilTransferCompletes,
 	}
 }

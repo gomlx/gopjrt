@@ -6,8 +6,10 @@
 * Improved documentation on Nvidia GPU card detection, and error message if not found. 
 * Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
   `main` branch.
-* Updated `Buffer.ToHost()` to use fewer CGO calls, speeding it up.
-* Added BufferToHost benchmarks.
+* Speed-ups (especially for small tensors) by merging CGO calls into fewer: 
+  * `Buffer.ToHost()`
+  * `Client.BufferFromHost()`
+* Added `BufferToHost` and `BufferFromHost` benchmarks.
 
 # v0.4.9 - 2024-11-25
 

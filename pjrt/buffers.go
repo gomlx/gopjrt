@@ -58,8 +58,11 @@ func (b *Buffer) Destroy() error {
 		return nil
 	}
 	defer runtime.KeepAlive(b)
-	args := C.new_PJRT_Buffer_Destroy_Args()
-	defer cFree(args)
+
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
 	b.client = nil
@@ -79,8 +82,10 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	args := C.new_PJRT_Buffer_Dimensions_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Dimensions_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Dimensions_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Dimensions(b.client.plugin.api, args))
 	if err != nil {
@@ -103,8 +108,10 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	args := C.new_PJRT_Buffer_ElementType_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_ElementType_Args](arena)
+	args.struct_size = C.PJRT_Buffer_ElementType_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_ElementType(b.client.plugin.api, args))
 	if err != nil {
@@ -122,8 +129,10 @@ func (b *Buffer) Device() (device *Device, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	args := C.new_PJRT_Buffer_Device_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Device_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Device_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Device(b.client.plugin.api, args))
 	if err != nil {
@@ -153,8 +162,13 @@ func (b *Buffer) Size() (int, error) {
 		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(b)
-	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
-	defer cFree(args)
+
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+
+	// It uses a PJRT_Buffer_ToHostBuffer_Args but it doesn't transfer, only inquire about size.
+	args := arenaAlloc[C.PJRT_Buffer_ToHostBuffer_Args](arena)
+	args.struct_size = C.PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE
 	args.src = b.cBuffer
 	args.dst = nil // Don't transfer, only inquire about size.
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
@@ -166,11 +180,6 @@ func (b *Buffer) Size() (int, error) {
 
 // BufferToScalar is a generic function that transfer a Buffer back to host as a scalar of the given type.
 func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dst := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	err = b.ToHost(dst)
 	return
@@ -181,11 +190,6 @@ func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
 // It is a shortcut to Client.BufferFromHost call with default parameters.
 // If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
 func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(client)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dtype := dtypes.FromGenericsType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
@@ -196,11 +200,6 @@ func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err
 // It is a shortcut to Client.BufferFromHost call with default parameters.
 // If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
 func ScalarToBufferOnDeviceNum[T dtypes.Supported](client *Client, deviceNum int, value T) (b *Buffer, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(client)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dtype := dtypes.FromGenericsType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).ToDeviceNum(deviceNum).Done()
@@ -243,12 +242,6 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 	}
 	flatValues = make([]T, totalSize)
 	flatValuesPtr := unsafe.SliceData(flatValues)
-
-	var pinner runtime.Pinner
-	pinner.Pin(buffer)
-	pinner.Pin(flatValuesPtr)
-	defer pinner.Unpin()
-
 	dst := unsafe.Slice((*byte)(
 		unsafe.Pointer(flatValuesPtr)),
 		totalSize*int(unsafe.Sizeof(flatValues[0])))
@@ -260,7 +253,6 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 //
 // Similar to the generic BufferToArray[T], but this returns an anonymous typed (`any`) flat slice instead of using generics.
 func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err error) {
-	defer runtime.KeepAlive(b)
 	var dtype dtypes.DType
 	dtype, err = b.DType()
 	if err != nil {
@@ -286,10 +278,6 @@ func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err erro
 	flatValuesPtr := element0.Addr().UnsafePointer()
 	sizeBytes := uintptr(flatV.Len()) * element0.Type().Size()
 
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(flatValuesPtr)
-	defer pinner.Unpin()
 	dst := unsafe.Slice((*byte)(flatValuesPtr), sizeBytes)
 	err = b.ToHost(dst)
 	flat = flatV.Interface()

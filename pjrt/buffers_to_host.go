@@ -73,6 +73,7 @@ func (b *Buffer) ToHost(dst []byte) error {
 	var pinner runtime.Pinner
 	pinner.Pin(dstBytes)
 	defer pinner.Unpin()
+
 	pErr := C.BufferToHost(b.client.plugin.api, b.cBuffer, dstBytes, C.int64_t(len(dst)), C.int(rank))
 	err = toError(b.client.plugin, pErr)
 	if err != nil {

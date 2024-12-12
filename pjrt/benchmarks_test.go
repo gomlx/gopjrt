@@ -33,24 +33,6 @@ func BenchmarkCGO(b *testing.B) {
 	}
 }
 
-// Benchmark tests a cMalloc[int] call and corresponding free.
-//
-// Results on cpu:
-//
-//	cpu: 12th Gen Intel(R) Core(TM) i9-12900K
-//	BenchmarkClient_CGO-24           8876160               129.3 ns/op
-func BenchmarkMalloc(b *testing.B) {
-	plugin := must1(GetPlugin(*flagPluginName))
-	client := must1(plugin.NewClient(nil))
-	defer runtime.KeepAlive(client)
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		values := cMalloc[int]()
-		cFree(values)
-	}
-}
-
 // Benchmark tests arena
 //
 // Results on cpu:
@@ -110,12 +92,16 @@ func BenchmarkArena(b *testing.B) {
 
 // BenchmarkClient_BufferFromHost benchmarks transfer time from host to device.
 //
-// Results for cpu:
+// Example command to run it:
 //
-//	BenchmarkClient_BufferFromHost/(Float32)[1_1]-24                 1000000              1364 ns/op
-//	BenchmarkClient_BufferFromHost/(Float32)[10_10]-24                820569              1413 ns/op
-//	BenchmarkClient_BufferFromHost/(Float32)[100_100]-24              486066              2276 ns/op
-//	BenchmarkClient_BufferFromHost/(Float32)[1000_1000]-24              7587            133828 ns/op
+//	go test . -bench=Host -run=NONE -count=20 > /tmp/benchs.txt && benchstat /tmp/benchs.txt
+//
+// Results on CPU:
+//
+//	Client_BufferFromHost/(Float32)[1_1]-24             1.206µ ± 2%
+//	Client_BufferFromHost/(Float32)[10_10]-24           1.233µ ± 2%
+//	Client_BufferFromHost/(Float32)[100_100]-24         2.042µ ± 2%
+//	Client_BufferFromHost/(Float32)[1000_1000]-24       134.9µ ± 1%
 func BenchmarkClient_BufferFromHost(b *testing.B) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
@@ -161,12 +147,16 @@ func BenchmarkClient_BufferFromHost(b *testing.B) {
 
 // BenchmarkClient_BufferToHost benchmarks time to transfer data from device buffer to host.
 //
-// Run times on cpu:
+// Example command to run it:
 //
-//	BenchmarkClient_BufferToHost/(Float32)[1_1]-24                    493348              2208 ns/op
-//	BenchmarkClient_BufferToHost/(Float32)[10_10]-24                  487226              2251 ns/op
-//	BenchmarkClient_BufferToHost/(Float32)[100_100]-24                216619              5580 ns/op
-//	BenchmarkClient_BufferToHost/(Float32)[1000_1000]-24                9078            132018 ns/op
+//	go test . -bench=Host -run=NONE -count=20 > /tmp/benchs.txt && benchstat /tmp/benchs.txt
+//
+// Results on CPU:
+//
+//	Client_BufferToHost/(Float32)[1_1]-24               2.016µ ± 4%
+//	Client_BufferToHost/(Float32)[10_10]-24             2.017µ ± 4%
+//	Client_BufferToHost/(Float32)[100_100]-24           5.341µ ± 1%
+//	Client_BufferToHost/(Float32)[1000_1000]-24         134.0µ ± 0%
 func BenchmarkClient_BufferToHost(b *testing.B) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))

@@ -6,9 +6,12 @@
 * Improved documentation on Nvidia GPU card detection, and error message if not found. 
 * Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
   `main` branch.
-* Speed-ups (especially for small tensors) by merging CGO calls into fewer: 
+* Added `prjt.arena` to avoid costly allocations for CGO calls, and merged some of CGO calls for general speed-ups.
+  The following functions had > 50% improvements on their fixed-cost (measured on transfers with 1 value, and minimal programs)
+  execution time (**not the variable part**): 
   * `Buffer.ToHost()`
   * `Client.BufferFromHost()`
+  * `LoadedExecutable.Execute()`
 * Added `BufferToHost` and `BufferFromHost` benchmarks.
 
 # v0.4.9 - 2024-11-25

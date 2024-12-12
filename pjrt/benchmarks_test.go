@@ -29,7 +29,7 @@ func BenchmarkCGO(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		dummyCGO(unsafe.Pointer(plugin))
+		dummyCGO(unsafe.Pointer(plugin.api))
 	}
 }
 
@@ -248,6 +248,79 @@ func BenchmarkAdd1Execution(b *testing.B) {
 		one := must1(xlabuilder.ScalarOne(builder, s.DType))
 		add1 := must1(xlabuilder.Add(x, one))
 		comp := must1(builder.Build(add1))
+		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+	}
+	defer func() {
+		// Clean up -- and don't wait for the GC.
+		for shapeIdx := range numShapes {
+			must(buffers[shapeIdx].Destroy())
+			must(execs[shapeIdx].Destroy())
+		}
+	}()
+
+	// Run test for each shape
+	benchShape := func(shapeIdx int) {
+		buf := buffers[shapeIdx]
+		exec := execs[shapeIdx]
+		outputs := must1(exec.Execute(buf).Done())
+		for _, output := range outputs {
+			must(output.Destroy())
+		}
+	}
+
+	// Warmup for each shape
+	for shapeIdx := range testShapes {
+		for i := 0; i < 10; i++ {
+			benchShape(shapeIdx)
+		}
+	}
+
+	// Reset timer and start the actual benchmark
+	b.ResetTimer()
+
+	// Test each shape
+	for shapeIdx, s := range testShapes {
+		b.Run(s.String(), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				benchShape(shapeIdx)
+			}
+		})
+	}
+}
+
+// BenchmarkAdd1Div2 benchmarks the execution time for f(x) = (x+1)/2.
+//
+// Runtimes for cpu:
+//
+//	BenchmarkAdd1Div2Execution/(Float32)[1_1]-24              649802              1808 ns/op
+//	BenchmarkAdd1Div2Execution/(Float32)[10_10]-24            670908              1780 ns/op
+//	BenchmarkAdd1Div2Execution/(Float32)[100_100]-24          343732              3347 ns/op
+//	BenchmarkAdd1Div2Execution/(Float32)[1000_1000]-24                 26298             43994 ns/op
+func BenchmarkAdd1Div2Execution(b *testing.B) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// Prepare input data, the uploaded buffers and the executables.
+	numShapes := len(testShapes)
+	execs := make([]*LoadedExecutable, numShapes)
+	inputData := make([][]float32, numShapes)
+	buffers := make([]*Buffer, numShapes)
+	for shapeIdx, s := range testShapes {
+		inputData[shapeIdx] = make([]float32, s.Size())
+		for i := 0; i < s.Size(); i++ {
+			inputData[shapeIdx][i] = float32(i)
+		}
+		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
+
+		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
+		// f(x) = x + 1
+		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
+		one := must1(xlabuilder.ScalarOne(builder, s.DType))
+		add1 := must1(xlabuilder.Add(x, one))
+		half := must1(xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(0.5))))
+		div2 := must1(xlabuilder.Mul(add1, half))
+		comp := must1(builder.Build(div2))
 		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
 	}
 	defer func() {

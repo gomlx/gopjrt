@@ -99,7 +99,6 @@ func (a *arenaContainer) Free() {
 	a.buf = nil
 	a.size = 0
 	a.current = 0
-	fmt.Printf("Freed arena of size %d\n", a.size)
 }
 
 // Reset invalidates all previous allocations with the arena, but does not free the C allocated area.

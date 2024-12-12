@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/streadway/quantile"
 	"runtime"
+	"strings"
 	"testing"
+	"time"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -14,6 +18,73 @@ var testShapes = []xlabuilder.Shape{
 	xlabuilder.MakeShape(dtypes.Float32, 10, 10),
 	xlabuilder.MakeShape(dtypes.Float32, 100, 100),
 	xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
+}
+
+var (
+	benchmarkDuration = 1 * time.Second
+)
+
+func observeNanoseconds(est *quantile.Estimator, start time.Time) {
+	est.Add(float64(time.Now().Sub(start)) / float64(time.Nanosecond))
+}
+
+func nanosecondsEstimate(est *quantile.Estimator, quantile float64) time.Duration {
+	return time.Duration(int(est.Get(quantile))) * time.Nanosecond
+}
+
+func benchmarkFunc(fn func()) (median, fivePercentile time.Duration) {
+	estimator := quantile.New(quantile.Known(0.50, 0.005), quantile.Known(0.05, 0.005))
+	timer := time.NewTimer(benchmarkDuration)
+collection:
+	for {
+		select {
+		case <-timer.C:
+			break collection
+		default:
+			start := time.Now()
+			fn()
+			observeNanoseconds(estimator, start)
+		}
+	}
+	median = nanosecondsEstimate(estimator, 0.50)
+	fivePercentile = nanosecondsEstimate(estimator, 0.05)
+	return
+}
+
+// benchmarkNamedFunctions benchmarks and pretty print results, with median and 5-percentile.
+func benchmarkNamedFunctions(names []string, fns []func(), warmUpCalls int) {
+	header := "Benchmarks:"
+	maxLen := len(header)
+	runeCount := make([]int, len(names))
+	for ii, name := range names {
+		runeCount[ii] = utf8.RuneCountInString(name)
+		maxLen = max(maxLen, runeCount[ii])
+	}
+
+	// Header
+	extraSpaces := maxLen - len(header)
+	if extraSpaces > 0 {
+		header = header + strings.Repeat(" ", extraSpaces)
+	}
+	fmt.Printf("%s\t%12s\t%12s\n", header, "Median", "5%-tile")
+
+	for ii, fn := range fns {
+		// Warm-up
+		for _ = range warmUpCalls {
+			fn()
+		}
+
+		// Collect benchmark estimations.
+		median, fivePercentile := benchmarkFunc(fn)
+
+		// Pretty-print.
+		name := names[ii]
+		extraSpaces := maxLen - runeCount[ii]
+		if extraSpaces > 0 {
+			name = name + strings.Repeat(" ", extraSpaces)
+		}
+		fmt.Printf("%s\t%12s\t%12s\n", name, median, fivePercentile)
+	}
 }
 
 // BenchmarkCGO tests a minimal CGO call.
@@ -143,6 +214,38 @@ func BenchmarkClient_BufferFromHost(b *testing.B) {
 			}
 		})
 	}
+}
+
+// TestBenchBufferFromHost benchmarks host->buffer transfer time.
+//
+//	Benchmarks:                                                   Median         5%-tile
+//	TestBenchBufferFromHost/shape=(Float32)[1 1]                   990ns           853ns
+//	TestBenchBufferFromHost/shape=(Float32)[10 10]               1.078µs           865ns
+//	TestBenchBufferFromHost/shape=(Float32)[100 100]             1.918µs         1.548µs
+//	TestBenchBufferFromHost/shape=(Float32)[1000 1000]         133.692µs       132.121µs
+func TestBenchBufferFromHost(t *testing.T) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	numShapes := len(testShapes)
+	inputData := make([][]float32, numShapes)
+	testFns := make([]func(), numShapes)
+	names := make([]string, numShapes)
+	for shapeIdx, s := range testShapes {
+		inputData[shapeIdx] = make([]float32, s.Size())
+		for i := 0; i < s.Size(); i++ {
+			inputData[shapeIdx][i] = float32(i)
+		}
+		names[shapeIdx] = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx] = func() {
+			x := inputData[shapeIdx]
+			s := testShapes[shapeIdx]
+			buf := must1(ArrayToBuffer(client, x, s.Dimensions...))
+			must(buf.Destroy())
+		}
+	}
+	benchmarkNamedFunctions(names, testFns, 10)
 }
 
 // BenchmarkClient_BufferToHost benchmarks time to transfer data from device buffer to host.

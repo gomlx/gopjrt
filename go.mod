@@ -7,6 +7,7 @@ require (
 	github.com/janpfeifer/gonb v0.10.6
 	github.com/janpfeifer/must v0.2.0
 	github.com/pkg/errors v0.9.1
+	github.com/streadway/quantile v0.0.0-20220407130108-4246515d968d
 	github.com/stretchr/testify v1.9.0
 	github.com/x448/float16 v0.8.4
 	google.golang.org/protobuf v1.35.2

@@ -114,7 +114,7 @@ func benchmarkNamedFunctions(names []string, fns []func(), warmUpCalls int, repe
 //
 //	go test . -test.v -test.run=Bench -test.count=1
 //	Benchmarks:           Median         5%-tile        99%-tile
-//	CGOCall                 59ns            58ns            89ns
+//	CGOCall                 38ns            38ns            40ns
 func TestBenchCGO(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	testNames := []string{"CGOCall"}
@@ -133,8 +133,23 @@ func TestBenchCGO(t *testing.T) {
 //
 // Runtime in CPU:
 //
-//	Benchmarks:           Median         5%-tile        99%-tile
-//	CGOCall                 38ns            38ns            40ns
+//	Benchmarks:                           Median         5%-tile        99%-tile
+//	TestBenchArena/arena/1                 153ns           144ns           170ns
+//	TestBenchArena/arena/5                 156ns           154ns           165ns
+//	TestBenchArena/arena/10                184ns           174ns           211ns
+//	TestBenchArena/arena/100               547ns           535ns           671ns
+//	TestBenchArena/arenaPool/1              86ns            83ns            92ns
+//	TestBenchArena/arenaPool/5             101ns            99ns           109ns
+//	TestBenchArena/arenaPool/10            121ns           119ns           135ns
+//	TestBenchArena/arenaPool/100           487ns           477ns           528ns
+//	TestBenchArena/malloc/1                135ns           132ns           143ns
+//	TestBenchArena/malloc/5                512ns           508ns           541ns
+//	TestBenchArena/malloc/10               984ns           975ns         1.104µs
+//	TestBenchArena/malloc/100            9.401µs         9.346µs          9.82µs
+//	TestBenchArena/go+pinner/1              88ns            85ns           138ns
+//	TestBenchArena/go+pinner/5             317ns           308ns           582ns
+//	TestBenchArena/go+pinner/10            646ns           594ns         2.291µs
+//	TestBenchArena/go+pinner/100        10.437µs         6.754µs        38.438µs
 func TestBenchArena(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
@@ -245,10 +260,10 @@ func TestBenchBufferFromHost(t *testing.T) {
 // Results on CPU:
 //
 //	Benchmarks:                                                   Median         5%-tile        99%-tile
-//	TestBenchBufferToHost/shape=(Float32)[1 1]                   1.763µs         1.548µs         3.835µs
-//	TestBenchBufferToHost/shape=(Float32)[10 10]                 1.812µs         1.568µs         3.856µs
-//	TestBenchBufferToHost/shape=(Float32)[100 100]               5.172µs         4.931µs         6.724µs
-//	TestBenchBufferToHost/shape=(Float32)[1000 1000]           132.934µs       130.236µs       139.723µs
+//	TestBenchBufferToHost/shape=(Float32)[1 1]                   1.684µs         1.555µs         3.762µs
+//	TestBenchBufferToHost/shape=(Float32)[10 10]                 1.651µs         1.534µs         3.699µs
+//	TestBenchBufferToHost/shape=(Float32)[100 100]               5.393µs         5.002µs         7.271µs
+//	TestBenchBufferToHost/shape=(Float32)[1000 1000]           131.826µs       131.498µs       139.316µs
 func TestBenchBufferToHost(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))

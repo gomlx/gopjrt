@@ -13,6 +13,8 @@
   * `Client.BufferFromHost()`
   * `LoadedExecutable.Execute()`
 * Added `BufferToHost` and `BufferFromHost` benchmarks.
+* Added support for environment variable `XLA_DEBUG_OPTIONS`: if set, it is parsed as a `DebugOptions` proto that
+  is passed to the JIT-compilation of a computation graph.
 
 # v0.4.9 - 2024-11-25
 

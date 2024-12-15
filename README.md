@@ -329,7 +329,7 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
   Because of https://github.com/golang/go/issues/13467 : C API's cannot be exported across packages, even within the same repo.
   Even a function as simple as `func Add(a, b C.int) C.int` in one package cannot be called from another. 
   So we need to wrap everything, and more than that, one cannot create separate sub-packages to handle separate concerns.
-  THis is also the reason the library `chelper.go` is copied in both `pjrt` and `xlabuilder` packages.
+  This is also the reason the library `chelper.go` is copied in both `pjrt` and `xlabuilder` packages.
 * **Why does PJRT spits out so much logging ? Can we disable it ?**
   This is a great question ... imagine if every library we use decided they also want to clutter our stderr?
   I have [an open question in Abseil about it](https://github.com/abseil/abseil-cpp/discussions/1700).
@@ -339,6 +339,18 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
   won't have where to log. This hack is encoded in the function `pjrt.SuppressAbseilLoggingHack()`: just call it
   before calling `pjrt.GetPlugin`. But it may have unintended consequences, if some other library is depending
   on the fd 2 to work, or if a real exceptional situation needs to be reported and is not.
+
+## Environment Variables
+
+That help control or debug how **gopjrt** work:
+
+* `PJRT_PLUGIN_LIBRARY_PATH`: Path to search for PJRT plugins. **gopjrt** also searches in `/usr/local/lib/gomlx/pjrt`,
+  the standard library paths for the system and `$LD_LIBRARY_PATH`.
+* `XLA_DEBUG_OPTIONS`: If set, it is parsed as a `DebugOptions` proto that
+  is passed during the JIT-compilation (`Client.Compile()`) of a computation graph.
+  It is not documented how it works in PJRT (e.g. I observed a great slow down when this is set,
+  even if set to the default values), but [the proto has some documentation](https://github.com/gomlx/gopjrt/blob/main/protos/xla.proto#L40).
+* `GOPJRT_INSTALL_DIR` and `GOPJRT_NOSUDO`: used by the install scripts, see "Installing" section above.
 
 ## Links to documentation
 

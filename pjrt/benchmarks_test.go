@@ -10,12 +10,9 @@ import (
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/xlabuilder"
-	"github.com/streadway/quantile"
+	benchmarks "github.com/janpfeifer/go-benchmarks"
 	"runtime"
-	"strings"
 	"testing"
-	"time"
-	"unicode/utf8"
 	"unsafe"
 )
 
@@ -24,88 +21,6 @@ var testShapes = []xlabuilder.Shape{
 	xlabuilder.MakeShape(dtypes.Float32, 10, 10),
 	xlabuilder.MakeShape(dtypes.Float32, 100, 100),
 	xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
-}
-
-var (
-	benchmarkDuration = 1 * time.Second
-)
-
-func observeNanoseconds(est *quantile.Estimator, start time.Time) {
-	est.Add(float64(time.Now().Sub(start)) / float64(time.Nanosecond))
-}
-
-func nanosecondsEstimate(est *quantile.Estimator, quantile float64) time.Duration {
-	return time.Duration(int(est.Get(quantile))) * time.Nanosecond
-}
-
-func benchmarkOneFunc(fn func()) (median, percentile5, percentile99 time.Duration) {
-	estimator := quantile.New(
-		quantile.Known(0.50, 0.0001),
-		quantile.Known(0.05, 0.0001),
-		quantile.Known(0.99, 0.0001),
-	)
-	timer := time.NewTimer(benchmarkDuration)
-collection:
-	for {
-		select {
-		case <-timer.C:
-			break collection
-		default:
-			start := time.Now()
-			fn()
-			observeNanoseconds(estimator, start)
-		}
-	}
-	median = nanosecondsEstimate(estimator, 0.50)
-	percentile5 = nanosecondsEstimate(estimator, 0.05)
-	percentile99 = nanosecondsEstimate(estimator, 0.99)
-	return
-}
-
-// benchmarkNamedFunctions benchmarks and pretty print results, with median and 5-percentile.
-//
-// Before each function is benchmarked, it is called warmUpCalls times.
-//
-// For very fast code, where even the extra wrapping in a function call makes a difference, you can execute
-// the code. The total time reported will be divided by repeats, if it's not 0.
-func benchmarkNamedFunctions(names []string, fns []func(), warmUpCalls int, repeats int) {
-	header := "Benchmarks:"
-	maxLen := len(header)
-	runeCount := make([]int, len(names))
-	for ii, name := range names {
-		runeCount[ii] = utf8.RuneCountInString(name)
-		maxLen = max(maxLen, runeCount[ii])
-	}
-
-	// Header
-	extraSpaces := maxLen - len(header)
-	if extraSpaces > 0 {
-		header = header + strings.Repeat(" ", extraSpaces)
-	}
-	fmt.Printf("%s\t%12s\t%12s\t%12s\n", header, "Median", "5%-tile", "99%-tile")
-
-	for ii, fn := range fns {
-		// Warm-up
-		for _ = range warmUpCalls {
-			fn()
-		}
-
-		// Collect benchmark estimations.
-		median, percentile5, percentile99 := benchmarkOneFunc(fn)
-		if repeats > 1 {
-			median /= time.Duration(repeats)
-			percentile5 /= time.Duration(repeats)
-			percentile99 /= time.Duration(repeats)
-		}
-
-		// Pretty-print.
-		name := names[ii]
-		extraSpaces := maxLen - runeCount[ii]
-		if extraSpaces > 0 {
-			name = name + strings.Repeat(" ", extraSpaces)
-		}
-		fmt.Printf("%s\t%12s\t%12s\t%12s\n", name, median, percentile5, percentile99)
-	}
 }
 
 // TestBenchCGO benchmarks a minimal CGO call.
@@ -117,16 +32,15 @@ func benchmarkNamedFunctions(names []string, fns []func(), warmUpCalls int, repe
 //	CGOCall                 38ns            38ns            40ns
 func TestBenchCGO(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
-	testNames := []string{"CGOCall"}
-	const repeats = 100
-	testFns := []func(){
-		func() {
-			for _ = range repeats {
-				dummyCGO(unsafe.Pointer(plugin.api))
-			}
-		},
+	const repeats = 1000
+	repeatedCGO := func() {
+		for _ = range repeats {
+			dummyCGO(unsafe.Pointer(plugin.api))
+		}
 	}
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(benchmarks.NamedFunction{"CGOCall", repeatedCGO}).
+		WithInnerRepeats(repeats).
+		Done()
 }
 
 // Benchmark tests arena
@@ -157,13 +71,12 @@ func TestBenchArena(t *testing.T) {
 
 	numAllocationsList := []int{1, 5, 10, 100}
 	allocations := make([]*int, 100)
-	testNames := make([]string, 0, 4*len(numAllocationsList))
-	testFns := make([]func(), 0, 4*len(numAllocationsList))
+	testFns := make([]benchmarks.NamedFunction, 4*len(numAllocationsList))
 	const repeats = 10
+	idxFn := 0
 	for _, allocType := range []string{"arena", "arenaPool", "malloc", "go+pinner"} {
 		for _, numAllocations := range numAllocationsList {
-			name := fmt.Sprintf("%s/%s/%d", t.Name(), allocType, numAllocations)
-			testNames = append(testNames, name)
+			testFns[idxFn].Name = fmt.Sprintf("%s/%s/%d", t.Name(), allocType, numAllocations)
 			var fn func()
 			switch allocType {
 			case "arena":
@@ -214,10 +127,14 @@ func TestBenchArena(t *testing.T) {
 					}
 				}
 			}
-			testFns = append(testFns, fn)
+			testFns[idxFn].Func = fn
+			idxFn++
 		}
 	}
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		WithWarmUps(10).
+		Done()
 }
 
 // TestBenchBufferFromHost benchmarks host->buffer transfer time.
@@ -235,15 +152,14 @@ func TestBenchBufferFromHost(t *testing.T) {
 	const repeats = 10
 	numShapes := len(testShapes)
 	inputData := make([][]float32, numShapes)
-	testFns := make([]func(), numShapes)
-	testNames := make([]string, numShapes)
+	testFns := make([]benchmarks.NamedFunction, numShapes)
 	for shapeIdx, s := range testShapes {
 		inputData[shapeIdx] = make([]float32, s.Size())
 		for i := 0; i < s.Size(); i++ {
 			inputData[shapeIdx][i] = float32(i)
 		}
-		testNames[shapeIdx] = fmt.Sprintf("%s/shape=%s", t.Name(), s)
-		testFns[shapeIdx] = func() {
+		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
 				x := inputData[shapeIdx]
 				s := testShapes[shapeIdx]
@@ -252,7 +168,9 @@ func TestBenchBufferFromHost(t *testing.T) {
 			}
 		}
 	}
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		Done()
 }
 
 // TestBenchBufferToHost benchmarks time to transfer data from device buffer to host.
@@ -271,8 +189,7 @@ func TestBenchBufferToHost(t *testing.T) {
 
 	const repeats = 10
 	numShapes := len(testShapes)
-	testFns := make([]func(), numShapes)
-	testNames := make([]string, numShapes)
+	testFns := make([]benchmarks.NamedFunction, numShapes)
 	// Prepare output data (host destination array) and upload buffers to GPU
 	outputData := make([][]float32, numShapes)
 	buffers := make([]*Buffer, numShapes)
@@ -282,8 +199,8 @@ func TestBenchBufferToHost(t *testing.T) {
 			outputData[shapeIdx][i] = float32(i)
 		}
 		buffers[shapeIdx] = must1(ArrayToBuffer(client, outputData[shapeIdx], s.Dimensions...))
-		testNames[shapeIdx] = fmt.Sprintf("%s/shape=%s", t.Name(), s)
-		testFns[shapeIdx] = func() {
+		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
 				buf := buffers[shapeIdx]
 				rawData := unsafe.Slice((*byte)(unsafe.Pointer(&outputData[shapeIdx][0])), len(outputData[shapeIdx])*int(unsafe.Sizeof(outputData[shapeIdx][0])))
@@ -297,7 +214,9 @@ func TestBenchBufferToHost(t *testing.T) {
 		}
 	}()
 
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		Done()
 }
 
 // BenchmarkAdd1Execution benchmarks the execution time for a minimal program.
@@ -318,8 +237,7 @@ func TestBenchAdd1Execution(t *testing.T) {
 	execs := make([]*LoadedExecutable, numShapes)
 	inputData := make([][]float32, numShapes)
 	buffers := make([]*Buffer, numShapes)
-	testNames := make([]string, numShapes)
-	testFns := make([]func(), numShapes)
+	testFns := make([]benchmarks.NamedFunction, numShapes)
 	for shapeIdx, s := range testShapes {
 		inputData[shapeIdx] = make([]float32, s.Size())
 		for i := 0; i < s.Size(); i++ {
@@ -334,8 +252,8 @@ func TestBenchAdd1Execution(t *testing.T) {
 		add1 := must1(xlabuilder.Add(x, one))
 		comp := must1(builder.Build(add1))
 		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
-		testNames[shapeIdx] = fmt.Sprintf("%s/shape=%s", t.Name(), s)
-		testFns[shapeIdx] = func() {
+		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
 				buf := buffers[shapeIdx]
 				exec := execs[shapeIdx]
@@ -352,7 +270,9 @@ func TestBenchAdd1Execution(t *testing.T) {
 		}
 	}()
 
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		Done()
 }
 
 // TestBenchAdd1Div2Execution benchmarks the execution time for f(x) = (x+1)/2.
@@ -375,8 +295,7 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 	execs := make([]*LoadedExecutable, numShapes)
 	inputData := make([][]float32, numShapes)
 	buffers := make([]*Buffer, numShapes)
-	testNames := make([]string, numShapes)
-	testFns := make([]func(), numShapes)
+	testFns := make([]benchmarks.NamedFunction, numShapes)
 	for shapeIdx, s := range testShapes {
 		inputData[shapeIdx] = make([]float32, s.Size())
 		for i := 0; i < s.Size(); i++ {
@@ -393,13 +312,13 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 		div2 := must1(xlabuilder.Mul(add1, half))
 		comp := must1(builder.Build(div2))
 		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
-		testNames[shapeIdx] = fmt.Sprintf("%s/shape=%s", t.Name(), s)
-		testFns[shapeIdx] = func() {
+		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
 				buf := buffers[shapeIdx]
 				exec := execs[shapeIdx]
 				output := must1(exec.Execute(buf).Done())[0]
-				output.Destroy()
+				_ = output.Destroy()
 			}
 		}
 	}
@@ -411,5 +330,70 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 		}
 	}()
 
-	benchmarkNamedFunctions(testNames, testFns, 10, repeats)
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		Done()
+}
+
+// TestBenchAdd1Div2Execution benchmarks the execution time for f(x) = (x+1)/2.
+//
+// Runtimes for cpu:
+//
+//	Benchmarks:                                                   Median         5%-tile        99%-tile
+//	TestBenchAdd1Div2Execution/shape=(Float32)[1 1]              1.536µs         1.374µs         3.522µs
+//	TestBenchAdd1Div2Execution/shape=(Float32)[10 10]            1.536µs         1.333µs         3.449µs
+//	TestBenchAdd1Div2Execution/shape=(Float32)[100 100]          2.973µs         2.638µs         5.282µs
+//	TestBenchAdd1Div2Execution/shape=(Float32)[1000 1000]       38.513µs        36.434µs        86.827µs
+func TestBenchMeanNormalizedExecution(t *testing.T) {
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// Prepare input data, the uploaded buffers and the executables.
+	const repeats = 10
+	numShapes := len(testShapes)
+	execs := make([]*LoadedExecutable, numShapes)
+	inputData := make([][]float32, numShapes)
+	buffers := make([]*Buffer, numShapes)
+	testFns := make([]benchmarks.NamedFunction, numShapes)
+	for shapeIdx, s := range testShapes {
+		inputData[shapeIdx] = make([]float32, s.Size())
+		for i := 0; i < s.Size(); i++ {
+			inputData[shapeIdx][i] = float32(i)
+		}
+		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
+
+		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
+		// f(x) = x + 1
+		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
+		one := must1(xlabuilder.ScalarOne(builder, s.DType))
+		add1 := must1(xlabuilder.Add(x, one))
+		half := must1(xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(0.5))))
+		div2 := must1(xlabuilder.Mul(add1, half))
+		mean := must1(xlabuilder.ReduceSum(div2))
+		normalized := must1(xlabuilder.Sub(div2, mean))
+
+		comp := must1(builder.Build(normalized))
+		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
+		testFns[shapeIdx].Func = func() {
+			for _ = range repeats {
+				buf := buffers[shapeIdx]
+				exec := execs[shapeIdx]
+				output := must1(exec.Execute(buf).Done())[0]
+				_ = output.Destroy()
+			}
+		}
+	}
+	defer func() {
+		// Clean up -- and don't wait for the GC.
+		for shapeIdx := range numShapes {
+			must(buffers[shapeIdx].Destroy())
+			must(execs[shapeIdx].Destroy())
+		}
+	}()
+
+	benchmarks.New(testFns...).
+		WithInnerRepeats(repeats).
+		Done()
 }

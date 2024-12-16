@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -26,6 +27,13 @@ type Buffer struct {
 	// DEBUG: creationStackTrace error
 }
 
+var buffersAlive atomic.Int64
+
+// BuffersAlive returns the number of PJRT Buffers in memory and currently tracked by gopjrt.
+func BuffersAlive() int64 {
+	return buffersAlive.Load()
+}
+
 // newBuffer creates Buffer and registers it for freeing.
 func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 	b := &Buffer{
@@ -33,6 +41,8 @@ func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 		cBuffer: cBuffer,
 		// DEBUG: creationStackTrace: errors.New("bufferCreation"),
 	}
+	buffersAlive.Add(1)
+
 	runtime.SetFinalizer(b, func(b *Buffer) {
 		/* DEBUG:
 		if b != nil && cBuffer != nil && b.client != nil && b.client.plugin != nil {
@@ -67,6 +77,8 @@ func (b *Buffer) Destroy() error {
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
 	b.client = nil
 	b.cBuffer = nil
+
+	buffersAlive.Add(-1)
 	return err
 }
 

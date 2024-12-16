@@ -11,6 +11,7 @@ import (
 	"k8s.io/klog/v2"
 	"runtime"
 	"slices"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -32,6 +33,13 @@ type LoadedExecutable struct {
 	NumOutputs int
 }
 
+var numLoadedExecutables atomic.Int64
+
+// LoadedExecutablesAlive returns a count of the numbers of LoadedExecutables currently in memory and tracked by gopjrt.
+func LoadedExecutablesAlive() int64 {
+	return numLoadedExecutables.Load()
+}
+
 // newLoadedExecutable creates LoadedExecutable and registers it for freeing.
 func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJRT_LoadedExecutable) (*LoadedExecutable, error) {
 	e := &LoadedExecutable{
@@ -39,6 +47,7 @@ func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJ
 		client:            client,
 		cLoadedExecutable: cLoadedExecutable,
 	}
+	numLoadedExecutables.Add(1)
 	runtime.SetFinalizer(e, func(e *LoadedExecutable) { e.destroyOrLog() })
 
 	// Gather information about executable:
@@ -78,6 +87,8 @@ func (e *LoadedExecutable) Destroy() error {
 	err := toError(e.plugin, C.call_PJRT_LoadedExecutable_Destroy(e.plugin.api, args))
 	e.plugin = nil
 	e.cLoadedExecutable = nil
+
+	numLoadedExecutables.Add(-1)
 	return err
 }
 

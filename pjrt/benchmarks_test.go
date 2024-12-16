@@ -7,21 +7,28 @@ package pjrt
 // All metrics recorded on a 12th Gen Intel(R) Core(TM) i9-12900K.
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/xlabuilder"
 	benchmarks "github.com/janpfeifer/go-benchmarks"
 	"runtime"
 	"testing"
+	"time"
 	"unsafe"
 )
 
-var testShapes = []xlabuilder.Shape{
-	xlabuilder.MakeShape(dtypes.Float32, 1, 1),
-	xlabuilder.MakeShape(dtypes.Float32, 10, 10),
-	xlabuilder.MakeShape(dtypes.Float32, 100, 100),
-	xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
-}
+var (
+	flagBenchDuration = flag.Duration("bench_duration", 1*time.Second, "Benchmark duration")
+
+	// testShapes used during benchmarks executing small computation graphs.
+	testShapes = []xlabuilder.Shape{
+		xlabuilder.MakeShape(dtypes.Float32, 1, 1),
+		xlabuilder.MakeShape(dtypes.Float32, 10, 10),
+		xlabuilder.MakeShape(dtypes.Float32, 100, 100),
+		xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
+	}
+)
 
 // TestBenchCGO benchmarks a minimal CGO call.
 //
@@ -395,5 +402,6 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 
 	benchmarks.New(testFns...).
 		WithInnerRepeats(repeats).
+		WithDuration(*flagBenchDuration).
 		Done()
 }

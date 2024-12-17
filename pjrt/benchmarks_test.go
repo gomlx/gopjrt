@@ -30,6 +30,9 @@ var (
 
 // TestBenchCGO benchmarks a minimal CGO call.
 func TestBenchCGO(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	const repeats = 1000
 	repeatedCGO := func() {
@@ -44,6 +47,9 @@ func TestBenchCGO(t *testing.T) {
 
 // Benchmark tests different methods to create temporary pointers to be passed to CGO.
 func TestBenchArena(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
@@ -118,6 +124,9 @@ func TestBenchArena(t *testing.T) {
 
 // TestBenchBufferFromHost benchmarks host->buffer transfer time.
 func TestBenchBufferFromHost(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
@@ -157,6 +166,9 @@ func TestBenchBufferFromHost(t *testing.T) {
 //	TestBenchBufferToHost/shape=(Float32)[100 100]               5.393µs         5.002µs         7.271µs
 //	TestBenchBufferToHost/shape=(Float32)[1000 1000]           131.826µs       131.498µs       139.316µs
 func TestBenchBufferToHost(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
@@ -195,6 +207,9 @@ func TestBenchBufferToHost(t *testing.T) {
 
 // BenchmarkAdd1Execution benchmarks the execution time for a minimal program.
 func TestBenchAdd1Execution(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
@@ -255,6 +270,9 @@ func TestBenchAdd1Execution(t *testing.T) {
 //	TestBenchAdd1Div2Execution/shape=(Float32)[100 100]          2.973µs         2.638µs         5.282µs
 //	TestBenchAdd1Div2Execution/shape=(Float32)[1000 1000]       38.513µs        36.434µs        86.827µs
 func TestBenchAdd1Div2Execution(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
@@ -317,6 +335,9 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 //	TestBenchAdd1Div2Execution/shape=(Float32)[100 100]          2.973µs         2.638µs         5.282µs
 //	TestBenchAdd1Div2Execution/shape=(Float32)[1000 1000]       38.513µs        36.434µs        86.827µs
 func TestBenchMeanNormalizedExecution(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)

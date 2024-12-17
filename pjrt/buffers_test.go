@@ -153,13 +153,31 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 	exec := must1(client.Compile().WithComputation(comp).Done())
 
 	// Input is created as a "Device Buffer View"
-	storage := make([]float32, shape.Size())
-	var pinner runtime.Pinner
-	pinner.Pin(unsafe.SliceData(storage))
-	defer pinner.Unpin()
-	rawStorage := unsafe.Slice((*byte)(unsafe.Pointer(unsafe.SliceData(storage))), len(storage)*int(unsafe.Sizeof(storage[0])))
-	inputBuffer, err := client.CreateViewOfDeviceBuffer(rawStorage, dtype, shape.Dimensions)
+	storage := AlignedAlloc(shape.Memory(), BufferAlignment)
+	defer AlignedFree(storage)
+	inputBuffer, err := client.CreateViewOfDeviceBuffer(storage, dtype, shape.Dimensions)
 	require.NoError(t, err)
-	_ = inputBuffer
-	_ = exec
+	flatData := unsafe.Slice((*float32)(storage), shape.Size())
+	for ii := range flatData {
+		flatData[ii] = float32(ii)
+	}
+
+	results, err := exec.Execute(inputBuffer).DonateNone().Done()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	gotFlat, gotDims, err := BufferToArray[float32](results[0])
+	require.NoError(t, err)
+	require.Equal(t, shape.Dimensions, gotDims)
+	require.Equal(t, []float32{1, 2, 3, 4, 5, 6}, gotFlat)
+
+	// Change the buffer directly, and see that we can reuse the buffer in PJRT, without the extra transfer.
+	flatData[1] = 11
+	results, err = exec.Execute(inputBuffer).DonateNone().Done()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	gotFlat, gotDims, err = BufferToArray[float32](results[0])
+	require.NoError(t, err)
+	require.Equal(t, shape.Dimensions, gotDims)
+	require.Equal(t, []float32{1, 12, 3, 4, 5, 6}, gotFlat)
 }

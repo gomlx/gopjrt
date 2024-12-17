@@ -195,27 +195,28 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 		b.device = devices[0]
 	}
 
+	// Arena for memory allocations used by CGO.
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+
 	// Start the call.
-	var args C.PJRT_Client_BufferFromHostBuffer_Args
-	pinner.Pin(&args)
+	var args *C.PJRT_Client_BufferFromHostBuffer_Args
+	args = arenaAlloc[C.PJRT_Client_BufferFromHostBuffer_Args](arena)
 	args.struct_size = C.PJRT_Client_BufferFromHostBuffer_Args_STRUCT_SIZE
 	args.client = b.client.client
 	args.data = unsafe.Pointer(dataPtr)
 	args._type = C.PJRT_Buffer_Type(b.dtype)
 	args.num_dims = C.size_t(len(b.dimensions))
-	var dims []C.int64_t
 	if len(b.dimensions) > 0 {
-		dims = make([]C.int64_t, len(b.dimensions))
+		dims := arenaAllocSlice[C.int64_t](arena, len(b.dimensions))
 		for ii, dim := range b.dimensions {
 			dims[ii] = C.int64_t(dim)
 		}
-		args.dims = &dims[0]
-		pinner.Pin(args.dims)
+		args.dims = unsafe.SliceData(dims)
 	}
 	args.host_buffer_semantics = C.PJRT_HostBufferSemantics(b.hostBufferSemantics)
 	args.device = b.device.cDevice
-
-	err := toError(b.client.plugin, C.BufferFromHostAndWait(b.client.plugin.api, &args))
+	err := toError(b.client.plugin, C.BufferFromHostAndWait(b.client.plugin.api, args))
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,33 @@ package pjrt
 #include "pjrt_c_api.h"
 #include "gen_api_calls.h"
 #include "gen_new_struct.h"
+
+PJRT_Error* ExecuteAndWait(const PJRT_Api *api, PJRT_LoadedExecutable_Execute_Args* args) {
+	PJRT_Error *err = api->PJRT_LoadedExecutable_Execute(args);
+	if (err) {
+		return err;
+	}
+
+	if (args->device_complete_events) {
+		// Wait for devices to complete executions.
+		for (int ii = 0; ii < args->num_devices; ii++) {
+			PJRT_Event_Await_Args event_args = {0};
+			event_args.struct_size = PJRT_Event_Await_Args_STRUCT_SIZE;
+			event_args.event = args->device_complete_events[ii];
+			err = api->PJRT_Event_Await(&event_args);
+			PJRT_Event_Destroy_Args efree_args;
+			efree_args.struct_size = PJRT_Event_Await_Args_STRUCT_SIZE;
+			efree_args.event = args->device_complete_events[ii];
+			api->PJRT_Event_Destroy(&efree_args);
+			if (err) {
+				return err;
+			}
+		}
+	}
+	return NULL;
+}
+
+
 */
 import "C"
 import (
@@ -339,11 +366,11 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputs, nil)
 	}
 
-	// We leave args.device_complete_events set to null, making this a synchronous call.
+	// We leave args.device_complete_events set to null, making this a synchronous call (?).
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
 	//defer cFree(args.device_complete_events)
 
-	err := toError(e.plugin, C.call_PJRT_LoadedExecutable_Execute(e.plugin.api, args))
+	err := toError(e.plugin, C.ExecuteAndWait(e.plugin.api, args))
 	if err != nil {
 		return nil, err
 	}

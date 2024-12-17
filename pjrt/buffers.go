@@ -123,7 +123,7 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	}
 	defer runtime.KeepAlive(b)
 	if b.dtypeSet {
-		return b.dtype
+		return b.dtype, nil
 	}
 
 	arena := getArenaFromPool()

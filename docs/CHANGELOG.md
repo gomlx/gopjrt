@@ -15,6 +15,9 @@
 * Added `BufferToHost` and `BufferFromHost` benchmarks.
 * Added support for environment variable `XLA_DEBUG_OPTIONS`: if set, it is parsed as a `DebugOptions` proto that
   is passed to the JIT-compilation of a computation graph.
+* `LoadedExecutable.Execute()` now waits for the end of the execution (by setting
+  `PJRT_LoadedExecutable_Execute_Args.device_complete_events`).
+  Previous behavior lead to odd behavior and was undefined (not documented).
 
 # v0.4.9 - 2024-11-25
 

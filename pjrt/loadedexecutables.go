@@ -366,7 +366,10 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputs, nil)
 	}
 
-	// We leave args.device_complete_events set to null, making this a synchronous call (?).
+	// Create events to wait for the end of execution: leaving this as NULL is allowed, but what happens then
+	// (does it wait or not, and then what?) is not documented in PJRT.
+	perDeviceEvents := arenaAllocSlice[*C.PJRT_Event](arena, numDevices)
+	args.device_complete_events = (**C.PJRT_Event)(unsafe.SliceData(perDeviceEvents))
 	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
 	//defer cFree(args.device_complete_events)
 

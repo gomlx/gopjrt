@@ -24,6 +24,9 @@ type Buffer struct {
 
 	dimsSet bool // Whether dims is set.
 	dims    []int
+
+	dtypeSet bool // Whether dtype is set.
+	dtype    dtypes.DType
 	// DEBUG: creationStackTrace error
 }
 
@@ -119,6 +122,9 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 		return
 	}
 	defer runtime.KeepAlive(b)
+	if b.dtypeSet {
+		return b.dtype
+	}
 
 	arena := getArenaFromPool()
 	defer returnArenaToPool(arena)
@@ -130,6 +136,8 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 		return
 	}
 	dtype = dtypes.DType(args._type)
+	b.dtype = dtype
+	b.dtypeSet = true
 	return
 }
 

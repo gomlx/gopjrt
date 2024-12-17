@@ -199,7 +199,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	arena := getArenaFromPool()
 	defer returnArenaToPool(arena)
 
-	// Start the call.
+	// Arguments to PJRT call.
 	var args *C.PJRT_Client_BufferFromHostBuffer_Args
 	args = arenaAlloc[C.PJRT_Client_BufferFromHostBuffer_Args](arena)
 	args.struct_size = C.PJRT_Client_BufferFromHostBuffer_Args_STRUCT_SIZE
@@ -224,6 +224,8 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	buffer := newBuffer(b.client, args.buffer)
 	buffer.dims = slices.Clone(b.dimensions)
 	buffer.dimsSet = true
+	buffer.dtype = b.dtype
+	buffer.dtypeSet = true
 	return buffer, nil
 }
 

@@ -1,11 +1,9 @@
 package pjrt
 
-// To run benchmarks:
-//	go test . -test.v -test.run=Bench -test.count=1
+// To run benchmarks: (and fix to P-Cores if running on a Intel i9-12900K)
+//	go test -c . && taskset 0xFF ./pjrt.test -test.v -test.run=Bench -test.count=1
 //
-// It is configured to report the median, the 5%-tile and the 99%-tile.
-// All metrics recorded on a 12th Gen Intel(R) Core(TM) i9-12900K.
-
+// See results in https://docs.google.com/spreadsheets/d/1ikpJH6rVVHq8ES-IA8U4lkKH4XsTSpRyZewXwGTgits/edit?gid=1369069161#gid=1369069161
 import (
 	"flag"
 	"fmt"
@@ -31,12 +29,6 @@ var (
 )
 
 // TestBenchCGO benchmarks a minimal CGO call.
-//
-// Results on cpu:
-//
-//	go test . -test.v -test.run=Bench -test.count=1
-//	Benchmarks:           Median         5%-tile        99%-tile
-//	CGOCall                 38ns            38ns            40ns
 func TestBenchCGO(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	const repeats = 1000
@@ -50,27 +42,7 @@ func TestBenchCGO(t *testing.T) {
 		Done()
 }
 
-// Benchmark tests arena
-//
-// Runtime in CPU:
-//
-//	Benchmarks:                           Median         5%-tile        99%-tile
-//	TestBenchArena/arena/1                 153ns           144ns           170ns
-//	TestBenchArena/arena/5                 156ns           154ns           165ns
-//	TestBenchArena/arena/10                184ns           174ns           211ns
-//	TestBenchArena/arena/100               547ns           535ns           671ns
-//	TestBenchArena/arenaPool/1              86ns            83ns            92ns
-//	TestBenchArena/arenaPool/5             101ns            99ns           109ns
-//	TestBenchArena/arenaPool/10            121ns           119ns           135ns
-//	TestBenchArena/arenaPool/100           487ns           477ns           528ns
-//	TestBenchArena/malloc/1                135ns           132ns           143ns
-//	TestBenchArena/malloc/5                512ns           508ns           541ns
-//	TestBenchArena/malloc/10               984ns           975ns         1.104µs
-//	TestBenchArena/malloc/100            9.401µs         9.346µs          9.82µs
-//	TestBenchArena/go+pinner/1              88ns            85ns           138ns
-//	TestBenchArena/go+pinner/5             317ns           308ns           582ns
-//	TestBenchArena/go+pinner/10            646ns           594ns         2.291µs
-//	TestBenchArena/go+pinner/100        10.437µs         6.754µs        38.438µs
+// Benchmark tests different methods to create temporary pointers to be passed to CGO.
 func TestBenchArena(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
@@ -145,12 +117,6 @@ func TestBenchArena(t *testing.T) {
 }
 
 // TestBenchBufferFromHost benchmarks host->buffer transfer time.
-//
-//	Benchmarks:                                                   Median         5%-tile        99%-tile
-//	TestBenchBufferFromHost/shape=(Float32)[1 1]                   999ns           835ns         2.297µs
-//	TestBenchBufferFromHost/shape=(Float32)[10 10]               1.115µs           852ns         2.813µs
-//	TestBenchBufferFromHost/shape=(Float32)[100 100]             1.915µs          1.54µs         3.957µs
-//	TestBenchBufferFromHost/shape=(Float32)[1000 1000]         129.644µs       128.748µs       144.503µs
 func TestBenchBufferFromHost(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
@@ -177,6 +143,7 @@ func TestBenchBufferFromHost(t *testing.T) {
 	}
 	benchmarks.New(testFns...).
 		WithInnerRepeats(repeats).
+		WithDuration(*flagBenchDuration).
 		Done()
 }
 
@@ -227,12 +194,6 @@ func TestBenchBufferToHost(t *testing.T) {
 }
 
 // BenchmarkAdd1Execution benchmarks the execution time for a minimal program.
-//
-//	Benchmarks:                                                   Median         5%-tile        99%-tile
-//	TestBenchAdd1Execution/shape=(Float32)[1 1]                  1.548µs          1.39µs         3.701µs
-//	TestBenchAdd1Execution/shape=(Float32)[10 10]                1.468µs         1.297µs          3.11µs
-//	TestBenchAdd1Execution/shape=(Float32)[100 100]              2.968µs         2.614µs         5.464µs
-//	TestBenchAdd1Execution/shape=(Float32)[1000 1000]           38.035µs        36.275µs        79.621µs
 func TestBenchAdd1Execution(t *testing.T) {
 	plugin := must1(GetPlugin(*flagPluginName))
 	client := must1(plugin.NewClient(nil))
@@ -279,6 +240,8 @@ func TestBenchAdd1Execution(t *testing.T) {
 
 	benchmarks.New(testFns...).
 		WithInnerRepeats(repeats).
+		WithWarmUps(100).
+		WithDuration(*flagBenchDuration).
 		Done()
 }
 
@@ -339,6 +302,8 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 
 	benchmarks.New(testFns...).
 		WithInnerRepeats(repeats).
+		WithWarmUps(100).
+		WithDuration(*flagBenchDuration).
 		Done()
 }
 
@@ -402,6 +367,7 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 
 	benchmarks.New(testFns...).
 		WithInnerRepeats(repeats).
+		WithWarmUps(100).
 		WithDuration(*flagBenchDuration).
 		Done()
 }

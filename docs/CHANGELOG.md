@@ -18,6 +18,9 @@
 * `LoadedExecutable.Execute()` now waits for the end of the execution (by setting
   `PJRT_LoadedExecutable_Execute_Args.device_complete_events`).
   Previous behavior lead to odd behavior and was undefined (not documented).
+* Package `dtypes`:
+  * Added tests;
+  * Added `SizeForDimensions()` to be used for dtypes that uses fractions of bytes (like 4 bits).
 
 # v0.4.9 - 2024-11-25
 

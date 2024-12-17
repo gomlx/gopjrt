@@ -1,9 +1,12 @@
 package pjrt
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"runtime"
 	"testing"
 	"unsafe"
 )
@@ -123,4 +126,40 @@ func TestBufferProperties(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, dtypes.Uint8, dtype)
 	}
+}
+
+var flagForceCreateViewOfDeviceBuffer = flag.Bool(
+	"force_create_view", false, "Force executing TestCreateViewOfDeviceBuffer even if plugin is not CPU.")
+
+func TestCreateViewOfDeviceBuffer(t *testing.T) {
+	if *flagPluginName != "cpu" && !*flagForceCreateViewOfDeviceBuffer {
+		t.Skip("Skipping TestCreateViewOfDeviceBuffer because -plugin != \"cpu\". " +
+			"Set --force_create_view to force executing the test anyway")
+	}
+
+	// Create plugin.
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// f(x) = x + 1
+	dtype := dtypes.Float32
+	shape := xlabuilder.MakeShape(dtype, 2, 3)
+	builder := xlabuilder.New("Add1")
+	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
+	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
+	add1 := must1(xlabuilder.Add(x, one))
+	comp := must1(builder.Build(add1))
+	exec := must1(client.Compile().WithComputation(comp).Done())
+
+	// Input is created as a "Device Buffer View"
+	storage := make([]float32, shape.Size())
+	var pinner runtime.Pinner
+	pinner.Pin(unsafe.SliceData(storage))
+	defer pinner.Unpin()
+	rawStorage := unsafe.Slice((*byte)(unsafe.Pointer(unsafe.SliceData(storage))), len(storage)*int(unsafe.Sizeof(storage[0])))
+	inputBuffer, err := client.CreateViewOfDeviceBuffer(rawStorage, dtype, shape.Dimensions)
+	require.NoError(t, err)
+	_ = inputBuffer
+	_ = exec
 }

@@ -8,9 +8,11 @@ package pjrt
 import "C"
 import (
 	"fmt"
+	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
+	"slices"
 	"unsafe"
 )
 
@@ -115,6 +117,7 @@ type Client struct {
 	platform, platformVersion string
 	processIndex              int
 	addressableDevices        []*Device
+	allowBufferViews          bool
 }
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
@@ -278,4 +281,70 @@ func (c *Client) BufferFromHost() *BufferFromHostConfig {
 		device:              nil,
 		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableUntilTransferCompletes,
 	}
+}
+
+// CreateViewOfDeviceBuffer creates a PJRT Buffer that is backed by storage on the same device given by the caller as flatData and shape.
+//
+// Different PJRT may have different requirements on alignment, but Linux CPU PJRT has a 64 bytes alignment requirement.
+//
+// If device is not given (at most one can be given), the first device available for the client is used.
+//
+// The naming comes from PJRT and is unfortunate, since it's the name from PJRT's perspective (PJRT view of a
+// users device buffer).
+// Probably, it should have been better named by "ShareDeviceBuffer" or something similar.
+//
+// This may not be implemented for all hardware (or all PJRT plugins).
+//
+// This can be useful to avoid one copy of values, by mutating directly in the memory used by PJRT as input.
+func (c *Client) CreateViewOfDeviceBuffer(rawData []byte, dtype dtypes.DType, dimensions []int, device ...*Device) (*Buffer, error) {
+	var selectedDevice *Device
+	if len(device) > 1 {
+		return nil, errors.Errorf("only one device can be given to CreateViewOfDeviceBuffer, %d were given", len(device))
+	} else if len(device) == 1 {
+		selectedDevice = device[0]
+	} else {
+		devices := c.AddressableDevices()
+		if len(devices) == 0 {
+			return nil, errors.New("CreateViewOfDeviceBuffer can't find addressable device to transfer to")
+		}
+		selectedDevice = devices[0]
+	}
+
+	// Sanity check the size of the data provided:
+	size := dtype.SizeForDimensions(dimensions...)
+	if len(rawData) != size {
+		return nil, errors.Errorf("received %d bytes ([]byte) for shape %s%v, wanted %d bytes instead",
+			len(rawData), dtype, dimensions, size)
+	}
+
+	// Arena for memory allocations used by CGO.
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+
+	// Arguments to PJRT call.
+	var args *C.PJRT_Client_CreateViewOfDeviceBuffer_Args
+	args = arenaAlloc[C.PJRT_Client_CreateViewOfDeviceBuffer_Args](arena)
+	args.struct_size = C.PJRT_Client_CreateViewOfDeviceBuffer_Args_STRUCT_SIZE
+	args.client = c.client
+	args.device_buffer_ptr = unsafe.Pointer(unsafe.SliceData(rawData))
+	args.element_type = C.PJRT_Buffer_Type(dtype)
+	args.num_dims = C.size_t(len(dimensions))
+	if args.num_dims > 0 {
+		dims := arenaAllocSlice[C.int64_t](arena, int(args.num_dims))
+		for ii, dim := range dimensions {
+			dims[ii] = C.int64_t(dim)
+		}
+		args.dims = unsafe.SliceData(dims)
+	}
+	args.device = selectedDevice.cDevice
+	err := toError(c.plugin, C.call_PJRT_Client_CreateViewOfDeviceBuffer(c.plugin.api, args))
+	if err != nil {
+		return nil, err
+	}
+	buffer := newBuffer(c, args.buffer)
+	buffer.dims = slices.Clone(dimensions)
+	buffer.dimsSet = true
+	buffer.dtype = dtype
+	buffer.dtypeSet = true
+	return buffer, nil
 }

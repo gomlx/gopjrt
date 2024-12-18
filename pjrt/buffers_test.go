@@ -26,6 +26,7 @@ func testTransfersImpl[T interface {
 	fmt.Printf("From %#v\n", input)
 	buffer, err := ArrayToBuffer(client, input, 3, 1)
 	require.NoError(t, err)
+	require.False(t, buffer.IsShared())
 
 	output, outputDims, err := BufferToArray[T](buffer)
 	require.NoError(t, err)
@@ -157,10 +158,18 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 	defer AlignedFree(storage)
 	inputBuffer, err := client.CreateViewOfDeviceBuffer(storage, dtype, shape.Dimensions)
 	require.NoError(t, err)
+	defer func() {
+		err := inputBuffer.Destroy()
+		if err != nil {
+			t.Logf("Failed Buffer.Destroy(): %+v", err)
+		}
+	}()
+
 	flatData := unsafe.Slice((*float32)(storage), shape.Size())
 	for ii := range flatData {
 		flatData[ii] = float32(ii)
 	}
+	require.True(t, inputBuffer.IsShared())
 
 	results, err := exec.Execute(inputBuffer).DonateNone().Done()
 	require.NoError(t, err)
@@ -180,4 +189,64 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, shape.Dimensions, gotDims)
 	require.Equal(t, []float32{1, 12, 3, 4, 5, 6}, gotFlat)
+	require.NoError(t, inputBuffer.Destroy())
+}
+
+func TestNewSharedBuffer(t *testing.T) {
+	if *flagPluginName != "cpu" && !*flagForceCreateViewOfDeviceBuffer {
+		t.Skip("Skipping TestNewSharedBuffer because -plugin != \"cpu\". " +
+			"Set --force_create_view to force executing the test anyway")
+	}
+
+	// Create plugin.
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// f(x) = x + 1
+	dtype := dtypes.Float32
+	shape := xlabuilder.MakeShape(dtype, 2, 3)
+	builder := xlabuilder.New("Add1")
+	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
+	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
+	add1 := must1(xlabuilder.Add(x, one))
+	comp := must1(builder.Build(add1))
+	exec := must1(client.Compile().WithComputation(comp).Done())
+
+	// Input is created as a "Device Buffer View"
+	inputBuffer, flatAny, err := client.NewSharedBuffer(dtype, shape.Dimensions)
+	require.NoError(t, err)
+	defer func() {
+		err := inputBuffer.Destroy()
+		if err != nil {
+			t.Logf("Failed to destroy shared buffer: %+v", err)
+		}
+	}()
+
+	flatData := flatAny.([]float32)
+	for ii := range flatData {
+		flatData[ii] = float32(ii)
+	}
+	require.True(t, inputBuffer.IsShared())
+
+	results, err := exec.Execute(inputBuffer).DonateNone().Done()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	gotFlat, gotDims, err := BufferToArray[float32](results[0])
+	require.NoError(t, err)
+	require.Equal(t, shape.Dimensions, gotDims)
+	require.Equal(t, []float32{1, 2, 3, 4, 5, 6}, gotFlat)
+
+	// Change the buffer directly, and see that we can reuse the buffer in PJRT, without the extra transfer.
+	flatData[1] = 11
+	results, err = exec.Execute(inputBuffer).DonateNone().Done()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	gotFlat, gotDims, err = BufferToArray[float32](results[0])
+	require.NoError(t, err)
+	require.Equal(t, shape.Dimensions, gotDims)
+	require.Equal(t, []float32{1, 12, 3, 4, 5, 6}, gotFlat)
+
+	require.NoError(t, inputBuffer.Destroy())
 }

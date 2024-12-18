@@ -22,6 +22,11 @@ type Buffer struct {
 	cBuffer *C.PJRT_Buffer
 	client  *Client
 
+	// For "shared buffers", with a direct pointer to the underlying data.
+	// This is nil for non-shared-buffers.
+	isShared         bool
+	sharedRawStorage unsafe.Pointer
+
 	dimsSet bool // Whether dims is set.
 	dims    []int
 
@@ -80,8 +85,13 @@ func (b *Buffer) Destroy() error {
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
 	b.client = nil
 	b.cBuffer = nil
-
 	buffersAlive.Add(-1)
+
+	if b.sharedRawStorage != nil {
+		// Shared storage can only be freed after the buffer is destroyed.
+		AlignedFree(b.sharedRawStorage)
+		b.sharedRawStorage = nil
+	}
 	return err
 }
 

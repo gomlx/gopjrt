@@ -1,4 +1,4 @@
-# Next
+# v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 
 * Added `install_linux_amd64_amazonlinux.sh` and pre-built libraries for amazonlinux (built using old glibc support).
 * Fixed installation scripts: s/sudo/$_SUDO. Also made them more verbose.
@@ -25,6 +25,7 @@
   memory with the host, for faster input.
   * Added `AlignedAlloc` and `AlignedFree` required by `client.CreateViewOfDeviceBuffer`.
 * Added `Buffer.Data` for direct access to a buffer's data. Undocumented in PJRT, and likely only works on CPU.
+* Fixed coverage script.
 
 # v0.4.9 - 2024-11-25
 

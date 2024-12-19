@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gomlx/gopjrt/protos/hlo"
-	"github.com/janpfeifer/must"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
@@ -52,32 +51,32 @@ func TestMinimal(t *testing.T) {
 	var hloModule hlo.HloModuleProto
 	if *flagLoadHLO != "" {
 		fmt.Printf("Loading HLO program from %s...\n", *flagLoadHLO)
-		hloSerialized = must.M1(os.ReadFile(*flagLoadHLO))
-		must.M(proto.Unmarshal(hloSerialized, &hloModule))
+		hloSerialized = must1(os.ReadFile(*flagLoadHLO))
+		must(proto.Unmarshal(hloSerialized, &hloModule))
 	} else {
 		// Serialize HLO program from hloText:
-		must.M(prototext.Unmarshal([]byte(hloText), &hloModule))
-		hloSerialized = must.M1(proto.Marshal(&hloModule))
+		must(prototext.Unmarshal([]byte(hloText), &hloModule))
+		hloSerialized = must1(proto.Marshal(&hloModule))
 	}
 	fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
 
 	// `dlopen` PJRT plugin.
-	plugin := must.M1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*flagPluginName))
 	defer runtime.KeepAlive(plugin)
 	fmt.Printf("PJRT: %s\n", plugin.String())
 
 	// Create client.
-	client := must.M1(plugin.NewClient(nil))
+	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 	devices := client.AddressableDevices()
 	for ii, dev := range devices {
-		desc := must.M1(dev.GetDescription())
+		desc := must1(dev.GetDescription())
 		fmt.Printf("\tDevice #%d: %s\n", ii, desc.DebugString())
 	}
 
 	// Compile.
 	defer runtime.KeepAlive(hloSerialized)
-	loadedExec := must.M1(client.Compile().WithHLO(hloSerialized).Done())
+	loadedExec := must1(client.Compile().WithHLO(hloSerialized).Done())
 	defer runtime.KeepAlive(loadedExec)
 	fmt.Printf("\t- program compiled successfully.\n")
 

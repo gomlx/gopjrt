@@ -33,3 +33,22 @@ func TestMapOfNames(t *testing.T) {
 	require.Equal(t, BFloat16, MapOfNames["BF16"])
 	require.Equal(t, BFloat16, MapOfNames["bf16"])
 }
+
+func TestFromAny(t *testing.T) {
+	require.Equal(t, Int64, FromAny(int64(7)))
+	require.Equal(t, Float32, FromAny(float32(13)))
+	require.Equal(t, BFloat16, FromAny(bfloat16.FromFloat32(1.0)))
+	require.Equal(t, Float16, FromAny(float16.Fromfloat32(3.0)))
+}
+
+func TestSize(t *testing.T) {
+	require.Equal(t, 8, Int64.Size())
+	require.Equal(t, 4, Float32.Size())
+	require.Equal(t, 2, BFloat16.Size())
+}
+
+func TestSizeForDimensions(t *testing.T) {
+	require.Equal(t, 2*3*8, Int64.SizeForDimensions(2, 3))
+	require.Equal(t, 4, Float32.SizeForDimensions())
+	require.Equal(t, 2, BFloat16.SizeForDimensions(1, 1, 1))
+}

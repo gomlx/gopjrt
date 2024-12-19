@@ -31,17 +31,15 @@ func cSizeOf[T any]() C.size_t {
 // It must be manually freed with cFree() by the user.
 func cMalloc[T any]() (ptr *T) {
 	size := cSizeOf[T]()
-	cPtr := (*T)(C.malloc(size))
-	C.memset(unsafe.Pointer(cPtr), 0, size)
+	cPtr := (*T)(C.calloc(1, size))
 	return cPtr
 }
 
 // cMallocArray allocates space to hold n copies of T in the C heap and initializes it to zero.
 // It must be manually freed with C.free() by the user.
 func cMallocArray[T any](n int) (ptr *T) {
-	size := cSizeOf[T]() * C.size_t(n)
-	cPtr := (*T)(C.malloc(size))
-	C.memset(unsafe.Pointer(cPtr), 0, size)
+	size := cSizeOf[T]()
+	cPtr := (*T)(C.calloc(C.size_t(n), size))
 	return cPtr
 }
 

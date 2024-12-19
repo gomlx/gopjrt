@@ -152,8 +152,28 @@ func FromAny(value any) DType {
 }
 
 // Size returns the number of bytes for the given DType.
+// If the size is < 1 (like a 4-bits quantity), consider the SizeForDimensions method.
 func (dtype DType) Size() int {
 	return int(dtype.GoType().Size())
+}
+
+// SizeForDimensions returns the size in bytes used for the given dimensions.
+// This is a safer method than Size in case the dtype uses an underlying size that is not multiple of 8 bits.
+//
+// It works also for scalar (one element), where dimensions list is empty.
+func (dtype DType) SizeForDimensions(dimensions ...int) int {
+	numElements := 1
+	for _, dim := range dimensions {
+		if dim <= 0 {
+			panicf("cannot use dim <= 0 for SizeForDimensions, got %v", dimensions)
+		}
+		numElements *= dim
+	}
+
+	// Switch case for dtypes with size not multiple of 8 bits (1 byte).
+
+	// Default is simply the number of elements times the size in bytes per element.
+	return numElements * dtype.Size()
 }
 
 // Memory returns the number of bytes for the given DType.

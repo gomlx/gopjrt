@@ -115,6 +115,7 @@ type Client struct {
 	platform, platformVersion string
 	processIndex              int
 	addressableDevices        []*Device
+	allowBufferViews          bool
 }
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
@@ -276,6 +277,6 @@ func (c *Client) BufferFromHost() *BufferFromHostConfig {
 	return &BufferFromHostConfig{
 		client:              c,
 		device:              nil,
-		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableOnlyDuringCall,
+		hostBufferSemantics: PJRT_HostBufferSemantics_kImmutableUntilTransferCompletes,
 	}
 }

@@ -1,4 +1,4 @@
-# Next
+# v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 
 * Added `install_linux_amd64_amazonlinux.sh` and pre-built libraries for amazonlinux (built using old glibc support).
 * Fixed installation scripts: s/sudo/$_SUDO. Also made them more verbose.
@@ -6,6 +6,26 @@
 * Improved documentation on Nvidia GPU card detection, and error message if not found. 
 * Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
   `main` branch.
+* Added `prjt.arena` to avoid costly allocations for CGO calls, and merged some of CGO calls for general speed-ups.
+  The following functions had > 50% improvements on their fixed-cost (measured on transfers with 1 value, and minimal programs)
+  execution time (**not the variable part**): 
+  * `Buffer.ToHost()`
+  * `Client.BufferFromHost()`
+  * `LoadedExecutable.Execute()`
+* Added `BufferToHost` and `BufferFromHost` benchmarks.
+* Added support for environment variable `XLA_DEBUG_OPTIONS`: if set, it is parsed as a `DebugOptions` proto that
+  is passed to the JIT-compilation of a computation graph.
+* `LoadedExecutable.Execute()` now waits for the end of the execution (by setting
+  `PJRT_LoadedExecutable_Execute_Args.device_complete_events`).
+  Previous behavior lead to odd behavior and was undefined (not documented).
+* Package `dtypes`:
+  * Added tests;
+  * Added `SizeForDimensions()` to be used for dtypes that uses fractions of bytes (like 4 bits).
+* Added `Client.NewSharedBuffer` (and the lower level `client.CreateViewOfDeviceBuffer()`) to create buffers with shared
+  memory with the host, for faster input.
+  * Added `AlignedAlloc` and `AlignedFree` required by `client.CreateViewOfDeviceBuffer`.
+* Added `Buffer.Data` for direct access to a buffer's data. Undocumented in PJRT, and likely only works on CPU.
+* Fixed coverage script.
 
 # v0.4.9 - 2024-11-25
 

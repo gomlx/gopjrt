@@ -3,13 +3,19 @@ package pjrt
 import (
 	"github.com/gomlx/gopjrt/cbuffer"
 	"github.com/gomlx/gopjrt/protos/compile_options"
+	"github.com/gomlx/gopjrt/protos/xla"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"k8s.io/klog/v2"
+	"os"
 	"runtime"
 	"unsafe"
 )
+
+// EnvXlaDebugOptions is an environment variable that can be defined to set XLA DebugOptions proto when compiling
+// a program.
+const EnvXlaDebugOptions = "XLA_DEBUG_OPTIONS"
 
 // CompileConfig is created with Client.Compile, and is a "builder pattern" to configure a compilation call.
 //
@@ -64,6 +70,27 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 		DeviceOrdinal: -1, // -1 means not set.
 		NumReplicas:   1,
 		NumPartitions: 1,
+	}
+
+	debugOptionsStr := os.Getenv(EnvXlaDebugOptions)
+	if debugOptionsStr != "" {
+		debugOptions := &xla.DebugOptions{}
+		err := prototext.Unmarshal([]byte(debugOptionsStr), debugOptions)
+		if err != nil {
+			cc.err = errors.Wrapf(err, "Failed to parse xla.DebugOptions protobuf from $%s=%q", EnvXlaDebugOptions, debugOptionsStr)
+			return cc
+		}
+		// Print configuration.
+		textBytes, err := prototext.MarshalOptions{Multiline: true}.Marshal(debugOptions)
+		if err != nil {
+			klog.Infof("Failed to convert xla.DebugOptions proto to text: %v", err)
+		} else {
+			klog.Infof("This adds 10ms!! of time to the execution of the compiled graph!")
+			klog.Infof("%s=%s -> %s", EnvXlaDebugOptions, debugOptionsStr, textBytes)
+		}
+
+		// Set parsed configuration.
+		cc.options.ExecutableBuildOptions.DebugOptions = debugOptions
 	}
 	return cc
 }

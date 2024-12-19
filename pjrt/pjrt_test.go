@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
 	"testing"
@@ -30,6 +31,17 @@ func capture[T any](value T, err error) errTester[T] {
 func (e errTester[T]) Test(t *testing.T) T {
 	require.NoError(t, e.err)
 	return e.value
+}
+
+func must(err error) {
+	if err != nil {
+		panicf("Failed: %+v", errors.WithStack(err))
+	}
+}
+
+func must1[T any](t T, err error) T {
+	must(err)
+	return t
 }
 
 // getPJRTClient loads a PJRT plugin and create a client to run tests on.

@@ -4,10 +4,6 @@ package pjrt
 #include "pjrt_c_api.h"
 #include "gen_api_calls.h"
 #include "gen_new_struct.h"
-
-PJRT_Buffer_MemoryLayout_Tiled *GetTiledLayoutUnion(PJRT_Buffer_MemoryLayout *layout) {
-	return &(layout->tiled);
-}
 */
 import "C"
 import (
@@ -17,6 +13,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -24,7 +21,25 @@ import (
 type Buffer struct {
 	cBuffer *C.PJRT_Buffer
 	client  *Client
+
+	// For "shared buffers", with a direct pointer to the underlying data.
+	// This is nil for non-shared-buffers.
+	isShared         bool
+	sharedRawStorage unsafe.Pointer
+
+	dimsSet bool // Whether dims is set.
+	dims    []int
+
+	dtypeSet bool // Whether dtype is set.
+	dtype    dtypes.DType
 	// DEBUG: creationStackTrace error
+}
+
+var buffersAlive atomic.Int64
+
+// BuffersAlive returns the number of PJRT Buffers in memory and currently tracked by gopjrt.
+func BuffersAlive() int64 {
+	return buffersAlive.Load()
 }
 
 // newBuffer creates Buffer and registers it for freeing.
@@ -34,6 +49,8 @@ func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 		cBuffer: cBuffer,
 		// DEBUG: creationStackTrace: errors.New("bufferCreation"),
 	}
+	buffersAlive.Add(1)
+
 	runtime.SetFinalizer(b, func(b *Buffer) {
 		/* DEBUG:
 		if b != nil && cBuffer != nil && b.client != nil && b.client.plugin != nil {
@@ -59,25 +76,41 @@ func (b *Buffer) Destroy() error {
 		return nil
 	}
 	defer runtime.KeepAlive(b)
-	args := C.new_PJRT_Buffer_Destroy_Args()
-	defer cFree(args)
+
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
 	b.client = nil
 	b.cBuffer = nil
+	buffersAlive.Add(-1)
+
+	if b.sharedRawStorage != nil {
+		// Shared storage can only be freed after the buffer is destroyed.
+		AlignedFree(b.sharedRawStorage)
+		b.sharedRawStorage = nil
+	}
 	return err
 }
 
 // Dimensions of the Buffer.
+// Returned slice is owned by the buffer, to avoid creating a copy. Don't change it.
 func (b *Buffer) Dimensions() (dims []int, err error) {
 	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
+	if b.dimsSet {
+		return b.dims, nil
+	}
 	defer runtime.KeepAlive(b)
 
-	args := C.new_PJRT_Buffer_Dimensions_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Dimensions_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Dimensions_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Dimensions(b.client.plugin.api, args))
 	if err != nil {
@@ -86,8 +119,9 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	if args.num_dims == 0 {
 		return // dims = nil
 	}
-	dims = slices.Clone(cDataToSlice[int](unsafe.Pointer(args.dims), int(args.num_dims)))
-	return
+	b.dims = slices.Clone(cDataToSlice[int](unsafe.Pointer(args.dims), int(args.num_dims)))
+	b.dimsSet = true
+	return b.dims, nil
 }
 
 // DType of the Buffer (PJRT_Buffer_ElementType).
@@ -98,15 +132,22 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 		return
 	}
 	defer runtime.KeepAlive(b)
+	if b.dtypeSet {
+		return b.dtype, nil
+	}
 
-	args := C.new_PJRT_Buffer_ElementType_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_ElementType_Args](arena)
+	args.struct_size = C.PJRT_Buffer_ElementType_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_ElementType(b.client.plugin.api, args))
 	if err != nil {
 		return
 	}
 	dtype = dtypes.DType(args._type)
+	b.dtype = dtype
+	b.dtypeSet = true
 	return
 }
 
@@ -118,8 +159,10 @@ func (b *Buffer) Device() (device *Device, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	args := C.new_PJRT_Buffer_Device_Args()
-	defer cFree(args)
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Device_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Device_Args_STRUCT_SIZE
 	args.buffer = b.cBuffer
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Device(b.client.plugin.api, args))
 	if err != nil {
@@ -132,203 +175,6 @@ func (b *Buffer) Device() (device *Device, err error) {
 // Client returns the client that created this Buffer.
 func (b *Buffer) Client() *Client {
 	return b.client
-}
-
-// BufferFromHostConfig is used to configure the transfer from a buffer from host memory to on-device memory, it is
-// created with Client.BufferFromHost.
-//
-// The data to transfer from host can be set up with one of the following methods:
-//
-// - FromRawData: it takes as inputs the bytes and shape (dtype and dimensions).
-// - FromFlatDataWithDimensions: it takes as inputs a flat slice and shape (dtype and dimensions).
-//
-// The device defaults to 0, but it can be configured with BufferFromHostConfig.ToDevice or BufferFromHostConfig.ToDeviceNum.
-//
-// At the end call BufferFromHostConfig.Done to actually initiate the transfer.
-//
-// TODO: Implement async transfers, arbitrary memory layout, etc.
-type BufferFromHostConfig struct {
-	client     *Client
-	data       []byte
-	dtype      dtypes.DType
-	dimensions []int
-	device     *Device
-
-	hostBufferSemantics PJRT_HostBufferSemantics
-
-	// err stores the first error that happened during configuration.
-	// If it is not nil, it is immediately returned by the Done call.
-	err error
-}
-
-// FromRawData configures the data from host to copy: a pointer to bytes that must be kept alive (and constant)
-// during the call. The parameters dtype and dimensions provide the shape of the array.
-func (b *BufferFromHostConfig) FromRawData(data []byte, dtype dtypes.DType, dimensions []int) *BufferFromHostConfig {
-	if b.err != nil {
-		return b
-	}
-	b.data = data
-	b.dtype = dtype
-	b.dimensions = dimensions
-	return b
-}
-
-// ToDevice configures which device to copy the host data to.
-//
-// If left un-configured, it will pick the first device returned by Client.AddressableDevices.
-//
-// You can also provide a device by their index in Client.AddressableDevices.
-func (b *BufferFromHostConfig) ToDevice(device *Device) *BufferFromHostConfig {
-	if b.err != nil {
-		return b
-	}
-	if device == nil {
-		b.err = errors.New("BufferFromHost().ToDevice() given a nil device")
-		return b
-	}
-	addressable, err := device.IsAddressable()
-	if err != nil {
-		b.err = errors.WithMessagef(err, "BufferFromHost().ToDevice() failed to check whether device is addressable")
-		return b
-	}
-	if !addressable {
-		b.err = errors.New("BufferFromHost().ToDevice() given a non addressable device")
-		return b
-	}
-	b.device = device
-	return b
-}
-
-// ToDeviceNum configures which device to copy the host data to, given a deviceNum pointing to the device in the
-// list returned by Client.AddressableDevices.
-//
-// If left un-configured, it will pick the first device returned by Client.AddressableDevices.
-//
-// You can also provide a device by their index in Client.AddressableDevices.
-func (b *BufferFromHostConfig) ToDeviceNum(deviceNum int) *BufferFromHostConfig {
-	if b.err != nil {
-		return b
-	}
-	if deviceNum < 0 || deviceNum >= len(b.client.addressableDevices) {
-		b.err = errors.Errorf("BufferFromHost().ToDeviceNum() invalid deviceNum=%d, only %d addressable devices available", deviceNum, len(b.client.addressableDevices))
-		return b
-	}
-	return b.ToDevice(b.client.addressableDevices[deviceNum])
-}
-
-// Done will use the configuration to start the transfer from host to device.
-// It's synchronous: it awaits the transfer to finish and then returns.
-func (b *BufferFromHostConfig) Done() (*Buffer, error) {
-	if b.err != nil {
-		// Return first error saved during configuration.
-		return nil, b.err
-	}
-	if len(b.data) == 0 {
-		return nil, errors.New("BufferFromHost requires one to configure the host data to transfer, none was configured.")
-	}
-
-	// Makes sure program data is not moved around by the GC during the C/C++ call.
-	var pinner runtime.Pinner
-	dataPtr := unsafe.SliceData(b.data)
-	pinner.Pin(b)
-	pinner.Pin(dataPtr)
-	defer func() {
-		pinner.Unpin()
-	}()
-
-	// Set default device.
-	if b.device == nil {
-		devices := b.client.AddressableDevices()
-		if len(devices) == 0 {
-			return nil, errors.New("BufferFromHost can't find addressable device to transfer to")
-		}
-		b.device = devices[0]
-	}
-	pinner.Pin(b.device)
-
-	// Start the call.
-	args := C.new_PJRT_Client_BufferFromHostBuffer_Args()
-	defer cFree(args)
-	pinner.Pin(b.client)
-	args.client = b.client.client
-	args.data = unsafe.Pointer(dataPtr)
-	args._type = C.PJRT_Buffer_Type(b.dtype)
-	args.num_dims = C.size_t(len(b.dimensions))
-	if len(b.dimensions) > 0 {
-		args.dims = cMallocArrayAndSet[C.int64_t](len(b.dimensions), func(i int) C.int64_t {
-			return C.int64_t(b.dimensions[i])
-		})
-	}
-	if args.dims != nil {
-		defer cFree(args.dims)
-	}
-	args.host_buffer_semantics = C.PJRT_HostBufferSemantics(b.hostBufferSemantics)
-	args.device = b.device.cDevice
-	pinner.Pin(b.client.plugin)
-	err := toError(b.client.plugin, C.call_PJRT_Client_BufferFromHostBuffer(b.client.plugin.api, args))
-	if err != nil {
-		return nil, err
-	}
-
-	// We get a PJRT_Buffer even before it's fully transferred.
-	buffer := newBuffer(b.client, args.buffer)
-
-	// Await for transfer to finish.
-	doneEvent := newEvent(b.client.plugin, args.done_with_host_buffer)
-	defer func() { _ = doneEvent.Destroy() }()
-	err = doneEvent.Await()
-	if err != nil {
-		err2 := buffer.Destroy()
-		if err2 != nil {
-			klog.Errorf("Failed to destroy buffer that didn't finish to transfer from host: %+v", err2)
-		}
-		return nil, errors.WithMessage(err, "Failed to finish Client.BufferFromHost transfer")
-	}
-	return buffer, nil
-}
-
-// FromFlatDataWithDimensions configures the data to come from a flat slice of the desired data type, and the underlying
-// dimensions.
-// The flat slice size must match the product of the dimension.
-// If no dimensions are given, it is assumed to be a scalar, and flat should have length 1.
-func (b *BufferFromHostConfig) FromFlatDataWithDimensions(flat any, dimensions []int) *BufferFromHostConfig {
-	if b.err != nil {
-		return b
-	}
-	// Checks dimensions.
-	expectedSize := 1
-	for _, dim := range dimensions {
-		if dim <= 0 {
-			b.err = errors.Errorf("FromFlatDataWithDimensions cannot be given zero or negative dimensions, got %v", dimensions)
-			return b
-		}
-		expectedSize *= dim
-	}
-
-	// Check the flat slice has the right shape.
-	flatV := reflect.ValueOf(flat)
-	if flatV.Kind() != reflect.Slice {
-		b.err = errors.Errorf("FromFlatDataWithDimensions was given a %s for flat, but it requires a slice", flatV.Kind())
-		return b
-	}
-	if flatV.Len() != expectedSize {
-		b.err = errors.Errorf("FromFlatDataWithDimensions(flat, dimensions=%v) needs %d values to match dimensions, but got len(flat)=%d", dimensions, expectedSize, flatV.Len())
-		return b
-	}
-
-	// Check validity of the slice elements type.
-	element0 := flatV.Index(0)
-	element0Type := element0.Type()
-	dtype := dtypes.FromGoType(element0Type)
-	if dtype == dtypes.InvalidDType {
-		b.err = errors.Errorf("FromFlatDataWithDimensions(flat, dimensions%v) got flat=[]%s, expected a slice of a Go tyep that can be converted to a valid DType", dimensions, element0Type)
-		return b
-	}
-
-	// Create slice of bytes and use b.FromRawData.
-	sizeBytes := uintptr(flatV.Len()) * element0Type.Size()
-	data := unsafe.Slice((*byte)(element0.Addr().UnsafePointer()), sizeBytes)
-	return b.FromRawData(data, dtype, dimensions)
 }
 
 // ScalarToRaw generates the raw values needed by BufferFromHostConfig.FromRawData to feed a simple scalar value.
@@ -346,8 +192,13 @@ func (b *Buffer) Size() (int, error) {
 		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(b)
-	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
-	defer cFree(args)
+
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+
+	// It uses a PJRT_Buffer_ToHostBuffer_Args but it doesn't transfer, only inquire about size.
+	args := arenaAlloc[C.PJRT_Buffer_ToHostBuffer_Args](arena)
+	args.struct_size = C.PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE
 	args.src = b.cBuffer
 	args.dst = nil // Don't transfer, only inquire about size.
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
@@ -357,80 +208,8 @@ func (b *Buffer) Size() (int, error) {
 	return int(args.dst_size), nil
 }
 
-// ToHost transfers the contents of buffer stored on device to the host.
-// The space in dst has to hold enough space (see Buffer.Size) to hold the required data, or an error is returned.
-//
-// This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
-// reorganize the layout.
-func (b *Buffer) ToHost(dst []byte) error {
-	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
-		// Already destroyed ?
-		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
-	}
-
-	// Make sure garbage collection doesn't free or move data before they are used by C/C++.
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(unsafe.SliceData(dst))
-	defer pinner.Unpin()
-
-	// We'll need the buffer rank to set up the layout.
-	dims, err := b.Dimensions()
-	if err != nil {
-		return err
-	}
-	rank := len(dims)
-
-	// Prepare arguments for the buffer-to-host call.
-	args := C.new_PJRT_Buffer_ToHostBuffer_Args()
-	defer cFree(args)
-	args.src = b.cBuffer
-	args.dst = unsafe.Pointer(unsafe.SliceData(dst))
-	args.dst_size = C.size_t(len(dst))
-
-	// Layout argument.
-	layoutArgs := C.new_PJRT_Buffer_MemoryLayout()
-	defer cFree(layoutArgs)
-	args.host_layout = layoutArgs
-
-	// Tiled layout must be present, even if there are no tiles (tileArgs.num_tiles==0).
-	layoutArgs._type = C.PJRT_Buffer_MemoryLayout_Type_Tiled
-	tileArgs := C.GetTiledLayoutUnion(layoutArgs)
-
-	// Configure major-to-minor layout into tileArgs, if not scalar.
-	tileArgs.minor_to_major_size = C.size_t(rank)
-	if rank > 0 {
-		tileArgs.minor_to_major = cMallocArray[C.int64_t](rank)
-		minorToMajorMapping := unsafe.Slice(tileArgs.minor_to_major, rank)
-		defer cFree(tileArgs.minor_to_major)
-		for axisIdx := range len(dims) {
-			minorToMajorMapping[axisIdx] = C.int64_t(rank - axisIdx - 1)
-		}
-	}
-
-	err = toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
-	if err != nil {
-		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
-	}
-
-	// Await for transfer to finish.
-	doneEvent := newEvent(b.client.plugin, args.event)
-	defer func() { _ = doneEvent.Destroy() }()
-	err = doneEvent.Await()
-	if err != nil {
-		return errors.WithMessage(err, "Failed to wait Buffer.ToHost transfer to finish")
-	}
-	return nil
-}
-
 // BufferToScalar is a generic function that transfer a Buffer back to host as a scalar of the given type.
 func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dst := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	err = b.ToHost(dst)
 	return
@@ -441,11 +220,6 @@ func BufferToScalar[T dtypes.Supported](b *Buffer) (value T, err error) {
 // It is a shortcut to Client.BufferFromHost call with default parameters.
 // If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
 func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(client)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dtype := dtypes.FromGenericsType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).Done()
@@ -456,11 +230,6 @@ func ScalarToBuffer[T dtypes.Supported](client *Client, value T) (b *Buffer, err
 // It is a shortcut to Client.BufferFromHost call with default parameters.
 // If you need more control where the value will be used you'll have to use Client.BufferFromHost instead.
 func ScalarToBufferOnDeviceNum[T dtypes.Supported](client *Client, deviceNum int, value T) (b *Buffer, err error) {
-	var pinner runtime.Pinner
-	pinner.Pin(client)
-	pinner.Pin(&value)
-	defer pinner.Unpin()
-
 	dtype := dtypes.FromGenericsType[T]()
 	src := unsafe.Slice((*byte)(unsafe.Pointer(&value)), unsafe.Sizeof(value))
 	return client.BufferFromHost().FromRawData(src, dtype, nil).ToDeviceNum(deviceNum).Done()
@@ -503,12 +272,6 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 	}
 	flatValues = make([]T, totalSize)
 	flatValuesPtr := unsafe.SliceData(flatValues)
-
-	var pinner runtime.Pinner
-	pinner.Pin(buffer)
-	pinner.Pin(flatValuesPtr)
-	defer pinner.Unpin()
-
 	dst := unsafe.Slice((*byte)(
 		unsafe.Pointer(flatValuesPtr)),
 		totalSize*int(unsafe.Sizeof(flatValues[0])))
@@ -520,7 +283,6 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 //
 // Similar to the generic BufferToArray[T], but this returns an anonymous typed (`any`) flat slice instead of using generics.
 func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err error) {
-	defer runtime.KeepAlive(b)
 	var dtype dtypes.DType
 	dtype, err = b.DType()
 	if err != nil {
@@ -546,10 +308,6 @@ func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err erro
 	flatValuesPtr := element0.Addr().UnsafePointer()
 	sizeBytes := uintptr(flatV.Len()) * element0.Type().Size()
 
-	var pinner runtime.Pinner
-	pinner.Pin(b)
-	pinner.Pin(flatValuesPtr)
-	defer pinner.Unpin()
 	dst := unsafe.Slice((*byte)(flatValuesPtr), sizeBytes)
 	err = b.ToHost(dst)
 	flat = flatV.Interface()

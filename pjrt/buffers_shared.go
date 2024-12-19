@@ -41,7 +41,7 @@ import (
 //	flat := unsafe.Slice((*float32)(storage), batchSize*sequenceLength*384)
 //	for _, batch := range batches {
 //		// ... set flat values
-//		// ... use buf as input when executing a PJRT program.
+//		// ... use buf as input when executing a PJRT program
 //	}
 //
 // If device is not given (at most one can be given), the first device available for the client is used.
@@ -139,4 +139,63 @@ func (c *Client) NewSharedBuffer(dtype dtypes.DType, dimensions []int, device ..
 // These buffers cannot be donated in execution.
 func (b *Buffer) IsShared() bool {
 	return b.isShared
+}
+
+// UnsafePointer returns platform-dependent address for the given buffer that is often but
+// not guaranteed to be the physical/device address.
+// Consider using the more convenient DirectAccess.
+//
+// Probably, this should only be used by CPU plugins.
+//
+// To be on the safe side, only use this if Client.HasSharedBuffers is true.
+// It uses the undocumented PJRT_Buffer_UnsafePointer.
+func (b *Buffer) UnsafePointer() (unsafe.Pointer, error) {
+	plugin := b.client.plugin
+
+	// Arena for memory allocations used by CGO.
+	arena := getArenaFromPool()
+	defer returnArenaToPool(arena)
+
+	// Arguments to PJRT call.
+	var args *C.PJRT_Buffer_UnsafePointer_Args
+	args = arenaAlloc[C.PJRT_Buffer_UnsafePointer_Args](arena)
+	args.struct_size = C.PJRT_Buffer_UnsafePointer_Args_STRUCT_SIZE
+	args.buffer = b.cBuffer
+	err := toError(plugin, C.call_PJRT_Buffer_UnsafePointer(plugin.api, args))
+	if err != nil {
+		return nil, err
+	}
+	return unsafe.Pointer(uintptr(args.buffer_pointer)), nil
+}
+
+// Data returns the flat slice pointing to the underlying storage data for the buffer.
+//
+// This is an undocumented feature of PJRT and likely only works for CPU platforms.
+// The flat slice returned is only valid while the buffer is alive.
+func (b *Buffer) Data() (flat any, err error) {
+	var rawStorage unsafe.Pointer
+	rawStorage, err = b.UnsafePointer()
+	if err != nil {
+		return nil, err
+	}
+	dims := b.dims
+	dtype := b.dtype
+	if !b.dimsSet {
+		dims, err = b.Dimensions()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !b.dtypeSet {
+		dtype, err = b.DType()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	numElements := 1
+	for _, dim := range dims {
+		numElements *= dim
+	}
+	return reflect.SliceAt(dtype.GoType(), rawStorage, numElements).Interface(), nil
 }

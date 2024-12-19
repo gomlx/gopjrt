@@ -129,11 +129,11 @@ func TestBufferProperties(t *testing.T) {
 	}
 }
 
-var flagForceCreateViewOfDeviceBuffer = flag.Bool(
-	"force_create_view", false, "Force executing TestCreateViewOfDeviceBuffer even if plugin is not CPU.")
+var flagForceSharedBuffer = flag.Bool(
+	"force_shared_buffer", false, "Force executing TestCreateViewOfDeviceBuffer and TestBufferUnsafePointer even if plugin is not \"cpu\".")
 
 func TestCreateViewOfDeviceBuffer(t *testing.T) {
-	if *flagPluginName != "cpu" && !*flagForceCreateViewOfDeviceBuffer {
+	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
 		t.Skip("Skipping TestCreateViewOfDeviceBuffer because -plugin != \"cpu\". " +
 			"Set --force_create_view to force executing the test anyway")
 	}
@@ -193,7 +193,7 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 }
 
 func TestNewSharedBuffer(t *testing.T) {
-	if *flagPluginName != "cpu" && !*flagForceCreateViewOfDeviceBuffer {
+	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
 		t.Skip("Skipping TestNewSharedBuffer because -plugin != \"cpu\". " +
 			"Set --force_create_view to force executing the test anyway")
 	}
@@ -249,4 +249,50 @@ func TestNewSharedBuffer(t *testing.T) {
 	require.Equal(t, []float32{1, 12, 3, 4, 5, 6}, gotFlat)
 
 	require.NoError(t, inputBuffer.Destroy())
+}
+
+func TestBufferData(t *testing.T) {
+	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
+		t.Skip("Skipping TestNewSharedBuffer because -plugin != \"cpu\". " +
+			"Set --force_create_view to force executing the test anyway")
+	}
+
+	// Create plugin.
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// f(x) = x + 1
+	dtype := dtypes.Float32
+	shape := xlabuilder.MakeShape(dtype, 2, 3)
+	builder := xlabuilder.New("Add1")
+	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
+	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
+	add1 := must1(xlabuilder.Add(x, one))
+	comp := must1(builder.Build(add1))
+	exec := must1(client.Compile().WithComputation(comp).Done())
+
+	// Input is created as a "Device Buffer View"
+	inputBuffer, flatAny, err := client.NewSharedBuffer(dtype, shape.Dimensions)
+	require.NoError(t, err)
+	defer func() {
+		err := inputBuffer.Destroy()
+		if err != nil {
+			t.Logf("Failed to destroy shared buffer: %+v", err)
+		}
+	}()
+
+	flatData := flatAny.([]float32)
+	for ii := range flatData {
+		flatData[ii] = float32(ii)
+	}
+	require.True(t, inputBuffer.IsShared())
+
+	results, err := exec.Execute(inputBuffer).DonateNone().Done()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+
+	flatOutput, err := results[0].Data()
+	require.NoError(t, err)
+	require.Equal(t, []float32{1, 2, 3, 4, 5, 6}, flatOutput.([]float32))
 }

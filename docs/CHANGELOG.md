@@ -21,9 +21,10 @@
 * Package `dtypes`:
   * Added tests;
   * Added `SizeForDimensions()` to be used for dtypes that uses fractions of bytes (like 4 bits).
-* Added `client.NewSharedBuffer` (and the lower level `client.CreateViewOfDeviceBuffer()`) to create buffers with shared 
+* Added `Client.NewSharedBuffer` (and the lower level `client.CreateViewOfDeviceBuffer()`) to create buffers with shared
   memory with the host, for faster input.
   * Added `AlignedAlloc` and `AlignedFree` required by `client.CreateViewOfDeviceBuffer`.
+* Added `Buffer.Data` for direct access to a buffer's data. Undocumented in PJRT, and likely only works on CPU.
 
 # v0.4.9 - 2024-11-25
 

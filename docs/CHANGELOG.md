@@ -1,3 +1,7 @@
+# Next
+
+* Issue #21: use syscall.Dup3 instead of syscall.Dup2 for Arm64 compatibility.
+
 # v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 
 * Added `install_linux_amd64_amazonlinux.sh` and pre-built libraries for amazonlinux (built using old glibc support).

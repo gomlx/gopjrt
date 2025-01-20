@@ -266,7 +266,7 @@ func SuppressAbseilLoggingHack(fn func()) {
 	} else {
 		defer func() {
 			// Revert suppression: revert back newFd to 2
-			err := syscall.Dup2(newFd, 2)
+			err := syscall.Dup3(newFd, 2, 0)
 			if err != nil {
 				klog.Errorf("Failed sycall.Dup2 while reverting suppression of logging: %v", err)
 			}

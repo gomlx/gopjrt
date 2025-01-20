@@ -5,8 +5,37 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"math"
 	"testing"
 )
+
+// TestMax tests the Max function, as part of the ReduceMax test.
+// See https://github.com/openxla/xla/issues/21461
+func TestMax(t *testing.T) {
+	client := getPJRTClient(t)
+	{
+		builder := New(fmt.Sprintf("%s-Max(NaN, 1) as Constant", t.Name()))
+		input0 := capture(Constant(builder, NewScalarLiteral(math.NaN()))).Test(t)
+		input1 := capture(Constant(builder, NewScalarLiteral(1.0))).Test(t)
+		output := capture(Max(input0, input1)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got := execScalarOutput[float64](t, client, exec)
+		require.True(t, math.IsNaN(got))
+		builder.Destroy()
+	}
+	{
+		builder := New(fmt.Sprintf("%s-Max(NaN, 1) as Parameter", t.Name()))
+		input0 := capture(Parameter(builder, "x", 0, MakeShape(dtypes.Float64))).Test(t)
+		input1 := capture(Parameter(builder, "y", 1, MakeShape(dtypes.Float64))).Test(t)
+		input0 = capture(Sqrt(input0)).Test(t)
+		input1 = capture(Sqrt(input1)).Test(t)
+		output := capture(Max(input0, input1)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got := execWithScalars(t, client, exec, -1.0, 1.0)
+		require.True(t, math.IsNaN(got))
+		builder.Destroy()
+	}
+}
 
 func TestReduce(t *testing.T) {
 	client := getPJRTClient(t)
@@ -30,6 +59,35 @@ func TestReduce(t *testing.T) {
 		got, dims := execArrayOutput[float32](t, client, exec)
 		require.Equal(t, []float32{6.2, 7.5, 8.8}, got)
 		require.Equal(t, []int{3}, dims)
+		builder.Destroy()
+	}
+
+	{
+		builder := New(fmt.Sprintf("%s-ReduceMax with NaN as constant", t.Name()))
+		literal := capture(NewArrayLiteral([]float32{float32(math.NaN()), 1}, 2)).Test(t)
+		input := capture(Constant(builder, literal)).Test(t)
+		output := capture(ReduceMax(input, 0)).Test(t)
+		comp := capture(builder.Build(output)).Test(t)
+		fmt.Printf("HLO:\n%s\n", comp.TextHLO())
+		exec := compile(t, client, comp)
+		got := execWithScalars[float32](t, client, exec)
+		require.True(t, math.IsNaN(float64(got)))
+		builder.Destroy()
+	}
+
+	{
+		builder := New(fmt.Sprintf("%s-ReduceMax with NaN as parameter", t.Name()))
+		input := capture(Parameter(builder, "x", 0, MakeShape(dtypes.Float32, 2))).Test(t)
+		output := capture(ReduceMax(input, 0)).Test(t)
+		comp := capture(builder.Build(output)).Test(t)
+		fmt.Printf("HLO:\n%s\n", comp.TextHLO())
+		exec := compile(t, client, comp)
+		got, dims := execWithSlices(t, client, exec, []float32{float32(math.NaN()), 1})
+		require.Empty(t, dims)
+		fmt.Printf("got: %f -- Should be NAN, but with CPU PJRT it's not\n", got[0])
+		// TODO: re-enable this test when bug is fixed.
+		// See https://github.com/openxla/xla/issues/21461
+		// require.True(t, math.IsNaN(float64(got[0])))
 		builder.Destroy()
 	}
 
@@ -96,6 +154,25 @@ func TestReduce(t *testing.T) {
 			require.Equal(t, wantForOr[ii], got)
 			builder.Destroy()
 		}
+	}
+}
+
+func TestReduceMaxBuggy(t *testing.T) {
+	client := getPJRTClient(t)
+	{
+		builder := New(fmt.Sprintf("%s-ReduceMax with NaN as parameter", t.Name()))
+		input := capture(Parameter(builder, "x", 0, MakeShape(dtypes.Float32, 2))).Test(t)
+		output := capture(ReduceMax(input, 0)).Test(t)
+		comp := capture(builder.Build(output)).Test(t)
+		fmt.Printf("HLO:\n%s\n", comp.TextHLO())
+		exec := compile(t, client, comp)
+		got, dims := execWithSlices(t, client, exec, []float32{float32(math.NaN()), 1})
+		require.Empty(t, dims)
+		fmt.Printf("got: %f -- Should be NAN, but with CPU PJRT it's not\n", got[0])
+		// TODO: re-enable this test when bug is fixed.
+		// See https://github.com/openxla/xla/issues/21461
+		//require.True(t, math.IsNaN(float64(got[0])))
+		builder.Destroy()
 	}
 }
 

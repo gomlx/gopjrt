@@ -6,6 +6,7 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/pjrt"
 	. "github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
 	"os"
@@ -73,20 +74,30 @@ func compile(t *testing.T, client *pjrt.Client, comp *XlaComputation) (exec *pjr
 // execWithScalars executes the program on the input value given, and return the output.
 // Both input and output expected to be a scalar.
 // Any errors fail the test.
-func execWithScalars[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable, input T) T {
-	inputBuffer, err := pjrt.ScalarToBuffer(client, input)
-	require.NoErrorf(t, err, "Failed to create on-device buffer for input %v", input)
-	defer func() { require.NoError(t, inputBuffer.Destroy()) }()
+func execWithScalars[T dtypes.Supported](t *testing.T, client *pjrt.Client, exec *pjrt.LoadedExecutable, inputs ...T) T {
+	inputBuffers := make([]*pjrt.Buffer, len(inputs))
+	defer func() {
+		for _, buf := range inputBuffers {
+			if buf != nil {
+				assert.NoError(t, buf.Destroy())
+			}
+		}
+	}()
+	var err error
+	for ii, input := range inputs {
+		inputBuffers[ii], err = pjrt.ScalarToBuffer(client, input)
+		require.NoErrorf(t, err, "Failed to create on-device buffer for input %v", input)
+	}
 
-	outputBuffers, err := exec.Execute(inputBuffer).Done()
-	require.NoErrorf(t, err, "Failed to execute on input %v", input)
+	outputBuffers, err := exec.Execute(inputBuffers...).Done()
+	require.NoErrorf(t, err, "Failed to execute on inputs %v", inputs)
 	require.Len(t, outputBuffers, 1, "Expected only one output")
 	defer func() { require.NoError(t, outputBuffers[0].Destroy()) }()
 
 	// Transfer output on-device buffer to a "host" value (in Go).
 	output, err := pjrt.BufferToScalar[T](outputBuffers[0])
-	fmt.Printf("  > f(%v)=%v\n", input, output)
-	require.NoErrorf(t, err, "Failed to transfer results of %q execution on input %d", exec.Name, input)
+	fmt.Printf("  > f(%v)=%v\n", inputs, output)
+	require.NoErrorf(t, err, "Failed to transfer results of %q execution on inputs %v", exec.Name, inputs)
 	return output
 }
 

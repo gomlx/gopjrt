@@ -10,7 +10,7 @@ RUN wget https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelis
     chmod +x /usr/local/bin/bazelisk
 
 # Install protoc
-RUN wget https://github.com/protocolbuffers/protobuf/releases/latest/download/protoc-29.0-linux-x86_64.zip -O protoc.zip && \
+RUN wget https://github.com/protocolbuffers/protobuf/releases/latest/download/protoc-29.3-linux-x86_64.zip -O protoc.zip && \
     unzip protoc.zip -d protoc && \
     cp protoc/bin/* /usr/local/bin/ && \
     rm -rf protoc.zip protoc

@@ -315,7 +315,7 @@ func Sub(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Div returns the element-wise subtraction of the two values.
+// Div returns the element-wise division of the two values.
 // Standard broadcasting rules apply (see documentation).
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Div(x0, x1 *Op) (*Op, error) {

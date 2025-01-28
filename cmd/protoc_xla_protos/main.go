@@ -33,6 +33,7 @@ var protos = []string{
 	"xla/pjrt/compile_options.proto",
 	"xla/service/hlo.proto",
 	"xla/service/metrics.proto",
+	"xla/stream_executor/cuda/cuda_compute_capability.proto",
 	"xla/stream_executor/device_description.proto",
 	"xla/xla.proto",
 	"xla/xla_data.proto",

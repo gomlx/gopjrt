@@ -95,7 +95,7 @@ Mul:two
 // Sub returns the element-wise subtraction of the two values.
 // Standard broadcasting rules apply (see documentation).
 Sub:two
-// Div returns the element-wise subtraction of the two values.
+// Div returns the element-wise division of the two values.
 // Standard broadcasting rules apply (see documentation).
 Div:two
 // Rem returns the remainder operation, also known as modulo (or Mod for short).

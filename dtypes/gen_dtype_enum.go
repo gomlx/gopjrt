@@ -116,6 +116,13 @@ const (
 
 	// F8E3M4 is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E3M4).
 	F8E3M4 DType = 27
+
+	// F8E8M0FNU is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F8E8M0FNU).
+	F8E8M0FNU DType = 28
+
+	// F4E2M1FN is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h (as PJRT_Buffer_Type_F4E2M1FN).
+	// 4-bit MX floating-point format.
+	F4E2M1FN DType = 29
 )
 
 // Aliases from PJRT C API.
@@ -216,6 +223,8 @@ var MapOfNames = map[string]DType{
 	"U2":            U2,
 	"F8E4M3":        F8E4M3,
 	"F8E3M4":        F8E3M4,
+	"F8E8M0FNU":     F8E8M0FNU,
+	"F4E2M1FN":      F4E2M1FN,
 }
 
 // PrimitiveType returns the DType equivalent used in C++ XlaBuilder.
@@ -281,6 +290,10 @@ func (dtype DType) PrimitiveType() xla_data.PrimitiveType {
 		return xla_data.PrimitiveType_F8E4M3
 	case F8E3M4:
 		return xla_data.PrimitiveType_F8E3M4
+	case F8E8M0FNU:
+		return xla_data.PrimitiveType_F8E8M0FNU
+	case F4E2M1FN:
+		return xla_data.PrimitiveType_F4E2M1FN
 	default:
 		return xla_data.PrimitiveType_PRIMITIVE_TYPE_INVALID
 	}
@@ -349,6 +362,10 @@ func FromPrimitiveType(primitiveType xla_data.PrimitiveType) DType {
 		return F8E4M3
 	case xla_data.PrimitiveType_F8E3M4:
 		return F8E3M4
+	case xla_data.PrimitiveType_F8E8M0FNU:
+		return F8E8M0FNU
+	case xla_data.PrimitiveType_F4E2M1FN:
+		return F4E2M1FN
 	default:
 		return InvalidDType
 	}

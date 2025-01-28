@@ -115,6 +115,14 @@ PJRT_KeyValueGetCallback_Args* new_PJRT_KeyValueGetCallback_Args() {
 	return p;
 }
 
+// new_PJRT_KeyValueTryGetCallback_Args allocates a zero-initialized C.PJRT_KeyValueTryGetCallback_Args structure, sets its .struct_size, and returns it.
+PJRT_KeyValueTryGetCallback_Args* new_PJRT_KeyValueTryGetCallback_Args() {
+	PJRT_KeyValueTryGetCallback_Args* p = malloc(sizeof(PJRT_KeyValueTryGetCallback_Args));
+	memset(p, 0, sizeof(PJRT_KeyValueTryGetCallback_Args));
+	p->struct_size = PJRT_KeyValueTryGetCallback_Args_STRUCT_SIZE;
+	return p;
+}
+
 // new_PJRT_KeyValuePutCallback_Args allocates a zero-initialized C.PJRT_KeyValuePutCallback_Args structure, sets its .struct_size, and returns it.
 PJRT_KeyValuePutCallback_Args* new_PJRT_KeyValuePutCallback_Args() {
 	PJRT_KeyValuePutCallback_Args* p = malloc(sizeof(PJRT_KeyValuePutCallback_Args));
@@ -235,11 +243,51 @@ PJRT_Client_DefaultDeviceAssignment_Args* new_PJRT_Client_DefaultDeviceAssignmen
 	return p;
 }
 
-// new_PJRT_Buffer_MemoryLayout_Tiled allocates a zero-initialized C.PJRT_Buffer_MemoryLayout_Tiled structure, sets its .struct_size, and returns it.
-PJRT_Buffer_MemoryLayout_Tiled* new_PJRT_Buffer_MemoryLayout_Tiled() {
-	PJRT_Buffer_MemoryLayout_Tiled* p = malloc(sizeof(PJRT_Buffer_MemoryLayout_Tiled));
-	memset(p, 0, sizeof(PJRT_Buffer_MemoryLayout_Tiled));
-	p->struct_size = PJRT_Buffer_MemoryLayout_Tiled_STRUCT_SIZE;
+// new_PJRT_Client_DmaMap_Args allocates a zero-initialized C.PJRT_Client_DmaMap_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_DmaMap_Args* new_PJRT_Client_DmaMap_Args() {
+	PJRT_Client_DmaMap_Args* p = malloc(sizeof(PJRT_Client_DmaMap_Args));
+	memset(p, 0, sizeof(PJRT_Client_DmaMap_Args));
+	p->struct_size = PJRT_Client_DmaMap_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_Client_DmaUnmap_Args allocates a zero-initialized C.PJRT_Client_DmaUnmap_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_DmaUnmap_Args* new_PJRT_Client_DmaUnmap_Args() {
+	PJRT_Client_DmaUnmap_Args* p = malloc(sizeof(PJRT_Client_DmaUnmap_Args));
+	memset(p, 0, sizeof(PJRT_Client_DmaUnmap_Args));
+	p->struct_size = PJRT_Client_DmaUnmap_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_AsyncHostToDeviceTransferManager_Destroy_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_Destroy_Args structure, sets its .struct_size, and returns it.
+PJRT_AsyncHostToDeviceTransferManager_Destroy_Args* new_PJRT_AsyncHostToDeviceTransferManager_Destroy_Args() {
+	PJRT_AsyncHostToDeviceTransferManager_Destroy_Args* p = malloc(sizeof(PJRT_AsyncHostToDeviceTransferManager_Destroy_Args));
+	memset(p, 0, sizeof(PJRT_AsyncHostToDeviceTransferManager_Destroy_Args));
+	p->struct_size = PJRT_AsyncHostToDeviceTransferManager_Destroy_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_AsyncHostToDeviceTransferManager_TransferData_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_TransferData_Args structure, sets its .struct_size, and returns it.
+PJRT_AsyncHostToDeviceTransferManager_TransferData_Args* new_PJRT_AsyncHostToDeviceTransferManager_TransferData_Args() {
+	PJRT_AsyncHostToDeviceTransferManager_TransferData_Args* p = malloc(sizeof(PJRT_AsyncHostToDeviceTransferManager_TransferData_Args));
+	memset(p, 0, sizeof(PJRT_AsyncHostToDeviceTransferManager_TransferData_Args));
+	p->struct_size = PJRT_AsyncHostToDeviceTransferManager_TransferData_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args structure, sets its .struct_size, and returns it.
+PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args* new_PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args() {
+	PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args* p = malloc(sizeof(PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args));
+	memset(p, 0, sizeof(PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args));
+	p->struct_size = PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args structure, sets its .struct_size, and returns it.
+PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args* new_PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args() {
+	PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args* p = malloc(sizeof(PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args));
+	memset(p, 0, sizeof(PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args));
+	p->struct_size = PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args_STRUCT_SIZE;
 	return p;
 }
 
@@ -275,6 +323,22 @@ PJRT_Client_CreateViewOfDeviceBuffer_Args* new_PJRT_Client_CreateViewOfDeviceBuf
 	PJRT_Client_CreateViewOfDeviceBuffer_Args* p = malloc(sizeof(PJRT_Client_CreateViewOfDeviceBuffer_Args));
 	memset(p, 0, sizeof(PJRT_Client_CreateViewOfDeviceBuffer_Args));
 	p->struct_size = PJRT_Client_CreateViewOfDeviceBuffer_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_ShapeSpec allocates a zero-initialized C.PJRT_ShapeSpec structure, sets its .struct_size, and returns it.
+PJRT_ShapeSpec* new_PJRT_ShapeSpec() {
+	PJRT_ShapeSpec* p = malloc(sizeof(PJRT_ShapeSpec));
+	memset(p, 0, sizeof(PJRT_ShapeSpec));
+	p->struct_size = PJRT_ShapeSpec_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_Client_CreateBuffersForAsyncHostToDevice_Args allocates a zero-initialized C.PJRT_Client_CreateBuffersForAsyncHostToDevice_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_CreateBuffersForAsyncHostToDevice_Args* new_PJRT_Client_CreateBuffersForAsyncHostToDevice_Args() {
+	PJRT_Client_CreateBuffersForAsyncHostToDevice_Args* p = malloc(sizeof(PJRT_Client_CreateBuffersForAsyncHostToDevice_Args));
+	memset(p, 0, sizeof(PJRT_Client_CreateBuffersForAsyncHostToDevice_Args));
+	p->struct_size = PJRT_Client_CreateBuffersForAsyncHostToDevice_Args_STRUCT_SIZE;
 	return p;
 }
 

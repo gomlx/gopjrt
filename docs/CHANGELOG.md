@@ -3,6 +3,10 @@
 # v0.5.1 - 2025/01/28
 
 * Issue #21: use syscall.Dup3 instead of syscall.Dup2 for Arm64 compatibility.
+* Added ReduceMax test for pending issue.
+* Sync up with [OpenXLA](https://github.com/openxla/xla):
+  * Updated protos, adding new one.
+  * Updated auto-generated code.
 
 # v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 

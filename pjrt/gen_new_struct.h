@@ -52,6 +52,9 @@ extern PJRT_Event_OnReady_Args* new_PJRT_Event_OnReady_Args();
 // new_PJRT_KeyValueGetCallback_Args allocates a zero-initialized C.PJRT_KeyValueGetCallback_Args structure, sets its .struct_size, and returns it.
 extern PJRT_KeyValueGetCallback_Args* new_PJRT_KeyValueGetCallback_Args();
 
+// new_PJRT_KeyValueTryGetCallback_Args allocates a zero-initialized C.PJRT_KeyValueTryGetCallback_Args structure, sets its .struct_size, and returns it.
+extern PJRT_KeyValueTryGetCallback_Args* new_PJRT_KeyValueTryGetCallback_Args();
+
 // new_PJRT_KeyValuePutCallback_Args allocates a zero-initialized C.PJRT_KeyValuePutCallback_Args structure, sets its .struct_size, and returns it.
 extern PJRT_KeyValuePutCallback_Args* new_PJRT_KeyValuePutCallback_Args();
 
@@ -97,8 +100,23 @@ extern PJRT_Client_Compile_Args* new_PJRT_Client_Compile_Args();
 // new_PJRT_Client_DefaultDeviceAssignment_Args allocates a zero-initialized C.PJRT_Client_DefaultDeviceAssignment_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_DefaultDeviceAssignment_Args* new_PJRT_Client_DefaultDeviceAssignment_Args();
 
-// new_PJRT_Buffer_MemoryLayout_Tiled allocates a zero-initialized C.PJRT_Buffer_MemoryLayout_Tiled structure, sets its .struct_size, and returns it.
-extern PJRT_Buffer_MemoryLayout_Tiled* new_PJRT_Buffer_MemoryLayout_Tiled();
+// new_PJRT_Client_DmaMap_Args allocates a zero-initialized C.PJRT_Client_DmaMap_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_DmaMap_Args* new_PJRT_Client_DmaMap_Args();
+
+// new_PJRT_Client_DmaUnmap_Args allocates a zero-initialized C.PJRT_Client_DmaUnmap_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_DmaUnmap_Args* new_PJRT_Client_DmaUnmap_Args();
+
+// new_PJRT_AsyncHostToDeviceTransferManager_Destroy_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_Destroy_Args structure, sets its .struct_size, and returns it.
+extern PJRT_AsyncHostToDeviceTransferManager_Destroy_Args* new_PJRT_AsyncHostToDeviceTransferManager_Destroy_Args();
+
+// new_PJRT_AsyncHostToDeviceTransferManager_TransferData_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_TransferData_Args structure, sets its .struct_size, and returns it.
+extern PJRT_AsyncHostToDeviceTransferManager_TransferData_Args* new_PJRT_AsyncHostToDeviceTransferManager_TransferData_Args();
+
+// new_PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args structure, sets its .struct_size, and returns it.
+extern PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args* new_PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args();
+
+// new_PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args allocates a zero-initialized C.PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args structure, sets its .struct_size, and returns it.
+extern PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args* new_PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args();
 
 // new_PJRT_Buffer_MemoryLayout_Strides allocates a zero-initialized C.PJRT_Buffer_MemoryLayout_Strides structure, sets its .struct_size, and returns it.
 extern PJRT_Buffer_MemoryLayout_Strides* new_PJRT_Buffer_MemoryLayout_Strides();
@@ -114,6 +132,12 @@ extern PJRT_Client_BufferFromHostBuffer_Args* new_PJRT_Client_BufferFromHostBuff
 
 // new_PJRT_Client_CreateViewOfDeviceBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateViewOfDeviceBuffer_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_CreateViewOfDeviceBuffer_Args* new_PJRT_Client_CreateViewOfDeviceBuffer_Args();
+
+// new_PJRT_ShapeSpec allocates a zero-initialized C.PJRT_ShapeSpec structure, sets its .struct_size, and returns it.
+extern PJRT_ShapeSpec* new_PJRT_ShapeSpec();
+
+// new_PJRT_Client_CreateBuffersForAsyncHostToDevice_Args allocates a zero-initialized C.PJRT_Client_CreateBuffersForAsyncHostToDevice_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_CreateBuffersForAsyncHostToDevice_Args* new_PJRT_Client_CreateBuffersForAsyncHostToDevice_Args();
 
 // new_PJRT_DeviceDescription_Id_Args allocates a zero-initialized C.PJRT_DeviceDescription_Id_Args structure, sets its .struct_size, and returns it.
 extern PJRT_DeviceDescription_Id_Args* new_PJRT_DeviceDescription_Id_Args();

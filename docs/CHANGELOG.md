@@ -1,4 +1,6 @@
-# Next
+# Gopjrt Changelog
+
+# v0.5.1 - 2025/01/28
 
 * Issue #21: use syscall.Dup3 instead of syscall.Dup2 for Arm64 compatibility.
 

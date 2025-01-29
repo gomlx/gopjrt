@@ -80,6 +80,9 @@ BUILD_FLAGS="${BUILD_FLAGS:---keep_going --verbose_failures --sandbox_debug}"
 # (for cross-compilation).
 if [[ -z "${TARGET_OS}" ]] ; then
   TARGET_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+  if [[ -e "/etc/amazon-linux-release" ]] ; then
+    TARGET_OS="amazonlinux"
+  fi
 fi
 if [[ -z "${TARGET_ARCH}" ]] ; then
   TARGET_ARCH="$(uname -m)"
@@ -94,10 +97,16 @@ BUILD_TARGET="${BUILD_TARGET:-:gomlx_xlabuilder_${TARGET_PLATFORM}}"
 BUILD_FLAGS="${BUILD_FLAGS} --action_env=TARGET_PLATFORM=${TARGET_PLATFORM} --define=TARGET_PLATFORM=${TARGET_PLATFORM}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${TARGET_PLATFORM}.bazelrc"
 
+
 # Switch statement for TARGET_PLATFORM.
 case "${TARGET_PLATFORM}" in
   "linux_amd64")
     echo "Building for Linux amd64"
+    BUILD_FLAGS="${BUILD_FLAGS} --config=linux"
+    ;;
+
+  "amazonlinux_amd64")
+    echo "Building for Amazon Linux amd64"
     BUILD_FLAGS="${BUILD_FLAGS} --config=linux"
     ;;
 

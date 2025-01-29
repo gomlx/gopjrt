@@ -9,6 +9,7 @@
   * Updated auto-generated code.
 * Added `ShiftLeft`, `ShiftRightLogical` and `ShiftRightArithmetic`.
 * Fixed documentation of `And`, `Or` and `Xor`: they work for logical and bitwise operations.
+* Separate build for `amazonlinux`.
 
 # v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 

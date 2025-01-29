@@ -89,4 +89,7 @@ const (
 	ErfOp
 	IsFiniteOp
 	PopulationCountOp
+	ShiftLeftOp
+	ShiftRightArithmeticOp
+	ShiftRightLogicalOp
 )

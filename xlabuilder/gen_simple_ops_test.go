@@ -71,6 +71,12 @@ func TestSimpleOps(t *testing.T) {
 	require.NoError(t, err, "Failed to build binary operation Max")
 	x, err = Pow(x, x)
 	require.NoError(t, err, "Failed to build binary operation Pow")
+	x, err = ShiftLeft(x, x)
+	require.NoError(t, err, "Failed to build binary operation ShiftLeft")
+	x, err = ShiftRightArithmetic(x, x)
+	require.NoError(t, err, "Failed to build binary operation ShiftRightArithmetic")
+	x, err = ShiftRightLogical(x, x)
+	require.NoError(t, err, "Failed to build binary operation ShiftRightLogical")
 
 	// Binary-comparison op.
 	var result, cmp *Op

@@ -792,3 +792,57 @@ func PopulationCount(x *Op) (*Op, error) {
 	}
 	return y, nil
 }
+
+// ShiftLeft n bits, preserving the sign. So ShiftLeft(-1, 1) = -2.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func ShiftLeft(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of ShiftLeft(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(ShiftLeftOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// ShiftRightArithmetic shifts right by n bits, preserving the sign bit. So ShiftRight(-2, 1) = -1.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func ShiftRightArithmetic(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of ShiftRightArithmetic(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(ShiftRightArithmeticOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// ShiftRightLogical shifts right by n bits, destroying the sign bit.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func ShiftRightLogical(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of ShiftRightLogical(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(ShiftRightLogicalOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}

@@ -1,4 +1,6 @@
-build --action_env GCC_HOST_COMPILER_PATH=/usr/bin/gcc
+# build --action_env GCC_HOST_COMPILER_PATH=/usr/bin/gcc
+build --action_env GCC_HOST_COMPILER_PATH=/usr/bin/x86_64-linux-gnu-gcc-13
+build --action_env LD_LIBRARY_PATH=/usr/local/lib:/home/janpf/src/vcpkg/installed/x64-linux/lib
 build --action_env PYTHON_BIN_PATH=/usr/bin/python3
 build --python_path /usr/bin/python3
 test --test_env LD_LIBRARY_PATH

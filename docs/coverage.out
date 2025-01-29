@@ -199,6 +199,9 @@ github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:742:	LessThanTotalOrder			7
 github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:760:	Erf					83.3%
 github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:774:	IsFinite				83.3%
 github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:786:	PopulationCount				83.3%
+github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:798:	ShiftLeft				70.0%
+github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:816:	ShiftRightArithmetic			70.0%
+github.com/gomlx/gopjrt/xlabuilder/gen_simple_ops.go:834:	ShiftRightLogical			70.0%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:27:		NewLiteralFromShape			66.7%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:47:		NewArrayLiteral				72.7%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:70:		Data					0.0%
@@ -206,8 +209,8 @@ github.com/gomlx/gopjrt/xlabuilder/literal.go:76:		NewScalarLiteral			83.3%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:91:		NewScalarLiteralFromFloat64		68.8%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:122:		NewScalarLiteralFromAny			75.0%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:142:		NewArrayLiteralFromAny			81.8%
-github.com/gomlx/gopjrt/xlabuilder/literal.go:177:		newLiteral				83.3%
-github.com/gomlx/gopjrt/xlabuilder/literal.go:189:		Destroy					100.0%
+github.com/gomlx/gopjrt/xlabuilder/literal.go:177:		newLiteral				66.7%
+github.com/gomlx/gopjrt/xlabuilder/literal.go:189:		Destroy					80.0%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:199:		IsNil					100.0%
 github.com/gomlx/gopjrt/xlabuilder/literal.go:204:		Shape					0.0%
 github.com/gomlx/gopjrt/xlabuilder/op.go:60:			newOp					100.0%
@@ -216,7 +219,7 @@ github.com/gomlx/gopjrt/xlabuilder/op.go:75:			opFinalizer				80.0%
 github.com/gomlx/gopjrt/xlabuilder/op.go:87:			serializeToC				100.0%
 github.com/gomlx/gopjrt/xlabuilder/op.go:125:			destroyCSerializedOp			100.0%
 github.com/gomlx/gopjrt/xlabuilder/optype_string.go:7:		_					0.0%
-github.com/gomlx/gopjrt/xlabuilder/optype_string.go:100:	String					0.0%
+github.com/gomlx/gopjrt/xlabuilder/optype_string.go:103:	String					0.0%
 github.com/gomlx/gopjrt/xlabuilder/reduce.go:43:		GetReduceComputationAndInitialValue	65.6%
 github.com/gomlx/gopjrt/xlabuilder/reduce.go:148:		Reduce					80.0%
 github.com/gomlx/gopjrt/xlabuilder/reduce.go:164:		simpleReduceImpl			72.7%
@@ -345,4 +348,4 @@ github.com/gomlx/gopjrt/xlabuilder/xlacomputation.go:89:	HasStableHLO				100.0%
 github.com/gomlx/gopjrt/xlabuilder/xlacomputation.go:99:	SerializedStableHLO			0.0%
 github.com/gomlx/gopjrt/xlabuilder/xlacomputation.go:121:	TextHLO					66.7%
 github.com/gomlx/gopjrt/xlabuilder/xlacomputation.go:133:	TextStableHLO				0.0%
-total:								(statements)				70.0%
+total:								(statements)				69.9%

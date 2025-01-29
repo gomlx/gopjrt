@@ -31,9 +31,9 @@ PJRT_Error* call_PJRT_Plugin_Initialize(const PJRT_Api *api, PJRT_Plugin_Initial
 }
 
 // call_PJRT_Plugin_Attributes calls the corresponding PJRT API method.
-// Returns an array of plugin attributes which are key-value pairs. One example
-// attribute is the minimum supported StableHLO version.
-// TODO(b/280349977): standardize the list of attributes.
+// Returns an array of plugin attributes which are key-value pairs. Common keys
+// include `xla_version`, `stablehlo_current_version`, and
+// `stablehlo_minimum_version`.
 PJRT_Error* call_PJRT_Plugin_Attributes(const PJRT_Api *api, PJRT_Plugin_Attributes_Args* args) {
 	return api->PJRT_Plugin_Attributes(args);
 }
@@ -168,6 +168,57 @@ PJRT_Error* call_PJRT_Client_DefaultDeviceAssignment(const PJRT_Api *api, PJRT_C
 	return api->PJRT_Client_DefaultDeviceAssignment(args);
 }
 
+// call_PJRT_Client_DmaMap calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_Client_DmaMap(const PJRT_Api *api, PJRT_Client_DmaMap_Args* args) {
+	return api->PJRT_Client_DmaMap(args);
+}
+
+// call_PJRT_Client_DmaUnmap calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_Client_DmaUnmap(const PJRT_Api *api, PJRT_Client_DmaUnmap_Args* args) {
+	return api->PJRT_Client_DmaUnmap(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_Destroy calls the corresponding PJRT API method.
+// Frees `transfer_manager`. `transfer_manager` can be nullptr.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_Destroy(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_Destroy_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_Destroy(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_TransferData calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_TransferData(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_TransferData_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_TransferData(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_RetrieveBuffer calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_RetrieveBuffer(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_RetrieveBuffer_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_RetrieveBuffer(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_Device calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_Device(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_Device_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_Device(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_BufferCount calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_BufferCount(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_BufferCount_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_BufferCount(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_BufferSize calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_BufferSize(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_BufferSize_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_BufferSize(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_SetBufferError calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_SetBufferError(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_SetBufferError_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_SetBufferError(args);
+}
+
+// call_PJRT_AsyncHostToDeviceTransferManager_AddMetadata calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_AddMetadata(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_AddMetadata_Args* args) {
+	return api->PJRT_AsyncHostToDeviceTransferManager_AddMetadata(args);
+}
+
 // call_PJRT_Client_BufferFromHostBuffer calls the corresponding PJRT API method.
 // Asynchronously copies a buffer stored on host to device memory.
 PJRT_Error* call_PJRT_Client_BufferFromHostBuffer(const PJRT_Api *api, PJRT_Client_BufferFromHostBuffer_Args* args) {
@@ -181,6 +232,11 @@ PJRT_Error* call_PJRT_Client_BufferFromHostBuffer(const PJRT_Api *api, PJRT_Clie
 // not required on all hardware platforms.
 PJRT_Error* call_PJRT_Client_CreateViewOfDeviceBuffer(const PJRT_Api *api, PJRT_Client_CreateViewOfDeviceBuffer_Args* args) {
 	return api->PJRT_Client_CreateViewOfDeviceBuffer(args);
+}
+
+// call_PJRT_Client_CreateBuffersForAsyncHostToDevice calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_Client_CreateBuffersForAsyncHostToDevice(const PJRT_Api *api, PJRT_Client_CreateBuffersForAsyncHostToDevice_Args* args) {
+	return api->PJRT_Client_CreateBuffersForAsyncHostToDevice(args);
 }
 
 // call_PJRT_DeviceDescription_Id calls the corresponding PJRT API method.

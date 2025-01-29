@@ -1,6 +1,15 @@
-# Next
+# Gopjrt Changelog
+
+# v0.5.1 - 2025/01/29
 
 * Issue #21: use syscall.Dup3 instead of syscall.Dup2 for Arm64 compatibility.
+* Added ReduceMax non-fatal test for pending XLA issue https://github.com/openxla/xla/issues/21461. 
+* Sync up with [OpenXLA](https://github.com/openxla/xla):
+  * Updated protos, adding new one.
+  * Updated auto-generated code.
+* Added `ShiftLeft`, `ShiftRightLogical` and `ShiftRightArithmetic`.
+* Fixed documentation of `And`, `Or` and `Xor`: they work for logical and bitwise operations.
+* Separate build for `amazonlinux`.
 
 # v0.5.0 - 2024/12/19 - Adding direct access to PJRT buffers for CPU.
 

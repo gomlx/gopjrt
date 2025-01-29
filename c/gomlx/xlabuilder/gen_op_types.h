@@ -92,6 +92,9 @@ enum OpType {
   ErfOp,
   IsFiniteOp,
   PopulationCountOp,
+  ShiftLeftOp,
+  ShiftRightArithmeticOp,
+  ShiftRightLogicalOp,
 };
 
 #ifdef __cplusplus

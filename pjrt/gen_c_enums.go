@@ -23,6 +23,12 @@ const (
 
 	// PJRT_Extension_Type_FFI is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
 	PJRT_Extension_Type_FFI PJRT_Extension_Type = 5
+
+	// PJRT_Extension_Type_MemoryDescriptions is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_MemoryDescriptions PJRT_Extension_Type = 6
+
+	// PJRT_Extension_Type_Triton is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_Triton PJRT_Extension_Type = 7
 )
 
 // PJRT_Error_Code is mapping of the corresponded C enum defined in pjrt_c_api.h.

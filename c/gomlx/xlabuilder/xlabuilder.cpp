@@ -578,6 +578,15 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case ComplexOp:
     op = xla::Complex(*inputs[0], *inputs[1]);
     break;
+  case ShiftLeftOp:
+    op = xla::ShiftLeft(*inputs[0], *inputs[1]);
+    break;
+  case ShiftRightArithmeticOp:
+    op = xla::ShiftRightArithmetic(*inputs[0], *inputs[1]);
+    break;
+  case ShiftRightLogicalOp:
+    op = xla::ShiftRightLogical(*inputs[0], *inputs[1]);
+    break;
 
   // Logical operations.
   case EqualOp:

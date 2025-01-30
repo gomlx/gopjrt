@@ -1,5 +1,9 @@
 # Gopjrt Changelog
 
+# Next
+
+* Fixed comments for bitwise and/or/xor operations.
+
 # v0.5.1 - 2025/01/29
 
 * Issue #21: use syscall.Dup3 instead of syscall.Dup2 for Arm64 compatibility.

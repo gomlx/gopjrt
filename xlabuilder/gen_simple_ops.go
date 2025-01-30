@@ -353,7 +353,7 @@ func Rem(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// And returns the element-wise logic "and" operator.
+// And returns the element-wise bitwise (for ints) or logic (for booleans) "and" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func And(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -371,7 +371,7 @@ func And(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Or returns the element-wise logic "and" operator.
+// Or returns the element-wise bitwise (for ints) or logic (for booleans) "or" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Or(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -389,7 +389,7 @@ func Or(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Xor returns the element-wise logic "and" operator.
+// Xor returns the element-wise bitwise (for ints) or logic (for booleans) "xor" operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func Xor(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

@@ -209,7 +209,7 @@ IsFinite:one
 // PopulationCount computes the number of bits set in each element of operand.
 PopulationCount:one
 
-// ShiftLeft n bits, preserving the sign. So ShiftLeft(-1, 1) = -2.
+// ShiftLeft n bits. It implicitly preserves the sign bit, if there is no overflow. So ShiftLeft(-1, 1) = -2.
 ShiftLeft:two
 
 // ShiftRightArithmetic shifts right by n bits, preserving the sign bit. So ShiftRight(-2, 1) = -1.

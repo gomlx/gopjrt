@@ -793,7 +793,7 @@ func PopulationCount(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// ShiftLeft n bits, preserving the sign. So ShiftLeft(-1, 1) = -2.
+// ShiftLeft n bits. It implicitly preserves the sign bit, if there is no overflow. So ShiftLeft(-1, 1) = -2.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func ShiftLeft(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {

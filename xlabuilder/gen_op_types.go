@@ -64,9 +64,9 @@ const (
 	SubOp
 	DivOp
 	RemOp
-	AndOp
-	OrOp
-	XorOp
+	LogicalAndOp
+	LogicalOrOp
+	LogicalXorOp
 	DotOp
 	MinOp
 	MaxOp
@@ -92,4 +92,8 @@ const (
 	ShiftLeftOp
 	ShiftRightArithmeticOp
 	ShiftRightLogicalOp
+	BitwiseAndOp
+	BitwiseOrOp
+	BitwiseXorOp
+	BitwiseNotOp
 )

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
@@ -123,8 +124,12 @@ func TestReduce(t *testing.T) {
 		require.Equal(t, int64(5), got)
 		builder.Destroy()
 	}
+}
 
-	// Test ReduceAnd and ReduceOr on all dimensions.
+func TestReduceLogicalOps(t *testing.T) {
+	client := getPJRTClient(t)
+
+	// Test ReduceLogicalAnd, ReduceLogicalOr and ReduceLogicalXor on all dimensions.
 	{
 		testValues := []*Literal{
 			capture(NewArrayLiteral([]bool{false, false, false}, 3)).Test(t),
@@ -132,27 +137,85 @@ func TestReduce(t *testing.T) {
 			capture(NewArrayLiteral([]bool{true, false, true}, 3)).Test(t),
 			capture(NewArrayLiteral([]bool{true, true, true}, 3)).Test(t),
 		}
-		wantForAnd := []bool{false, false, false, true}
-		wantForOr := []bool{false, true, true, true}
 
-		for ii, testValue := range testValues {
-			builder := New(fmt.Sprintf("%s-ReduceAnd-%d", t.Name(), ii))
-			input := capture(Constant(builder, testValue)).Test(t)
-			output := capture(ReduceAnd(input)).Test(t)
-			exec := compile(t, client, capture(builder.Build(output)).Test(t))
-			got := execScalarOutput[bool](t, client, exec)
-			require.Equal(t, wantForAnd[ii], got)
-			builder.Destroy()
+		ops := []func(x *Op, axes ...int) (*Op, error){ReduceLogicalAnd, ReduceLogicalOr, ReduceLogicalXor}
+		opsNames := []string{"LogicalAnd", "LogicalOr", "LogicalXor"}
+		wantForOps := [][]any{
+			// ReduceLogicalAnd
+			{false, false, false, true},
+			// ReduceLogicalOr
+			{false, true, true, true},
+			// ReduceLogicalXor
+			{false, true, false, true},
 		}
 
-		for ii, testValue := range testValues {
-			builder := New(fmt.Sprintf("%s-ReduceOr-%d", t.Name(), ii))
-			input := capture(Constant(builder, testValue)).Test(t)
-			output := capture(ReduceOr(input)).Test(t)
-			exec := compile(t, client, capture(builder.Build(output)).Test(t))
-			got := execScalarOutput[bool](t, client, exec)
-			require.Equal(t, wantForOr[ii], got)
-			builder.Destroy()
+		for opIdx, op := range ops {
+			fmt.Printf("Test %s\n", opsNames[opIdx])
+			for testIdx, testInput := range testValues {
+				builder := New(fmt.Sprintf("%s-Reduce%s-%d", t.Name(), opsNames[opIdx], testIdx))
+				input := capture(Constant(builder, testInput)).Test(t)
+				output := capture(op(input)).Test(t)
+				exec := compile(t, client, capture(builder.Build(output)).Test(t))
+
+				wantAny := wantForOps[opIdx][testIdx]
+				switch want := wantAny.(type) {
+				case bool:
+					got := execScalarOutput[bool](t, client, exec)
+					require.Equal(t, want, got)
+				case int8:
+					got := execScalarOutput[int8](t, client, exec)
+					require.Equal(t, want, got)
+				}
+				builder.Destroy()
+			}
+		}
+	}
+}
+
+func TestReduceBitwiseOps(t *testing.T) {
+	client := getPJRTClient(t)
+
+	// Test ReduceBitwiseAnd, ReduceBitwiseOr and ReduceBitwiseXor on all dimensions.
+	{
+		testValues := []*Literal{
+			capture(NewArrayLiteral([]bool{false, false, false}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{false, true, false}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{true, false, true}, 3)).Test(t),
+			capture(NewArrayLiteral([]bool{true, true, true}, 3)).Test(t),
+			capture(NewArrayLiteral([]int8{15, 6, 2}, 3)).Test(t),
+			capture(NewArrayLiteral([]int8{-1, -2, -4}, 3)).Test(t),
+		}
+
+		ops := []func(x *Op, axes ...int) (*Op, error){ReduceBitwiseAnd, ReduceBitwiseOr, ReduceBitwiseXor}
+		opsNames := []string{"ReduceBitwiseAnd", "ReduceBitwiseOr", "ReduceBitwiseXor"}
+		wantForOps := [][]any{
+			// ReduceBitwiseAnd
+			{false, false, false, true, int8(2), int8(-4)},
+			// ReduceBitwiseOr
+			{false, true, true, true, int8(15), int8(-1)},
+			// ReduceBitwiseXor
+			{false, true, false, true, int8(11), int8(-3)},
+		}
+
+		for opIdx, op := range ops {
+			fmt.Printf("Test %s\n", opsNames[opIdx])
+			for testIdx, testInput := range testValues {
+				builder := New(fmt.Sprintf("%s-Reduce%s-%d", t.Name(), opsNames[opIdx], testIdx))
+				input := capture(Constant(builder, testInput)).Test(t)
+				output := capture(op(input)).Test(t)
+				exec := compile(t, client, capture(builder.Build(output)).Test(t))
+
+				wantAny := wantForOps[opIdx][testIdx]
+				switch want := wantAny.(type) {
+				case bool:
+					got := execScalarOutput[bool](t, client, exec)
+					assert.Equal(t, want, got)
+				case int8:
+					got := execScalarOutput[int8](t, client, exec)
+					assert.Equal(t, want, got)
+				}
+				builder.Destroy()
+			}
 		}
 	}
 }

@@ -1430,3 +1430,27 @@ func DecodeDynamicUpdateSlice(op *Op) (operand, update *Op, startIndices []*Op) 
 	startIndices = op.OpInputs[2:]
 	return
 }
+
+// And is an alias to LogicalAnd.
+// Deprecated: please use LogicalAnd instead.
+func And(lhs, rhs *Op) (*Op, error) {
+	return LogicalAnd(lhs, rhs)
+}
+
+// Or is an alias to LogicalOr.
+// Deprecated: please use LogicalOr instead.
+func Or(lhs, rhs *Op) (*Op, error) {
+	return LogicalOr(lhs, rhs)
+}
+
+// Xor is an alias to LogicalXor.
+// Deprecated: please use LogicalXor instead.
+func Xor(lhs, rhs *Op) (*Op, error) {
+	return LogicalXor(lhs, rhs)
+}
+
+// Not is an alias to LogicalNot.
+// Deprecated: please use LogicalNot instead.
+func Not(operand *Op) (*Op, error) {
+	return LogicalNot(operand)
+}

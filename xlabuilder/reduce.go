@@ -29,11 +29,23 @@ const (
 	// ReduceMinType reduces by taking the minimum value.
 	ReduceMinType
 
-	// ReduceAndType reduces by taking the logical-and value.
-	ReduceAndType
+	// ReduceLogicalAndType reduces by taking the logical and value.
+	ReduceLogicalAndType
 
-	// ReduceOrType reduces by taking the logical-or value.
-	ReduceOrType
+	// ReduceLogicalOrType reduces by taking the logical or value.
+	ReduceLogicalOrType
+
+	// ReduceLogicalXorType reduces by taking the logical xor value.
+	ReduceLogicalXorType
+
+	// ReduceBitwiseAndType reduces by taking the bitwise and value.
+	ReduceBitwiseAndType
+
+	// ReduceBitwiseOrType reduces by taking the bitwise or value.
+	ReduceBitwiseOrType
+
+	// ReduceBitwiseXorType reduces by taking the bitwise xor value.
+	ReduceBitwiseXorType
 )
 
 //go:generate stringer -type ReduceOpType reduce.go
@@ -49,7 +61,6 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 		err = errors.Errorf("invalid dtype (%s) for reduce operation", dtype)
 		return
 	}
-
 	reductionName := fmt.Sprintf("#_%s_%s", reduction, dtype)
 	comp = b.cachedStandardComputations[reductionName]
 	if comp == nil {
@@ -77,18 +88,18 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 			output, err = Max(lhs, rhs)
 		case ReduceMinType:
 			output, err = Min(lhs, rhs)
-		case ReduceAndType:
-			if dtype != dtypes.Bool {
-				err = errors.Errorf("ReduceAndType only supports boolean values (dtypes.Bool), got %q instead", dtype)
-				return
-			}
-			output, err = And(lhs, rhs)
-		case ReduceOrType:
-			if dtype != dtypes.Bool {
-				err = errors.Errorf("ReduceOrType only supports boolean values (dtypes.Bool), got %q instead", dtype)
-				return
-			}
-			output, err = Or(lhs, rhs)
+		case ReduceLogicalAndType:
+			output, err = LogicalAnd(lhs, rhs)
+		case ReduceLogicalOrType:
+			output, err = LogicalOr(lhs, rhs)
+		case ReduceLogicalXorType:
+			output, err = LogicalXor(lhs, rhs)
+		case ReduceBitwiseAndType:
+			output, err = BitwiseAnd(lhs, rhs)
+		case ReduceBitwiseOrType:
+			output, err = BitwiseOr(lhs, rhs)
+		case ReduceBitwiseXorType:
+			output, err = BitwiseXor(lhs, rhs)
 		default:
 			err = errors.Errorf("unknown reduce computation type: %s (%d)", reduction, reduction)
 			return
@@ -109,10 +120,16 @@ func (b *XlaBuilder) GetReduceComputationAndInitialValue(reduction ReduceOpType,
 	initialValue = b.cachedStandardConstants[reductionName]
 	if initialValue == nil {
 		switch reduction {
-		case ReduceSumType, ReduceOrType:
+		case ReduceSumType, ReduceLogicalOrType, ReduceBitwiseOrType, ReduceLogicalXorType, ReduceBitwiseXorType:
 			initialValue, err = ScalarZero(b, dtype)
-		case ReduceProductType, ReduceAndType:
+		case ReduceProductType, ReduceLogicalAndType:
 			initialValue, err = ScalarOne(b, dtype)
+		case ReduceBitwiseAndType:
+			// We want all bits set to 1.
+			initialValue, err = ScalarZero(b, dtype)
+			if err == nil {
+				initialValue, err = BitwiseNot(initialValue)
+			}
 		case ReduceMaxType:
 			var literal *Literal
 			literal, err = NewScalarLiteralFromAny(dtype.LowestValue())
@@ -207,20 +224,64 @@ func ReduceProduct(x *Op, axes ...int) (*Op, error) {
 	return simpleReduceImpl(ReduceProductType, x, axes...)
 }
 
-// ReduceAnd is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the logical-and of the reduced axes.
-// It only works for booleans.
+// ReduceLogicalAnd is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical And of the reduced axes.
 //
 // If no axes are given, it reduces the full array.
-func ReduceAnd(x *Op, axes ...int) (*Op, error) {
-	return simpleReduceImpl(ReduceAndType, x, axes...)
+func ReduceLogicalAnd(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceLogicalAndType, x, axes...)
 }
 
-// ReduceOr is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the logical-or of the reduced axes.
-// It only works for booleans.
+// ReduceLogicalOr is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical Or of the reduced axes.
 //
 // If no axes are given, it reduces the full array.
+func ReduceLogicalOr(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceLogicalOrType, x, axes...)
+}
+
+// ReduceLogicalXor is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical Xor of the reduced axes.
+//
+// If no axes are given, it reduces the full array.
+func ReduceLogicalXor(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceLogicalXorType, x, axes...)
+}
+
+// ReduceAnd is a deprecated alias to ReduceLogicalAnd.
+// Deprecated: use ReduceLogicalAnd instead.
+func ReduceAnd(x *Op, axes ...int) (*Op, error) {
+	return ReduceLogicalAnd(x, axes...)
+}
+
+// ReduceOr is a deprecated alias to ReduceLogicalOr.
+// Deprecated: use ReduceLogicalOr instead.
 func ReduceOr(x *Op, axes ...int) (*Op, error) {
-	return simpleReduceImpl(ReduceOrType, x, axes...)
+	return ReduceLogicalOr(x, axes...)
+}
+
+// ReduceXor is a deprecated alias to ReduceLogicalXor.
+// Deprecated: use ReduceLogicalXor instead.
+func ReduceXor(x *Op, axes ...int) (*Op, error) {
+	return ReduceLogicalXor(x, axes...)
+}
+
+// ReduceBitwiseAnd is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical And of the reduced axes.
+//
+// If no axes are given, it reduces the full array.
+func ReduceBitwiseAnd(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceBitwiseAndType, x, axes...)
+}
+
+// ReduceBitwiseOr is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical Or of the reduced axes.
+//
+// If no axes are given, it reduces the full array.
+func ReduceBitwiseOr(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceBitwiseOrType, x, axes...)
+}
+
+// ReduceBitwiseXor is a shortcut for Reduce with the proper computation and initial value to reduce x on the given axes, by taking the bitwise/logical Xor of the reduced axes.
+//
+// If no axes are given, it reduces the full array.
+func ReduceBitwiseXor(x *Op, axes ...int) (*Op, error) {
+	return simpleReduceImpl(ReduceBitwiseXorType, x, axes...)
 }
 
 type ReduceWindowConfig struct {

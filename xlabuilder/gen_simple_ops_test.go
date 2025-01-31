@@ -85,7 +85,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from Equal")
 	}
 	cmp, err = NotEqual(x, x)
@@ -93,7 +93,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from NotEqual")
 	}
 	cmp, err = GreaterOrEqual(x, x)
@@ -101,7 +101,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from GreaterOrEqual")
 	}
 	cmp, err = GreaterThan(x, x)
@@ -109,7 +109,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from GreaterThan")
 	}
 	cmp, err = LessOrEqual(x, x)
@@ -117,7 +117,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from LessOrEqual")
 	}
 	cmp, err = LessThan(x, x)
@@ -125,7 +125,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from LessThan")
 	}
 	cmp, err = EqualTotalOrder(x, x)
@@ -133,7 +133,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from EqualTotalOrder")
 	}
 	cmp, err = NotEqualTotalOrder(x, x)
@@ -141,7 +141,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from NotEqualTotalOrder")
 	}
 	cmp, err = GreaterOrEqualTotalOrder(x, x)
@@ -149,7 +149,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from GreaterOrEqualTotalOrder")
 	}
 	cmp, err = GreaterThanTotalOrder(x, x)
@@ -157,7 +157,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from GreaterThanTotalOrder")
 	}
 	cmp, err = LessOrEqualTotalOrder(x, x)
@@ -165,7 +165,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from LessOrEqualTotalOrder")
 	}
 	cmp, err = LessThanTotalOrder(x, x)
@@ -173,7 +173,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from LessThanTotalOrder")
 	}
 
@@ -189,7 +189,7 @@ func TestSimpleOps(t *testing.T) {
 	require.NoError(t, err, "Failed to build Real operation")
 	same, err := Equal(imgV, realV)
 	require.NoError(t, err, "Failed to build Equal operation")
-	result, err = And(result, same)
+	result, err = LogicalAnd(result, same)
 	require.NoError(t, err, "Failed to build And operation")
 
 	result, err = IsFinite(x)
@@ -205,15 +205,23 @@ func TestSimpleOps(t *testing.T) {
 	same, err = Equal(i, i)
 	require.NoError(t, err, "Failed to build Equal operation")
 
-	result, err = Or(result, same)
+	result, err = BitwiseOr(result, same)
 	require.NoError(t, err, "Failed to build Or operation")
-	result, err = And(result, same)
+	result, err = BitwiseAnd(result, same)
 	require.NoError(t, err, "Failed to build And operation")
-	result, err = Xor(result, same)
+	result, err = BitwiseXor(result, same)
 	require.NoError(t, err, "Failed to build Xor operation")
+	i, err = BitwiseNot(i)
+	require.NoError(t, err, "Failed to build unary operation BitwiseNot")
 
-	result, err = LogicalNot(result)
-	require.NoError(t, err, "Failed to build LogicalNot operation")
+	result, err = LogicalOr(result, same)
+	require.NoError(t, err, "Failed to build Or operation")
+	result, err = LogicalAnd(result, same)
+	require.NoError(t, err, "Failed to build And operation")
+	result, err = LogicalXor(result, same)
+	require.NoError(t, err, "Failed to build Xor operation")
+	i, err = LogicalNot(i)
+	require.NoError(t, err, "Failed to build unary operation LogicalNot")
 
 	// Get computation created: result depends on all of them.
 	comp, err := builder.Build(result)

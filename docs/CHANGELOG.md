@@ -1,8 +1,11 @@
 # Gopjrt Changelog
 
-# Next
+# v0.5.2
 
-* Fixed comments for bitwise and/or/xor operations.
+* Added bitwise operations and renamed old logical operators to `{Logical,Bitwise}{And,Or,Xor,Not}`, and 
+  the corresponding `Reduce*` functions.
+* The original unqualified `And`, `Or`, `Xor` (and corresponding `Reduce*`) and `Not` remains as aliases to their
+  `Logical` version for compatibility, but marked as deprecated. To be removed at the next major version.
 
 # v0.5.1 - 2025/01/29
 

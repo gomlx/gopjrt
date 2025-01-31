@@ -495,6 +495,9 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case LogicalNotOp:
     op = xla::Not(*inputs[0]);
     break;
+  case BitwiseNotOp:
+    op = ~(*inputs[0]);
+    break;
   case LogisticOp:
     op = xla::Logistic(*inputs[0]);
     break;
@@ -554,14 +557,23 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   case RemOp:
     op = xla::Rem(*inputs[0], *inputs[1]);
     break;
-  case AndOp:
+  case LogicalAndOp:
     op = xla::And(*inputs[0], *inputs[1]);
     break;
-  case OrOp:
+  case LogicalOrOp:
     op = xla::Or(*inputs[0], *inputs[1]);
     break;
-  case XorOp:
+  case LogicalXorOp:
     op = xla::Xor(*inputs[0], *inputs[1]);
+    break;
+  case BitwiseAndOp:
+    op = (*inputs[0]) & (*inputs[1]);
+    break;
+  case BitwiseOrOp:
+    op = (*inputs[0]) | (*inputs[1]);
+    break;
+  case BitwiseXorOp:
+    op = (*inputs[0]) ^ (*inputs[1]);
     break;
   case DotOp:
     op = xla::Dot(*inputs[0], *inputs[1]);

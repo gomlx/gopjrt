@@ -146,6 +146,11 @@ func execScalarOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exe
 	return
 }
 
+// TestCVersion checks that the libgomlx_xlabuilder.so matches the expected version.
+func TestCVersions(t *testing.T) {
+	require.Equal(t, MatchingCVersion, CVersion())
+}
+
 func TestXlaBuilder(t *testing.T) {
 	// f(x) = x^2
 	builder := New("x*x")

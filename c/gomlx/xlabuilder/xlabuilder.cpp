@@ -36,6 +36,14 @@
 
 using namespace std;
 
+// GopjrtXlaBuilderVersion is the "semantic versioning" numbers (e.g. "v0.6.0") of the C/C++
+// XlaBuilder wrapper library for Gopjrt.
+//
+// This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
+// we don't bump the version of the C/C++ code if it doesn't change.
+// But when it changes, it matches the Gopjrt version it's being released with.
+const char *GopjrtXlaBuilderVersion = "v0.6.0";
+
 // ShapeFromXlaShape allocates and sets a new Shape struct set with the same
 // shape defined by xla::Shape. C++ only.
 extern Shape *ShapeFromXlaShape(const xla::Shape &shape);

@@ -47,6 +47,14 @@ typedef void XlaComputation;
 extern "C" {
  #endif
 
+// GopjrtXlaBuilderVersion is semver version (e.g. "v0.6.0") of the C/C++
+// XlaBuilder wrapper library for Gopjrt.
+//
+// This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
+// we don't bump the version of the C/C++ code if it doesn't change.
+// But when it changes, it matches the Gopjrt version it's being released with.
+extern const char *GopjrtXlaBuilderVersion;
+
 // NewXlaBuilder returns a new xla::XlaBuilder.
 // The caller owns the returned pointer and the name string.
 extern XlaBuilder *NewXlaBuilder(char *name);

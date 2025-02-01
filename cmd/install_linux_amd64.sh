@@ -7,8 +7,13 @@
 #
 # Arguments (environment variables):
 #
-# - GOPJRT_INSTALL_DIR: if not empty, defines the directory where to install the library. If empty, it install into `/usr/local`.
-#   Notice that ${GOPJRT_INSTALL_DIR}/lib must be set in your LD_LIBRARY_CONF -- `/usr/local/lib` usually is included in the path.
+# - GOPJRT_INSTALL_DIR: if not empty, defines the directory where to install the library.
+#   If empty, it install into `/usr/local`.
+#   Notice that ${GOPJRT_INSTALL_DIR}/lib must be set in your LD_LIBRARY_CONF -- `/usr/local/lib` usually is included
+#   in the path.
+#   If you want to install for you local user only, consider setting this to ${HOME}/.local (it will install the files
+#   under ${HOME}/.local/{lib,include}). Make sure you have CPATH set to ${HOME}/.local/include and LIBRARY_PATH
+#   and LD_LIBRARY_PATH to ${HOME}/.local/lib.
 # - GOPJRT_NOSUDO: if not empty, it prevents using sudo to install.
 #
 # Check install_cuda.sh to additionally install the PJRT plugin for CUDA -- for NVidia GPU support.

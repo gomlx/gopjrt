@@ -19,8 +19,7 @@ var flagStableHLOOutput = flag.String("hlo", "",
 		"and manually checked for their values.")
 
 var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path to use for XlaBuilder tests that evaluate the program")
-
-var flagUseStableHLO = flag.Bool("stable_hlo", true, "Convert HLO to StableHLO before executing")
+var flagUseStableHLO = flag.Bool("stable_hlo", false, "Convert HLO to StableHLO before executing")
 
 type errTester[T any] struct {
 	value T

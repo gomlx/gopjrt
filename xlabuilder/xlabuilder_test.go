@@ -19,8 +19,7 @@ var flagStableHLOOutput = flag.String("hlo", "",
 		"and manually checked for their values.")
 
 var flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path to use for XlaBuilder tests that evaluate the program")
-
-var flagUseStableHLO = flag.Bool("stable_hlo", true, "Convert HLO to StableHLO before executing")
+var flagUseStableHLO = flag.Bool("stable_hlo", false, "Convert HLO to StableHLO before executing")
 
 type errTester[T any] struct {
 	value T
@@ -144,6 +143,11 @@ func execScalarOutput[T dtypes.Supported](t *testing.T, client *pjrt.Client, exe
 	require.NoErrorf(t, err, "Failed to transfer results of %q execution", exec.Name)
 	fmt.Printf("  > f()=(%T) %v\n", value, value)
 	return
+}
+
+// TestCVersion checks that the libgomlx_xlabuilder.so matches the expected version.
+func TestCVersions(t *testing.T) {
+	require.Equal(t, MatchingCVersion, CVersion())
 }
 
 func TestXlaBuilder(t *testing.T) {

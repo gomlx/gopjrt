@@ -92,7 +92,7 @@ func TestSimpleOps(t *testing.T) {
 	if result == nil {
 		result = cmp
 	} else {
-		result, err = And(result, cmp)
+		result, err = LogicalAnd(result, cmp)
 		require.NoError(t, err, "Failed to build logical And operation when aggregating the result from {{.Name}}")	
 	}{{end}}{{end}}
 
@@ -108,7 +108,7 @@ func TestSimpleOps(t *testing.T) {
 	require.NoError(t, err, "Failed to build Real operation")
 	same, err := Equal(imgV, realV)
 	require.NoError(t, err, "Failed to build Equal operation")
-	result, err = And(result, same)
+	result, err = LogicalAnd(result, same)
 	require.NoError(t, err, "Failed to build And operation")
 
 	result, err = IsFinite(x)
@@ -124,15 +124,24 @@ func TestSimpleOps(t *testing.T) {
 	same, err = Equal(i, i)
 	require.NoError(t, err, "Failed to build Equal operation")
 
-	result, err = Or(result, same)
+	result, err = BitwiseOr(result, same)
 	require.NoError(t, err, "Failed to build Or operation")
-	result, err = And(result, same)
+	result, err = BitwiseAnd(result, same)
 	require.NoError(t, err, "Failed to build And operation")
-	result, err = Xor(result, same)
+	result, err = BitwiseXor(result, same)
 	require.NoError(t, err, "Failed to build Xor operation")
+	i, err = BitwiseNot(i)
+	require.NoError(t, err, "Failed to build unary operation BitwiseNot")
 
-	result, err = LogicalNot(result)
-	require.NoError(t, err, "Failed to build LogicalNot operation")
+	result, err = LogicalOr(result, same)
+	require.NoError(t, err, "Failed to build Or operation")
+	result, err = LogicalAnd(result, same)
+	require.NoError(t, err, "Failed to build And operation")
+	result, err = LogicalXor(result, same)
+	require.NoError(t, err, "Failed to build Xor operation")
+	i, err = LogicalNot(i)
+	require.NoError(t, err, "Failed to build unary operation LogicalNot")
+
 
 	// Get computation created: result depends on all of them.
 	comp, err := builder.Build(result)
@@ -156,7 +165,10 @@ func GenerateSimpleGoOps(opsInfo []OpInfo) {
 	fmt.Printf("Generated %q based on %q\n", fileName, OpTypesFileName)
 
 	// For testing we skip some that require special types.
-	skip := []string{"LogicalNot", "And", "Or", "Xor", "Dot", "Clz", "Real", "Imag", "Conj", "Complex", "IsFinite", "PopulationCount"}
+	skip := []string{
+		"LogicalNot", "LogicalAnd", "LogicalOr", "LogicalXor",
+		"BitwiseNot", "BitwiseAnd", "BitwiseOr", "BitwiseXor",
+		"Dot", "Clz", "Real", "Imag", "Conj", "Complex", "IsFinite", "PopulationCount"}
 	filteredOps := slices.DeleteFunc(opsInfo, func(info OpInfo) bool {
 		return slices.Index(skip, info.Name) != -1
 	})

@@ -101,12 +101,12 @@ Div:two
 // Rem returns the remainder operation, also known as modulo (or Mod for short).
 // Notice despite the name XLA implements Mod not IEEE754 Remainder operation.
 Rem:two
-// And returns the element-wise bitwise (for ints) or logic (for booleans) "and" operator.
-And:two
-// Or returns the element-wise bitwise (for ints) or logic (for booleans) "or" operator.
-Or:two
-// Xor returns the element-wise bitwise (for ints) or logic (for booleans) "xor" operator.
-Xor:two
+// LogicalAnd returns the element-wise logical AND operation.
+LogicalAnd:two
+// LogicalOr returns the element-wise logical OR operation.
+LogicalOr:two
+// LogicalXor returns the element-wise logical XOR operator.
+LogicalXor:two
 // Dot returns the "dot product" operation.
 // The exact semantics of this operation depend on the ranks of the operands:
 //
@@ -209,7 +209,7 @@ IsFinite:one
 // PopulationCount computes the number of bits set in each element of operand.
 PopulationCount:one
 
-// ShiftLeft n bits, preserving the sign. So ShiftLeft(-1, 1) = -2.
+// ShiftLeft n bits. It implicitly preserves the sign bit, if there is no overflow. So ShiftLeft(-1, 1) = -2.
 ShiftLeft:two
 
 // ShiftRightArithmetic shifts right by n bits, preserving the sign bit. So ShiftRight(-2, 1) = -1.
@@ -217,3 +217,13 @@ ShiftRightArithmetic:two
 
 // ShiftRightLogical shifts right by n bits, destroying the sign bit.
 ShiftRightLogical:two
+
+// BitwiseAnd returns the element-wise bitwise AND operation.
+BitwiseAnd:two
+// BitwiseOr returns the element-wise bitwise OR operation.
+BitwiseOr:two
+// BitwiseXor returns the element-wise bitwise XOR operator.
+BitwiseXor:two
+// BitwiseNot returns the element-wise bitwise AND operation.
+BitwiseNot:one
+

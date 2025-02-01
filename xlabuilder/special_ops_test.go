@@ -689,3 +689,46 @@ func TestDynamicUpdateSlice(t *testing.T) {
 		4, -1, -1, 7,
 		8, -1, -1, 11}, gotFlat)
 }
+
+func TestBitwise(t *testing.T) {
+	client := getPJRTClient(t)
+	{
+		x0L := capture(NewArrayLiteral([]int8{15, 6, 2}, 3)).Test(t)
+		x1L := capture(NewArrayLiteral([]int8{7, 12, 1}, 3)).Test(t)
+		builder := New(fmt.Sprintf("%s-And", t.Name()))
+		x0 := capture(Constant(builder, x0L)).Test(t)
+		x1 := capture(Constant(builder, x1L)).Test(t)
+		output := capture(BitwiseAnd(x0, x1)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[int8](t, client, exec)
+		require.Equal(t, []int{3}, dims)
+		require.Equal(t, []int8{7, 4, 0}, got)
+		builder.Destroy()
+	}
+	{
+		x0L := capture(NewArrayLiteral([]int8{3, 6, 2}, 3)).Test(t)
+		x1L := capture(NewArrayLiteral([]int8{12, 12, 1}, 3)).Test(t)
+		builder := New(fmt.Sprintf("%s-Or", t.Name()))
+		x0 := capture(Constant(builder, x0L)).Test(t)
+		x1 := capture(Constant(builder, x1L)).Test(t)
+		output := capture(BitwiseOr(x0, x1)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[int8](t, client, exec)
+		require.Equal(t, []int{3}, dims)
+		require.Equal(t, []int8{15, 14, 3}, got)
+		builder.Destroy()
+	}
+	{
+		x0L := capture(NewArrayLiteral([]int8{3, 6, 2}, 3)).Test(t)
+		x1L := capture(NewArrayLiteral([]int8{12, 12, 1}, 3)).Test(t)
+		builder := New(fmt.Sprintf("%s-Xor", t.Name()))
+		x0 := capture(Constant(builder, x0L)).Test(t)
+		x1 := capture(Constant(builder, x1L)).Test(t)
+		output := capture(BitwiseXor(x0, x1)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[int8](t, client, exec)
+		require.Equal(t, []int{3}, dims)
+		require.Equal(t, []int8{15, 10, 3}, got)
+		builder.Destroy()
+	}
+}

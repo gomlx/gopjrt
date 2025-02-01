@@ -353,17 +353,17 @@ func Rem(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// And returns the element-wise bitwise (for ints) or logic (for booleans) "and" operator.
+// LogicalAnd returns the element-wise logical AND operation.
 // The op is created on the same XlaBuilder as used for x0 and x1.
-func And(x0, x1 *Op) (*Op, error) {
+func LogicalAnd(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
-		return nil, errors.New("arguments of And(x0, x1) come from different XlaBuilder objects (or nil)")
+		return nil, errors.New("arguments of LogicalAnd(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
 	if x0.Shape.DType != x1.Shape.DType {
 		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
-	y := newOp(AndOp, x0, x1)
+	y := newOp(LogicalAndOp, x0, x1)
 	err := builder.addOp(y)
 	if err != nil {
 		return nil, err
@@ -371,17 +371,17 @@ func And(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Or returns the element-wise bitwise (for ints) or logic (for booleans) "or" operator.
+// LogicalOr returns the element-wise logical OR operation.
 // The op is created on the same XlaBuilder as used for x0 and x1.
-func Or(x0, x1 *Op) (*Op, error) {
+func LogicalOr(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
-		return nil, errors.New("arguments of Or(x0, x1) come from different XlaBuilder objects (or nil)")
+		return nil, errors.New("arguments of LogicalOr(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
 	if x0.Shape.DType != x1.Shape.DType {
 		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
-	y := newOp(OrOp, x0, x1)
+	y := newOp(LogicalOrOp, x0, x1)
 	err := builder.addOp(y)
 	if err != nil {
 		return nil, err
@@ -389,17 +389,17 @@ func Or(x0, x1 *Op) (*Op, error) {
 	return y, nil
 }
 
-// Xor returns the element-wise bitwise (for ints) or logic (for booleans) "xor" operator.
+// LogicalXor returns the element-wise logical XOR operator.
 // The op is created on the same XlaBuilder as used for x0 and x1.
-func Xor(x0, x1 *Op) (*Op, error) {
+func LogicalXor(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
-		return nil, errors.New("arguments of Xor(x0, x1) come from different XlaBuilder objects (or nil)")
+		return nil, errors.New("arguments of LogicalXor(x0, x1) come from different XlaBuilder objects (or nil)")
 	}
 	if x0.Shape.DType != x1.Shape.DType {
 		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
 	}
 	builder := x0.builder
-	y := newOp(XorOp, x0, x1)
+	y := newOp(LogicalXorOp, x0, x1)
 	err := builder.addOp(y)
 	if err != nil {
 		return nil, err
@@ -793,7 +793,7 @@ func PopulationCount(x *Op) (*Op, error) {
 	return y, nil
 }
 
-// ShiftLeft n bits, preserving the sign. So ShiftLeft(-1, 1) = -2.
+// ShiftLeft n bits. It implicitly preserves the sign bit, if there is no overflow. So ShiftLeft(-1, 1) = -2.
 // The op is created on the same XlaBuilder as used for x0 and x1.
 func ShiftLeft(x0, x1 *Op) (*Op, error) {
 	if x0.builder != x1.builder {
@@ -840,6 +840,72 @@ func ShiftRightLogical(x0, x1 *Op) (*Op, error) {
 	}
 	builder := x0.builder
 	y := newOp(ShiftRightLogicalOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// BitwiseAnd returns the element-wise bitwise AND operation.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func BitwiseAnd(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of BitwiseAnd(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(BitwiseAndOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// BitwiseOr returns the element-wise bitwise OR operation.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func BitwiseOr(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of BitwiseOr(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(BitwiseOrOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// BitwiseXor returns the element-wise bitwise XOR operator.
+// The op is created on the same XlaBuilder as used for x0 and x1.
+func BitwiseXor(x0, x1 *Op) (*Op, error) {
+	if x0.builder != x1.builder {
+		return nil, errors.New("arguments of BitwiseXor(x0, x1) come from different XlaBuilder objects (or nil)")
+	}
+	if x0.Shape.DType != x1.Shape.DType {
+		return nil, errors.Errorf("dtype of first (%s) and second (%s) operands don't match", x0.Shape.DType, x1.Shape.DType)
+	}
+	builder := x0.builder
+	y := newOp(BitwiseXorOp, x0, x1)
+	err := builder.addOp(y)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+// BitwiseNot returns the element-wise bitwise AND operation.
+// The op is created on the same XlaBuilder as used for x.
+func BitwiseNot(x *Op) (*Op, error) {
+	builder := x.builder
+	y := newOp(BitwiseNotOp, x)
 	err := builder.addOp(y)
 	if err != nil {
 		return nil, err

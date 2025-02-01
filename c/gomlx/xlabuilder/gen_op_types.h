@@ -67,9 +67,9 @@ enum OpType {
   SubOp,
   DivOp,
   RemOp,
-  AndOp,
-  OrOp,
-  XorOp,
+  LogicalAndOp,
+  LogicalOrOp,
+  LogicalXorOp,
   DotOp,
   MinOp,
   MaxOp,
@@ -95,6 +95,10 @@ enum OpType {
   ShiftLeftOp,
   ShiftRightArithmeticOp,
   ShiftRightLogicalOp,
+  BitwiseAndOp,
+  BitwiseOrOp,
+  BitwiseXorOp,
+  BitwiseNotOp,
 };
 
 #ifdef __cplusplus

@@ -7,6 +7,7 @@ package xlabuilder
 import "C"
 import (
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
 )
@@ -179,4 +180,34 @@ func (b *XlaBuilder) CreateSubBuilder(computationName string) *XlaBuilder {
 	newB := newXlaBuilder(cNewBuilder)
 	newB.parent = b
 	return newB
+}
+
+// CVersion returns the version of the XlaBuilder C/C++ wrapper.
+//
+// This uses the same "semantic versioning" numbers (e.g. "v0.6.0") used by the Go,
+// and follows (with a lag) the Gopjrt version.
+//
+// This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
+// we don't bump the version of the C/C++ code if it doesn't change.
+// But when it changes, it matches the Gopjrt version it's being released with.
+//
+// At initialization this value is checked if it matches the version required by
+// Gopjrt, and will print a warning if it doesn't match.
+func CVersion() string {
+	return C.GoString(C.GopjrtXlaBuilderVersion)
+}
+
+// MatchingCVersion is the Gopjrt XlaBuilder C/C++ wrapper version that matches the
+// Go library.
+//
+// This is needed because they can go out-of-sync in developers machines -- if one updates
+// the Go library, but not the corresponding C/C++ libgomlx_xlabuilder.so library.
+var MatchingCVersion = "v0.6.0"
+
+func init() {
+	if CVersion() != MatchingCVersion {
+		klog.Errorf(
+			"Gopjrt C/C++ library libgomlx_xlabuilder.so version is %q, but this Gopjrt "+
+				"version requires libgomlx_xlabuilder.so version %q", CVersion(), MatchingCVersion)
+	}
 }

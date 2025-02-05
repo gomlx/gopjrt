@@ -7,9 +7,28 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"slices"
+	"strings"
 )
 
 // Manual implementation of the special ops.
+
+// validateOps checks that the ops builders are the same.
+func validateOpsBuilders(opName string, ops ...*Op) error {
+	if len(ops) == 0 {
+		return nil
+	}
+	builder := ops[0].builder
+	for _, op := range ops {
+		if op.builder != builder {
+			builders := make([]string, len(ops))
+			for ii, op := range ops {
+				builders[ii] = op.builder.Name()
+			}
+			return errors.Errorf("%s inputs are not from the same builder: \"%s\"", opName, strings.Join(builders, "\", \""))
+		}
+	}
+	return nil
+}
 
 // Parameter creates a "retrieves a parameter value" op in builder.
 //
@@ -43,6 +62,9 @@ func DecodeParameter(paramOp *Op) (name string, paramIndex int, shape Shape) {
 //
 // This is particularly useful to get multiple outputs to a computation.
 func Tuple(inputs ...*Op) (*Op, error) {
+	if err := validateOpsBuilders("GetTupleElement", inputs...); err != nil {
+		return nil, err
+	}
 	builder := inputs[0].builder
 	tupleOp := newOp(TupleOp, inputs...)
 	err := builder.addOp(tupleOp)
@@ -200,8 +222,40 @@ func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
 // DecodeConvertDType retrieves the arguments for a ConvertDType op.
 func DecodeConvertDType(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }
 
+// Bitcast performs an elementwise bit-cast operation from a dtype to another dtype.
+// The bitcast doesn't "convert" anything, it just reinterprets the bits from x.DType() to the targetDType.
+//
+// If x.DType() and targetDType use the same number of bytes (targetDType.Size() = x.DType().Size()),
+// the dimensions are not changed, simply the dtype is changed.
+//
+// If targetDType.Size() > x.DType().Size(), it requires that x last axis to have a dimension of targetDType.Size() / x.DType().Size(),
+// and the returned shape will trim the last axis.
+//
+// If targetDType.Size() < x.DType().Size(), the returned shape will have an extra axis in the end, with dimension of
+// x.DType().Size() / targetDType.Size().
+//
+// E.g: Bitcast([1]uint32{0xdeadbeef}, dtypes.UInt16) -> [1][2]uint16{{0xdead, 0xbeef}}
+func Bitcast(x *Op, targetDType dtypes.DType) (*Op, error) {
+	if x.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
+	op := newOp(BitcastOp, x)
+	op.IntArg = int(targetDType.PrimitiveType())
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBitcast retrieves the arguments for a Bitcast op.
+func DecodeBitcast(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }
+
 // Where takes element-wise values from onTrue or onFalse depending on the value of condition (expected to be boolean).
 func Where(condition, onTrue, onFalse *Op) (*Op, error) {
+	if err := validateOpsBuilders("Where", condition, onTrue, onFalse); err != nil {
+		return nil, err
+	}
 	if condition.builder.IsNil() {
 		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
 	}
@@ -392,6 +446,9 @@ func Concatenate(axis int, operands ...*Op) (*Op, error) {
 		// Trivial solution.
 		return operands[0], nil
 	}
+	if err := validateOpsBuilders("Concatenate", operands...); err != nil {
+		return nil, err
+	}
 	dtype := operands[0].Shape.DType
 	for ii, op := range operands {
 		if op.Shape.DType != dtype {
@@ -516,6 +573,9 @@ type PadAxis struct {
 // There must be at most `operand.Rank()` axesConfig values. Missing PadAxis are assumed to be zeros,
 // that is, no padding for those axes.
 func Pad(x, fillValue *Op, axesConfig ...PadAxis) (*Op, error) {
+	if err := validateOpsBuilders("Pad", x, fillValue); err != nil {
+		return nil, err
+	}
 	builder := x.builder
 	rank := x.Shape.Rank()
 	if rank == 0 {
@@ -585,6 +645,9 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 //     be the gathered slices mapped to these `offsetAxes`. There must be one value per axis not collapsed with
 //     collapsedSliceAxes -- the value itself is an axis in the output shape.
 func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) (*Op, error) {
+	if err := validateOpsBuilders("Gather", operand, startIndices); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	rank := operand.Shape.Rank()
 	if rank == 0 {
@@ -663,6 +726,9 @@ func ScatterCustom(operand, scatterIndices, updates *Op,
 	updateComputation *XlaComputation,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	if err := validateOpsBuilders("ScatterCustom", operand, scatterIndices, updates); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	if operand.Shape.Rank() == 0 {
 		return nil, errors.New("cannot use ScatterCustom() with scalar operand")
@@ -708,6 +774,9 @@ func ScatterCustom(operand, scatterIndices, updates *Op,
 func ScatterAdd(operand, scatterIndices, updates *Op,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	if err := validateOpsBuilders("ScatterAdd", operand, scatterIndices, updates); err != nil {
+		return nil, err
+	}
 	return scatterImpl(operand, scatterIndices, updates, ReduceSumType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
 }
@@ -717,6 +786,9 @@ func ScatterAdd(operand, scatterIndices, updates *Op,
 func ScatterMax(operand, scatterIndices, updates *Op,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	if err := validateOpsBuilders("ScatterMax", operand, scatterIndices, updates); err != nil {
+		return nil, err
+	}
 	return scatterImpl(operand, scatterIndices, updates, ReduceMaxType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
 }
@@ -726,6 +798,9 @@ func ScatterMax(operand, scatterIndices, updates *Op,
 func ScatterMin(operand, scatterIndices, updates *Op,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	if err := validateOpsBuilders("ScatterMin", operand, scatterIndices, updates); err != nil {
+		return nil, err
+	}
 	return scatterImpl(operand, scatterIndices, updates, ReduceMinType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
 }
@@ -782,6 +857,9 @@ func DecodeScatter(op *Op) (
 // See details in https://openxla.org/xla/operation_semantics#selectandscatter
 func SelectAndScatterCustom(operand, source, defaultValue *Op, selectComputation, scatterComputation *XlaComputation,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	if err := validateOpsBuilders("SelectAndScatterCustom", operand, source, defaultValue); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	dtype := operand.Shape.DType
 	rank := operand.Shape.Rank()
@@ -840,6 +918,9 @@ func SelectAndScatterCustom(operand, source, defaultValue *Op, selectComputation
 // Details in SelectAndScatterCustom.
 func SelectAndScatterMax(operand, source *Op,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	if err := validateOpsBuilders("SelectAndScatterMax", operand, source); err != nil {
+		return nil, err
+	}
 	reduceType := ReduceMaxType
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
@@ -849,6 +930,9 @@ func SelectAndScatterMax(operand, source *Op,
 // Details in SelectAndScatterCustom.
 func SelectAndScatterMin(operand, source *Op,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	if err := validateOpsBuilders("SelectAndScatterMin", operand, source); err != nil {
+		return nil, err
+	}
 	reduceType := ReduceMinType
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
@@ -858,6 +942,9 @@ func SelectAndScatterMin(operand, source *Op,
 // Details in SelectAndScatterCustom.
 func SelectAndScatterSum(operand, source *Op,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
+	if err := validateOpsBuilders("SelectAndScatterSum", operand, source); err != nil {
+		return nil, err
+	}
 	reduceType := ReduceSumType
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
@@ -1025,6 +1112,10 @@ func DecodeSelectAndScatter(op *Op) (
 // It provides the basic means of implementing Einsum.
 func DotGeneral(lhs *Op, lhsContractingAxes, lhsBatchAxes []int,
 	rhs *Op, rhsContractingAxes, rhsBatchAxes []int) (*Op, error) {
+	if err := validateOpsBuilders("DotGeneral", lhs, rhs); err != nil {
+		return nil, err
+	}
+
 	builder := lhs.builder
 	dtype := lhs.Shape.DType
 	if lhs.Shape.IsScalar() || rhs.Shape.IsScalar() {
@@ -1116,6 +1207,9 @@ func DecodeReverse(op *Op) (x *Op, axes []int) {
 // Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
 // Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
 func BatchNormForInference(operand, scale, offset, mean, variance *Op, epsilon float32, axis int) (*Op, error) {
+	if err := validateOpsBuilders("BatchNormForInference", operand, scale, offset, mean, variance); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	op := newOp(BatchNormInferenceOp, operand, scale, offset, mean, variance)
 	op.IntArg = axis
@@ -1147,6 +1241,9 @@ func DecodeBatchNormForInference(op *Op) (operand, scale, offset, mean, variance
 // Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
 // Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.
 func BatchNormForTraining(operand, scale, offset *Op, epsilon float32, axis int) (normalized, batchMean, batchVariance *Op, err error) {
+	if err := validateOpsBuilders("BatchNormForTraining", operand, scale, offset); err != nil {
+		return nil, nil, nil, err
+	}
 	builder := operand.builder
 	op := newOp(BatchNormTrainingOp, operand, scale, offset)
 	op.IntArg = axis
@@ -1374,6 +1471,9 @@ func scalarStartIndices(funcName string, startIndices []*Op) ([]*Op, error) {
 //
 // See description in https://openxla.org/xla/operation_semantics#dynamicslice
 func DynamicSlice(operand *Op, startIndices []*Op, sliceDims []int) (*Op, error) {
+	if err := validateOpsBuilders("DynamicSlice", append([]*Op{operand}, startIndices...)...); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	var err error
 	startIndices, err = scalarStartIndices("DynamicSlice", startIndices)
@@ -1405,6 +1505,9 @@ func DecodeDynamicSlice(op *Op) (operand *Op, startIndices []*Op, sliceDims []in
 //
 // See description in https://openxla.org/xla/operation_semantics#dynamicupdateslice
 func DynamicUpdateSlice(operand, update *Op, startIndices []*Op) (*Op, error) {
+	if err := validateOpsBuilders("DynamicUpdateSlice", append([]*Op{operand, update}, startIndices...)...); err != nil {
+		return nil, err
+	}
 	builder := operand.builder
 	if operand.Shape.DType != update.Shape.DType {
 		return nil, errors.Errorf("operand and update dtypes (%s and %s) don't match for DynamicUpdateSlice", operand.Shape.DType, update.Shape.DType)

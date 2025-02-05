@@ -6,6 +6,7 @@ package xlabuilder
 */
 import "C"
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"runtime"
@@ -101,6 +102,12 @@ func (b *XlaBuilder) Destroy() {
 // Name returns the name after it was canonicalized by the XlaBuilder library -- so it may be different from the
 // one given.
 func (b *XlaBuilder) Name() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if b.cXlaBuilder == nil {
+		return fmt.Sprintf("%s (destroyed)", b.name)
+	}
 	return b.name
 }
 

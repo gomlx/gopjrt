@@ -1,5 +1,11 @@
 # Gopjrt Changelog
 
+# Next
+
+* Package `xlabuilder`:
+  * Added name of builder on the error message when trying to combine nodes from different builders.
+* Added `BitcastConvert` op.
+
 # v0.6.0
 
 * Added bitwise operations and renamed old logical operators to `{Logical,Bitwise}{And,Or,Xor,Not}`, and 

@@ -119,6 +119,46 @@ func TestConvertDType(t *testing.T) {
 	require.Equal(t, []int{3, 2}, dims)
 }
 
+func TestBitcast(t *testing.T) {
+	client := getPJRTClient(t)
+
+	// Bitcast to the same size.
+	{
+		builder := New(t.Name() + "-same")
+		defer builder.Destroy()
+		x := capture(Constant(builder, mustNewArrayLiteral(t, []int32{0xfedbeef, 0xbabcafe}, 2))).Test(t)
+		output := capture(Bitcast(x, dtypes.Uint32)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[uint32](t, client, exec)
+		require.Equal(t, []int{2}, dims)
+		require.Equal(t, []uint32{0xfedbeef, 0xbabcafe}, got)
+	}
+
+	// Bitcast to smaller size.
+	{
+		builder := New(t.Name() + "-to-smaller")
+		defer builder.Destroy()
+		x := capture(Constant(builder, mustNewArrayLiteral(t, []uint32{0xdeadbeef}, 1))).Test(t)
+		output := capture(Bitcast(x, dtypes.Uint16)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[uint16](t, client, exec)
+		require.Equal(t, []int{1, 2}, dims)
+		require.Equal(t, []uint16{0xbeef, 0xdead}, got)
+	}
+
+	// Bitcast to larger size.
+	{
+		builder := New(t.Name() + "-to-larger")
+		defer builder.Destroy()
+		x := capture(Constant(builder, mustNewArrayLiteral(t, []uint16{0xbeef, 0xdead, 0xfade, 0xcafe}, 2, 2))).Test(t)
+		output := capture(Bitcast(x, dtypes.Uint32)).Test(t)
+		exec := compile(t, client, capture(builder.Build(output)).Test(t))
+		got, dims := execArrayOutput[uint32](t, client, exec)
+		require.Equal(t, []int{2}, dims)
+		require.Equal(t, []uint32{0xdeadbeef, 0xcafefade}, got)
+	}
+}
+
 func TestWhere(t *testing.T) {
 	client := getPJRTClient(t)
 	builder := New(t.Name())

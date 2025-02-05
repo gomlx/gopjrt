@@ -222,6 +222,35 @@ func ConvertDType(x *Op, dtype dtypes.DType) (*Op, error) {
 // DecodeConvertDType retrieves the arguments for a ConvertDType op.
 func DecodeConvertDType(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }
 
+// Bitcast performs an elementwise bit-cast operation from a dtype to another dtype.
+// The bitcast doesn't "convert" anything, it just reinterprets the bits from x.DType() to the targetDType.
+//
+// If x.DType() and targetDType use the same number of bytes (targetDType.Size() = x.DType().Size()),
+// the dimensions are not changed, simply the dtype is changed.
+//
+// If targetDType.Size() > x.DType().Size(), it requires that x last axis to have a dimension of targetDType.Size() / x.DType().Size(),
+// and the returned shape will trim the last axis.
+//
+// If targetDType.Size() < x.DType().Size(), the returned shape will have an extra axis in the end, with dimension of
+// x.DType().Size() / targetDType.Size().
+//
+// E.g: Bitcast([1]uint32{0xdeadbeef}, dtypes.UInt16) -> [1][2]uint16{{0xdead, 0xbeef}}
+func Bitcast(x *Op, targetDType dtypes.DType) (*Op, error) {
+	if x.builder.IsNil() {
+		return nil, errors.New("trying to access XlaBuilder that is nil or already destroyed")
+	}
+	op := newOp(BitcastOp, x)
+	op.IntArg = int(targetDType.PrimitiveType())
+	err := x.builder.addOp(op)
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
+}
+
+// DecodeBitcast retrieves the arguments for a Bitcast op.
+func DecodeBitcast(op *Op) (dtype dtypes.DType) { return dtypes.DType(op.IntArg) }
+
 // Where takes element-wise values from onTrue or onFalse depending on the value of condition (expected to be boolean).
 func Where(condition, onTrue, onFalse *Op) (*Op, error) {
 	if err := validateOpsBuilders("Where", condition, onTrue, onFalse); err != nil {

@@ -99,6 +99,7 @@ enum OpType {
   BitwiseOrOp,
   BitwiseXorOp,
   BitwiseNotOp,
+  BitcastOp,
 };
 
 #ifdef __cplusplus

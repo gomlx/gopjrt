@@ -119,6 +119,10 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = xla::ConvertElementType(
         *inputs[0], static_cast<xla::PrimitiveType>(serialized_op->integer));
     break;
+  case BitcastOp:
+    op = xla::BitcastConvertType(
+        *inputs[0], static_cast<xla::PrimitiveType>(serialized_op->integer));
+    break;
   case WhereOp:
     op = xla::Select(*inputs[0], *inputs[1], *inputs[2]);
     break;

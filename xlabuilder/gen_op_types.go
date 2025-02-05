@@ -96,4 +96,5 @@ const (
 	BitwiseOrOp
 	BitwiseXorOp
 	BitwiseNotOp
+	BitcastOp
 )

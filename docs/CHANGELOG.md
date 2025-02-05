@@ -4,7 +4,7 @@
 
 * Package `xlabuilder`:
   * Added name of builder on the error message when trying to combine nodes from different builders.
-* Added `Bitcast` op.
+* Added `BitcastConvert` op.
 
 # v0.6.0
 

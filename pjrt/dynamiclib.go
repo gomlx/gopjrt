@@ -176,6 +176,16 @@ func searchPlugin(searchName string) (path string, found bool) {
 
 func searchPlugins(searchName string) (pluginsPaths map[string]string) {
 	pluginsPaths = make(map[string]string)
+
+	// Include plugins already (pre-)loaded.
+	for name, pluginPath := range loadedPlugins {
+		if searchName != "" && searchName != name {
+			continue
+		}
+		pluginsPaths[name] = pluginPath.Path()
+	}
+
+	// Search for plugins in other paths.
 	for _, pluginPath := range pluginSearchPaths {
 		for _, pattern := range []string{
 			"pjrt-plugin-*.so", "pjrt_plugin_*.so", "pjrt_c_api_*_plugin.so",

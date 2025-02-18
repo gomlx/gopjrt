@@ -5,6 +5,7 @@
 * Package `xlabuilder`:
   * Added name of builder on the error message when trying to combine nodes from different builders.
 * Added `BitcastConvert` op.
+* Fixed `pjrt.AvailablePlugins()` to return statically pre-linked plugins. 
 
 # v0.6.0
 

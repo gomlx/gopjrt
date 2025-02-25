@@ -54,3 +54,10 @@ func TestAvailablePlugins(t *testing.T) {
 	fmt.Printf("Available plugins: %v\n", plugins)
 	require.NotEqualf(t, "", plugins[*flagPluginName], "Can not find %q plugin", *flagPluginName)
 }
+
+// TestSuppressAbseilLoggingHack never fails, since errors are simply logged.
+// But we leave it here even if to be manually checked.
+func TestSuppressAbseilLoggingHack(t *testing.T) {
+	SuppressAbseilLoggingHack(func() { fmt.Println("SuppressAbseilLoggingHack call 1") })
+	SuppressAbseilLoggingHack(func() { fmt.Println("SuppressAbseilLoggingHack call 2") })
+}

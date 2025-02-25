@@ -269,6 +269,9 @@ func checkPlugin(name, pluginPath string) (err error) {
 //
 // It's an overkill, because this may prevent valid logging, in some truly exceptional situation, but it's the only
 // solution I can think of for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
+//
+// Since file descriptors are a global resource, this function is not reentrant, and you should
+// make sure no two goroutines are calling this at the same time.
 func SuppressAbseilLoggingHack(fn func()) {
 	newFd, err := suppressLogging()
 	if err != nil {
@@ -278,7 +281,7 @@ func SuppressAbseilLoggingHack(fn func()) {
 			// Revert suppression: revert back newFd to 2
 			err := syscall.Dup3(newFd, 2, 0)
 			if err != nil {
-				klog.Errorf("Failed sycall.Dup2 while reverting suppression of logging: %v", err)
+				klog.Errorf("Failed sycall.Dup3 while reverting suppression of logging: %v", err)
 			}
 		}()
 	}
@@ -289,7 +292,7 @@ func SuppressAbseilLoggingHack(fn func()) {
 func suppressLogging() (newFd int, err error) {
 	newFd, err = syscall.Dup(2)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to duplicate file descriptor 2 (stderr) in order to silence abseil logging")
+		err = errors.Wrap(err, "failed to duplicate (syscall.Dup) file descriptor 2 (stderr) in order to silence abseil logging")
 		return
 	}
 	err = syscall.Close(2)

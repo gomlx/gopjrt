@@ -1,6 +1,7 @@
 package pjrt
 
 import (
+	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
@@ -22,6 +23,10 @@ func TestDonatableConfig(t *testing.T) {
 	comp := capture(builder.Build(fX)).Test(t)
 	exec, err := client.Compile().WithComputation(comp).Done()
 	require.NoErrorf(t, err, "Failed to compile program")
+
+	fmt.Println("Memory usage:")
+	fmt.Printf("OnDevice: %+v\n", exec.OnDeviceMemoryUsageStats)
+	fmt.Printf("OnHost: %+v\n", exec.OnHostMemoryUsageStats)
 
 	// Test the ExecutionConfig:
 	c := exec.Execute(nil, nil, nil)                       // nil values, we are not going to actually execute it.

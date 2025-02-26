@@ -58,6 +58,9 @@ type LoadedExecutable struct {
 
 	// NumOutputs of the executable.
 	NumOutputs int
+
+	// OnDeviceMemoryUsageStats, OnHostMemoryUsageStats can be used to estimate the required memory usage for the executable on device (and on host).
+	OnDeviceMemoryUsageStats, OnHostMemoryUsageStats ExecutableMemoryUsageStats
 }
 
 var numLoadedExecutables atomic.Int64
@@ -93,6 +96,12 @@ func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJ
 	if err != nil {
 		e.destroyOrLog()
 		return nil, errors.WithMessagef(err, "failed to Executable.NumOutputs from compiled LoadedExecutable")
+	}
+
+	e.OnDeviceMemoryUsageStats, e.OnHostMemoryUsageStats, err = e.executable.GetMemoryStats()
+	if err != nil {
+		e.destroyOrLog()
+		return nil, errors.WithMessagef(err, "failed to Executable.GetMemoryStats from compiled LoadedExecutable")
 	}
 	return e, nil
 }

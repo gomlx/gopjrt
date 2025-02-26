@@ -1,11 +1,13 @@
 # Gopjrt Changelog
 
-# Next
+# v0.6.1
 
 * Package `xlabuilder`:
   * Added name of builder on the error message when trying to combine nodes from different builders.
 * Added `BitcastConvert` op.
 * Fixed `pjrt.AvailablePlugins()` to return statically pre-linked plugins. 
+* Added memory usage information for executables: `pjrt.LoadedExecutable.OnDeviceMemoryUsageStats`
+  and `pjrt.LoadedExecutable.OnHostMemoryUsageStats`.
 
 # v0.6.0
 

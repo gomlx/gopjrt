@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/github/license/gomlx/gopjrt)](https://github.com/Kwynto/gosession/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gomlx/gopjrt)](https://goreportcard.com/report/github.com/gomlx/gopjrt)
 [![TestStatus](https://github.com/gomlx/gopjrt/actions/workflows/go.yaml/badge.svg)](https://github.com/gomlx/gopjrt/actions/workflows/go.yaml)
-![Coverage](https://img.shields.io/badge/Coverage-69.8%25-yellow)
+![Coverage](https://img.shields.io/badge/Coverage-70.0%25-yellow)
 
 **`gopjrt`** leverages [OpenXLA](https://openxla.org/) to compile, optimize and accelerate numeric 
 computations (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, Intel*, Apple Metal*) and TPU*. 

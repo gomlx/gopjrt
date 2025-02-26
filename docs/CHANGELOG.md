@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# v0.6.1
+# v0.6.1 - 2025/02/26
 
 * Package `xlabuilder`:
   * Added name of builder on the error message when trying to combine nodes from different builders.

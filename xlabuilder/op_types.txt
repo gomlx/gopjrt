@@ -226,8 +226,11 @@ BitwiseXor:two
 // BitwiseNot returns the element-wise bitwise AND operation.
 BitwiseNot:one
 
-
 Bitcast:special
 
+#################################### IMPORTANT ####################################
+# - New ops must be appended to the bottom -- changing the order would break
+#   all types of compatibility.
+# - Any changes require a bump in xlabuilder.cpp GopjrtXlaBuilderVersion.
+#################################### IMPORTANT ####################################
 
-################## New ops must be appended to the bottom. ##################

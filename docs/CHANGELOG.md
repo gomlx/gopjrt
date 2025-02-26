@@ -1,5 +1,9 @@
 # Gopjrt Changelog
 
+# v0.6.2 - 2025/02/26
+
+* Fixed C/C++ wrapper version.
+
 # v0.6.1 - 2025/02/26
 
 * Package `xlabuilder`:

@@ -209,12 +209,14 @@ func CVersion() string {
 //
 // This is needed because they can go out-of-sync in developers machines -- if one updates
 // the Go library, but not the corresponding C/C++ libgomlx_xlabuilder.so library.
-var MatchingCVersion = "v0.6.0"
+var MatchingCVersion = "v0.6.2"
 
 func init() {
 	if CVersion() != MatchingCVersion {
 		klog.Errorf(
 			"Gopjrt C/C++ library libgomlx_xlabuilder.so version is %q, but this Gopjrt "+
-				"version requires libgomlx_xlabuilder.so version %q", CVersion(), MatchingCVersion)
+				"version requires libgomlx_xlabuilder.so version %q. "+
+				"See https://github.com/gomlx/gopjrt on how to install the newest version.",
+			CVersion(), MatchingCVersion)
 	}
 }

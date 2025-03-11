@@ -68,7 +68,7 @@ func (b *CBuffer) Free() {
 
 // Bytes returns the buffer as a byte slice.
 //
-// Ownership is not transferred: remember to free CBuffer afterwards.
+// Ownership is not transferred: remember to free CBuffer afterward.
 func (b *CBuffer) Bytes() []byte {
 	if b.data == nil {
 		return nil

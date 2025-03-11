@@ -77,7 +77,9 @@ func (comp *XlaComputation) SerializedHLO() *cbuffer.CBuffer {
 	}
 	var vectorData *C.VectorData
 	vectorData = (*C.VectorData)(C.XlaComputationSerializedHLO(unsafe.Pointer(comp.cXlaComputation)))
-	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
+	cBuf := cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
+	C.free(unsafe.Pointer(vectorData))
+	return cBuf
 }
 
 // HasStableHLO returns whether StableHLO support was included in the build -- it's very large, so by default it is not.
@@ -111,7 +113,9 @@ func (comp *XlaComputation) SerializedStableHLO() (*cbuffer.CBuffer, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "while converting XlaComputation to StableHLO")
 	}
-	return cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true), nil
+	cBuf := cbuffer.New(unsafe.Pointer(vectorData.data), int(vectorData.count), true)
+	C.free(unsafe.Pointer(vectorData))
+	return cBuf, nil
 }
 
 // TextHLO generates the HLO program as a <serialized HLOModule proto> and returns its text representation.
@@ -130,6 +134,8 @@ func (comp *XlaComputation) TextHLO() string {
 }
 
 // TextStableHLO generates the StableHLO program.
+//
+// It returns an error if StableHLO code was not linked in (it's large). This can be checked with HasStableHLO.
 func (comp *XlaComputation) TextStableHLO() (string, error) {
 	if comp.IsNil() {
 		return "", errors.New("XlaComputation is nil, maybe it has already been destroyed?")

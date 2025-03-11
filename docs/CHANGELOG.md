@@ -1,5 +1,9 @@
 # Gopjrt Changelog
 
+# Next
+
+* Fixed small memory leak of a VectorData wrapper when converting to HLO/StableHLO (#31).
+
 # v0.6.2 - 2025/02/26
 
 * Fixed C/C++ wrapper version.

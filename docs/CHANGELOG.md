@@ -3,6 +3,7 @@
 # Next
 
 * Fixed small memory leak of a VectorData wrapper when converting to HLO/StableHLO (#31).
+* Fixed leak when destroying XlaBuilder.
 
 # v0.6.2 - 2025/02/26
 

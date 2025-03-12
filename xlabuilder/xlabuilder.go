@@ -90,13 +90,14 @@ func (b *XlaBuilder) Destroy() {
 	if b.IsNil() {
 		return
 	}
+	cXlaBuilder := b.cXlaBuilder
 	b.cXlaBuilder = nil
 	b.parent = nil // Help the GC just in case.
 	for _, subComp := range b.cachedStandardComputations {
 		subComp.Destroy()
 	}
 	b.cachedStandardComputations = nil
-	C.XlaBuilderDestroy(unsafe.Pointer(b.cXlaBuilder))
+	C.XlaBuilderDestroy(unsafe.Pointer(cXlaBuilder))
 }
 
 // Name returns the name after it was canonicalized by the XlaBuilder library -- so it may be different from the

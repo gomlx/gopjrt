@@ -1,0 +1,5 @@
+# Required to compile cc_static_library, otherwise it fails with the message
+# "Error in fail: cc_static_library is an experimental rule and must be enabled with --experimental_cc_static_library"
+#
+# This overrides the opposite flag set in openxla_xla_bazelrc.
+common --incompatible_enable_cc_toolchain_resolution

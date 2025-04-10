@@ -5,6 +5,7 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
+	"math"
 	"strings"
 	"testing"
 )
@@ -464,7 +465,7 @@ func TestScatter(t *testing.T) {
 		scatterAxesToOperandAxes := []int{0, 1}
 		indicesAreSorted := true
 		uniqueIndices := false // We scatter twice to index (4, 2)
-		output := capture(ScatterAdd(operand, indices, updates, indexVectorAxis, updateWindowAxes,
+		output := capture(ScatterSum(operand, indices, updates, indexVectorAxis, updateWindowAxes,
 			insertedWindowAxes, scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)).Test(t)
 
 		gotIndexVectorAxis, gotUpdateWindowAxes, gotInsertedWindowAxes, gotScatterAxesToOperandAxes, gotIndicesAreSorted, gotUniqueIndices := DecodeScatter(output)
@@ -771,4 +772,76 @@ func TestBitwise(t *testing.T) {
 		require.Equal(t, []int8{15, 10, 3}, got)
 		builder.Destroy()
 	}
+}
+
+// makeConst creates a constant in the XlaBuilder graph.
+// If dimensions is omitted and flat has more than one element,it is assumed to be a 1D tensor.
+func makeConst[T dtypes.Supported](t *testing.T, builder *XlaBuilder, flat []T, dimensions ...int) *Op {
+	if len(dimensions) == 0 && len(flat) > 1 {
+		dimensions = []int{len(flat)}
+	}
+	fmt.Printf("makeConst: flat=%v, dimensions=%v\n", flat, dimensions)
+	literal := mustNewArrayLiteral(t, flat, dimensions...)
+	fmt.Printf("\tliteral.shape=%s\n", literal.Shape())
+	return capture(Constant(builder, literal)).Test(t)
+}
+
+func TestScatterSum(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	initialValues := makeConst(t, builder, []float32{0, 0, 0, 0, 0})
+	updates := makeConst(t, builder, []float32{1, 3, 5, 7, 11, 13})
+	indices := makeConst(t, builder, []int32{0, 0, 0, 1, 1, 3})
+	fmt.Printf("indices.shape=%s\n", indices.Shape)
+	indices = capture(Reshape(indices, 6, 1)).Test(t)
+	var updateWindowAxes []int
+	insertedWindowAxes := []int{0}
+	scatterAxesToOperandAxes := []int{0}
+	output := capture(ScatterSum(initialValues, indices, updates, 1, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes, true, false)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	want := []float32{1 + 3 + 5, 7 + 11, 0, 13, 0}
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, want, got)
+	require.Equal(t, []int{len(want)}, dims)
+}
+
+func TestScatterMax(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	negInf := float32(math.Inf(-1))
+	initialValues := makeConst(t, builder, []float32{negInf, negInf, negInf, negInf, negInf})
+	updates := makeConst(t, builder, []float32{1, 3, 5, 7, 11, 13})
+	indices := makeConst(t, builder, []int32{0, 0, 0, 1, 1, 3})
+	indices = capture(Reshape(indices, 6, 1)).Test(t)
+	var updateWindowAxes []int
+	insertedWindowAxes := []int{0}
+	scatterAxesToOperandAxes := []int{0}
+	output := capture(ScatterMax(initialValues, indices, updates, 1, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes, true, false)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	want := []float32{5, 11, negInf, 13, negInf}
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, want, got)
+	require.Equal(t, []int{len(want)}, dims)
+}
+
+func TestScatterMin(t *testing.T) {
+	client := getPJRTClient(t)
+	builder := New(t.Name())
+
+	posInf := float32(math.Inf(1))
+	initialValues := makeConst(t, builder, []float32{posInf, posInf, posInf, posInf, posInf})
+	updates := makeConst(t, builder, []float32{1, 3, 5, 7, 11, 13})
+	indices := makeConst(t, builder, []int32{0, 0, 0, 1, 1, 3})
+	indices = capture(Reshape(indices, 6, 1)).Test(t)
+	var updateWindowAxes []int
+	insertedWindowAxes := []int{0}
+	scatterAxesToOperandAxes := []int{0}
+	output := capture(ScatterMin(initialValues, indices, updates, 1, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes, true, false)).Test(t)
+	exec := compile(t, client, capture(builder.Build(output)).Test(t))
+	want := []float32{1, 7, posInf, 13, posInf}
+	got, dims := execArrayOutput[float32](t, client, exec)
+	require.Equal(t, want, got)
+	require.Equal(t, []int{len(want)}, dims)
 }

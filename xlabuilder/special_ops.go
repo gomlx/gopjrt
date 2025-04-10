@@ -721,7 +721,7 @@ func DecodeGather(op *Op) (indexVectorAxis int, offsetAxes, collapsedSliceAxes, 
 // Full details in https://www.tensorflow.org/xla/operation_semantics#scatter.
 //
 // It takes a custom updateComputation used when scattering values.
-// See ScatterAdd for a version that adds the values when scattering.
+// See ScatterSum for a version that adds the values when scattering.
 func ScatterCustom(operand, scatterIndices, updates *Op,
 	updateComputation *XlaComputation,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
@@ -769,16 +769,26 @@ func ScatterCustom(operand, scatterIndices, updates *Op,
 	return op, nil
 }
 
-// ScatterAdd values from updates pointed by scatterIndices to operand.
+// ScatterSum values from updates pointed by scatterIndices to operand.
 // Details in ScatterCustom, which is used with the updateComputation set to Sum.
-func ScatterAdd(operand, scatterIndices, updates *Op,
+func ScatterSum(operand, scatterIndices, updates *Op,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) (*Op, error) {
-	if err := validateOpsBuilders("ScatterAdd", operand, scatterIndices, updates); err != nil {
+	if err := validateOpsBuilders("ScatterSum", operand, scatterIndices, updates); err != nil {
 		return nil, err
 	}
 	return scatterImpl(operand, scatterIndices, updates, ReduceSumType, indexVectorAxis, updateWindowAxes, insertedWindowAxes,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
+}
+
+// ScatterAdd is an alias to ScatterSum.
+//
+// Deprecated: use ScatterSum instead, it will be removed in future versions.
+func ScatterAdd(operand, scatterIndices, updates *Op,
+	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
+	indicesAreSorted, uniqueIndices bool) (*Op, error) {
+	return ScatterSum(operand, scatterIndices, updates, indexVectorAxis, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes,
+		indicesAreSorted, uniqueIndices)
 }
 
 // ScatterMax scatter values from updates pointed by scatterIndices to operand, by taking the Max.
@@ -805,7 +815,7 @@ func ScatterMin(operand, scatterIndices, updates *Op,
 		scatterAxesToOperandAxes, indicesAreSorted, uniqueIndices)
 }
 
-// scatterImpl is a helper function for ScatterAdd, ScatterMax, ScatterMin.
+// scatterImpl is a helper function for ScatterSum, ScatterMax, ScatterMin.
 func scatterImpl(operand, scatterIndices, updates *Op,
 	reduceType ReduceOpType,
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
@@ -824,7 +834,7 @@ func scatterImpl(operand, scatterIndices, updates *Op,
 	return op, nil
 }
 
-// DecodeScatter retrieves the arguments for a Scatter (ScatterCustom or ScatterAdd) op.
+// DecodeScatter retrieves the arguments for a Scatter (ScatterCustom or ScatterSum) op.
 func DecodeScatter(op *Op) (
 	indexVectorAxis int, updateWindowAxes, insertedWindowAxes, scatterAxesToOperandAxes []int,
 	indicesAreSorted, uniqueIndices bool) {

@@ -42,7 +42,7 @@ using namespace std;
 // This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
 // we don't bump the version of the C/C++ code if it doesn't change.
 // But when it changes, it matches the Gopjrt version it's being released with.
-const char *GopjrtXlaBuilderVersion = "v0.6.2";
+const char *GopjrtXlaBuilderVersion = "v0.6.3";
 
 // ShapeFromXlaShape allocates and sets a new Shape struct set with the same
 // shape defined by xla::Shape. C++ only.
@@ -255,9 +255,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
       return new absl::Status(std::move(shape_or.status()));
     }
     xla::PrimitiveType primitive_type = shape_or.value().element_type();
-    auto update_computation =
-        CreateScalarAddComputation(primitive_type, builder);
-    op = Scatter(*inputs[0], *inputs[1], *inputs[2], update_computation,
+    op = Scatter(*inputs[0], *inputs[1], *inputs[2], *(serialized_op->computation),
                  scatter_dims, indices_are_sorted, unique_indices);
     break;
   }

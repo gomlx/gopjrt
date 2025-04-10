@@ -33,7 +33,7 @@ type Op struct {
 	// them.
 	UserPayload any
 
-	// ReduceType is informative only. For some ops (ReduceMax, ScatterAdd, etc.) it informs what kind of
+	// ReduceType is informative only. For some ops (ReduceMax, ScatterSum, etc.) it informs what kind of
 	// standard computations were used (set in ComputationArg).
 	ReduceType ReduceOpType
 

@@ -12,7 +12,8 @@
 # Versions 8 and above don't work. They seem to require blzmod (and the compatibility --enable_workspace build option
 # doesn't seem to work the same):
 # export USE_BAZEL_VERSION=last_green
-export USE_BAZEL_VERSION=7.4.0  # First version allowing cc_static_library rule.
+export USE_BAZEL_VERSION=7.4.1  # Same used by OpenXLA/XLA as of 2025-04-10
+# export USE_BAZEL_VERSION=7.6.1
 
 DEBUG=0
 OUTPUT_DIR=""
@@ -97,7 +98,6 @@ BUILD_TARGET="${BUILD_TARGET:-:gomlx_xlabuilder_${TARGET_PLATFORM}}"
 BUILD_FLAGS="${BUILD_FLAGS} --action_env=TARGET_PLATFORM=${TARGET_PLATFORM} --define=TARGET_PLATFORM=${TARGET_PLATFORM}"
 STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=xla_configure.${TARGET_PLATFORM}.bazelrc"
 
-
 # Switch statement for TARGET_PLATFORM.
 case "${TARGET_PLATFORM}" in
   "linux_amd64")
@@ -169,6 +169,17 @@ BUILD_FLAGS="${BUILD_FLAGS} --cxxopt=-Wno-macro-redefined"
 # Whatever version is set here, XLA seems to require a matching "requirment_lock_X_YY.txt" file, where
 # X=3, YY=11 match the python version.
 export HERMETIC_PYTHON_VERSION=3.11
+
+# Add GoMLX startup flags, they come last so they can override XLA's flags.
+STARTUP_FLAGS="${STARTUP_FLAGS} --bazelrc=gomlx.bazelrc"
+
+if [[ "${BUILD_TARGET}" = "clean" ]]; then
+  "${BAZEL}" ${STARTUP_FLAGS} clean ${BUILD_FLAGS} --build_tag_filters=-tfdistributed
+  exit
+elif [[ "${BUILD_TARGET}" = "expunge" ]]; then
+  "${BAZEL}" ${STARTUP_FLAGS} clean --expunge ${BUILD_FLAGS} --build_tag_filters=-tfdistributed
+  exit
+fi
 
 # Invoke bazel build
 set -vx

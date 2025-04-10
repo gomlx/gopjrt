@@ -45,10 +45,10 @@ Shape *ShapeFromXlaShape(const xla::Shape &xla_shape) {
     return shape;
   }
   if (xla_shape.IsArray()) {
-    shape->rank = xla_shape.rank();
-    if (shape->rank > 0) {
-      shape->dimensions = Malloc<int64_t>(shape->rank);
-      const auto xla_shape_dims = xla_shape.dimensions();
+    const auto xla_shape_dims = xla_shape.dimensions();
+    auto rank = xla_shape_dims.size();
+    if (rank > 0) {
+      shape->dimensions = Malloc<int64_t>(rank);
       std::copy(xla_shape_dims.begin(), xla_shape_dims.end(),
                 shape->dimensions);
     }

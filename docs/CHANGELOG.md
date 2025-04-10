@@ -1,9 +1,13 @@
 # Gopjrt Changelog
 
-# Next
+# v0.6.3 - 2025/04/10
 
 * Fixed small memory leak of a VectorData wrapper when converting to HLO/StableHLO (#31).
 * Fixed leak when destroying XlaBuilder.
+* Fixed C++ xla::Shape rank extraction -- xla::Shape::rank method was removed.
+* Updated OpenXLA/XLA builds; Fixed broken `cc_static_library` bazel/XLA configuration.
+* Fixed ScatterSum, ScatterMax and ScatterMin. Added unit tests.
+* Renamed ScatterAdd -> ScatterSum.
 
 # v0.6.2 - 2025/02/26
 

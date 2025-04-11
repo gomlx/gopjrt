@@ -1,6 +1,6 @@
-build --action_env CLANG_COMPILER_PATH=/usr/bin/clang-15
-build --repo_env CC=/usr/bin/clang-15
-build --repo_env BAZEL_COMPILER=/usr/bin/clang-15
+build --action_env CLANG_COMPILER_PATH=/opt/llvm20/bin/clang-20
+build --repo_env CC=/opt/llvm20/bin/clang-20
+build --repo_env BAZEL_COMPILER=/opt/llvm20/bin/clang-20
 build --action_env PYTHON_BIN_PATH=/usr/bin/python3
 build --python_path /usr/bin/python3
 test --test_env LD_LIBRARY_PATH

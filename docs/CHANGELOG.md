@@ -1,6 +1,10 @@
 # Gopjrt Changelog
 
-# v0.6.3 - 2025/04/10
+# Next
+
+* Fixed Scatter functions: indicesAreSorted and uniqueIndices were reversed.
+
+# v0.6.3 - 2025/04/11
 
 * Fixed small memory leak of a VectorData wrapper when converting to HLO/StableHLO (#31).
 * Fixed leak when destroying XlaBuilder.

@@ -232,8 +232,8 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     int pos = 0;
     xla::ScatterDimensionNumbers scatter_dims;
     scatter_dims.set_index_vector_dim(serialized_op->integer_array[pos++]);
-    bool unique_indices = bool(serialized_op->integer_array[pos++]);
     bool indices_are_sorted = bool(serialized_op->integer_array[pos++]);
+    bool unique_indices = bool(serialized_op->integer_array[pos++]);
     int64_t len_update_window_dims = serialized_op->integer_array[pos++];
     int64_t len_inserted_window_dims = serialized_op->integer_array[pos++];
     int64_t len_scatter_dims_to_operand_dims = serialized_op->integer_array[pos++];

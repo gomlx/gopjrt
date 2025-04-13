@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.6.4 - 2025/04/13
 
 * Fixed Scatter functions: indicesAreSorted and uniqueIndices were reversed.
 

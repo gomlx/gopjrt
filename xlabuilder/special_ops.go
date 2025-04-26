@@ -658,7 +658,7 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 //     this mean each row of the startIndices will point to the first 3 axis (0,1 and 2) in operand.
 //     In many cases this is [0, 1, 2, ..., operand.Shape.Rank()-1], that is, each "index vector" fully defines
 //     an element on the operand. In some this is only a prefix of the operand's rank.
-//     For those axis in the operand not explicitly set (so if len(startIndexMap) < operand.Rank()), the correspoding
+//     For those axis in the operand not explicitly set (so if len(startIndexMap) < operand.Rank()), the corresponding
 //     axis start index is considered to be 0, and one sets the sliceSizes to take the slice one wants (typically the
 //     full slice).
 //   - sliceSizes: once the start index from where to gather is resolved, this defines how much data in each axis

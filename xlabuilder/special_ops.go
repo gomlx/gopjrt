@@ -665,8 +665,8 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 //     to gather. The "offset" output axes (see above) will have dimensions equal to this number for not axes that
 //     are not collapsed.
 //   - indicesAreSorted: can be set to true if its guaranteed that startIndices are sorted (in ascending order,
-//     after scattering its values according to start_index_map) by the user. If they are not then
-//     the semantics are implementation defined.
+//     after scattering its values according to start_index_map) by the user. This allows for some optimzations
+//     in some platforms.
 func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) (*Op, error) {
 	if err := validateOpsBuilders("Gather", operand, startIndices); err != nil {
 		return nil, err

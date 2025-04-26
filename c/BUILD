@@ -67,7 +67,7 @@ genrule(
 # Generate genrules for each supported platform.
 gomlx_xlabuilder_genrule("linux_amd64")
 
-gomlx_xlabuilder_genrule("amazonlinux_amd64")
+gomlx_xlabuilder_genrule("linux_amd64_amazonlinux")
 
 gomlx_xlabuilder_genrule("darwin_amd64")
 

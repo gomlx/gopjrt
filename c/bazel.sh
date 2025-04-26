@@ -107,6 +107,7 @@ case "${TARGET_PLATFORM}" in
 
   "amazonlinux_amd64")
     echo "Building for Amazon Linux amd64"
+    BUILD_TARGET="gomlx_xlabuilder_linux_amd64_amazonlinux"
     BUILD_FLAGS="${BUILD_FLAGS} --config=linux"
     ;;
 

@@ -1,5 +1,9 @@
 # Gopjrt Changelog
 
+# Next
+
+* Renamed Gather() parameter offsetAxes to offsetOutputAxes to avoid confusion.
+
 # v0.6.4 - 2025/04/13
 
 * Fixed Scatter functions: indicesAreSorted and uniqueIndices were reversed.

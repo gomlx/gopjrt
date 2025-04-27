@@ -644,14 +644,17 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 //     It is typically the last axis of startIndices, so startIndices.Shape.Rank()-1.
 //     There is a special case where indexVectorAxis == startIndices.Rank() in which case we assume there is an
 //     extra virtual axis in startIndices of size 1, in which case output.Rank() = startIndices.Rank() + len(offsetAxes).
-//   - offsetAxes: all axes in the operand will either become an "offset axis" in the output, if their slice size > 1,
-//     of optionally collapsed (or "squeezed") in the output, if their slice size == 1. This argument lists the axes
-//     in the operand that marked to be "offset", so they will exist in the output.
-//     Every axis in the operand must either be in offsetAxes or in collapsedSliceAxes.
+//   - offsetOutputAxes: axes in the _output_ (not on the operand) that will hold the "offset slices", slices that are not
+//     collapsed. It points in which position (axis) in the output these slices should show up. Any axis in sliceSizes
+//     that is > 1 must feature here.
+//     Notice all axes in the operand will either become an "offset axis" in the output, if their slice size > 1,
+//     of optionally collapsed (or "squeezed") in the output, if their slice size == 1. We map the axes in the output
+//     (given in offsetAxes) to the axes in the operand (the axes not present in collapsedSliceAxes) sequentially.
+//     One must have Rank(operand) == len(collapsedSliceAxes) + len(offsetAxes).
 //   - collapsedSliceAxes: for sliceSizes that are 1 in the operand, one may not want to include them in the output.
-//     The operand axes included here are marked to be collapsed (removed) in the output. Notice, the corresponding
+//     The _operand_ axes included here are marked to be collapsed (removed) in the output. Notice, the corresponding
 //     value in sliceSizes must be 1.
-//     Every axis in the operand must either be in offsetAxes or in collapsedSliceAxes.
+//     One must have Rank(operand) == len(collapsedSliceAxes) + len(offsetOutputAxes).
 //   - startIndexMap: this maps which value in startIndices is used for which axis index in the slice to be gathered.
 //     Notice len(startIndexMap) must match the startIndices.Shape().Dimensions[indexVectorAxis].
 //     E.g: if startIndices.shape=(2, 3), indexVectorAxis=1, and operand.rank=4 and startIndexMap=[]int{0, 1, 2},
@@ -665,9 +668,9 @@ func DecodePad(op *Op) (axesConfig []PadAxis) {
 //     to gather. The "offset" output axes (see above) will have dimensions equal to this number for not axes that
 //     are not collapsed.
 //   - indicesAreSorted: can be set to true if its guaranteed that startIndices are sorted (in ascending order,
-//     after scattering its values according to start_index_map) by the user. This allows for some optimzations
+//     after scattering its values according to start_index_map) by the user. This allows for some optimizations
 //     in some platforms.
-func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) (*Op, error) {
+func Gather(operand, startIndices *Op, indexVectorAxis int, offsetOutputAxes, collapsedSliceAxes, startIndexMap, sliceSizes []int, indicesAreSorted bool) (*Op, error) {
 	if err := validateOpsBuilders("Gather", operand, startIndices); err != nil {
 		return nil, err
 	}
@@ -679,8 +682,8 @@ func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapse
 	op := newOp(GatherOp, operand, startIndices)
 
 	if klog.V(2).Enabled() {
-		klog.Infof("\tGather(operand=%s, start=%s, indexVectorAxis=%d, offsetAxes=%v, collapsedSliceAxes=%v, startIndexMap=%v, sliceSizes=%v\n",
-			operand.Shape, startIndices.Shape, indexVectorAxis, offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes)
+		klog.Infof("\tGather(operand=%s, start=%s, indexVectorAxis=%d, offsetOutputAxes=%v, collapsedSliceAxes=%v, startIndexMap=%v, sliceSizes=%v\n",
+			operand.Shape, startIndices.Shape, indexVectorAxis, offsetOutputAxes, collapsedSliceAxes, startIndexMap, sliceSizes)
 	}
 
 	// Encoding of the values as follows. IMPORTANT: this code needs to be in sync with corresponding
@@ -688,9 +691,9 @@ func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapse
 	// and with DecodeGather below.
 	//
 	//  * 6 first elements store the various parameters and lengths:
-	op.IntsArg = make([]int, 6+len(offsetAxes)+len(collapsedSliceAxes)+len(startIndexMap)+len(sliceSizes))
+	op.IntsArg = make([]int, 6+len(offsetOutputAxes)+len(collapsedSliceAxes)+len(startIndexMap)+len(sliceSizes))
 	op.IntsArg[0] = indexVectorAxis
-	op.IntsArg[1] = len(offsetAxes)
+	op.IntsArg[1] = len(offsetOutputAxes)
 	op.IntsArg[2] = len(collapsedSliceAxes)
 	op.IntsArg[3] = len(startIndexMap)
 	op.IntsArg[4] = len(sliceSizes)
@@ -698,7 +701,7 @@ func Gather(operand, startIndices *Op, indexVectorAxis int, offsetAxes, collapse
 
 	//  * Copy sequentially the contents of the 3 int arrays:
 	pos := 6
-	for _, slice := range [][]int{offsetAxes, collapsedSliceAxes, startIndexMap, sliceSizes} {
+	for _, slice := range [][]int{offsetOutputAxes, collapsedSliceAxes, startIndexMap, sliceSizes} {
 		if len(slice) > 0 {
 			copy(op.IntsArg[pos:], slice)
 			pos += len(slice)

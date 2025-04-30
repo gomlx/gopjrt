@@ -252,8 +252,9 @@ func (c *ExecutionConfig) OnDevicesByNum(devicesNum ...int) *ExecutionConfig {
 
 // DonateAll marks all inputs to be "donated".
 //
-// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
-// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+// Donated inputs become invalid after the execution, they are automatically destroyed.
+// Often donated arguments are also the output of a computation and are updated in place.
+// See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
 func (c *ExecutionConfig) DonateAll() *ExecutionConfig {
 	c.nonDonatableInputs = nil
 	return c
@@ -275,8 +276,9 @@ func (c *ExecutionConfig) DonateNone() *ExecutionConfig {
 //
 // This can be called more than once for different inputsIndices.
 //
-// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
-// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+// Donated inputs become invalid after the execution, they are automatically destroyed.
+// Often donated arguments are also the output of a computation and are updated in place.
+// See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
 func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 	c.nonDonatableInputs = slices.DeleteFunc(c.nonDonatableInputs, func(i int) bool {
 		return slices.Index(inputsIndices, i) != -1
@@ -286,8 +288,9 @@ func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 
 // SetDonate set the donate status of all inputs in one call. The default is no input is donated.
 //
-// Donated inputs become invalid after the execution. Often donated arguments are also the output of a computation
-// and are updated in place. See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
+// Donated inputs become invalid after the execution, they are automatically destroyed.
+// Often donated arguments are also the output of a computation and are updated in place.
+// See discussion in https://jax.readthedocs.io/en/latest/faq.html#buffer-donation
 func (c *ExecutionConfig) SetDonate(donate []bool) *ExecutionConfig {
 	if c.err != nil {
 		return c

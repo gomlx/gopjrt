@@ -35,11 +35,12 @@ Shape *ShapeFromXlaShape(const xla::Shape &xla_shape) {
   Shape *shape = Malloc<Shape>();
   shape->dtype = int32_t(xla_shape.element_type());
   if (shape->dtype == xla::TUPLE) {
-    shape->tuple_size = xla_shape.tuple_shapes_size();
+    auto &tuple_shapes = xla_shape.tuple_shapes();
+    shape->tuple_size = tuple_shapes.size();
     if (shape->tuple_size > 0) {
       shape->tuple_shapes = Malloc<Shape *>(shape->tuple_size);
       for (int ii = 0; ii < shape->tuple_size; ii++) {
-        shape->tuple_shapes[ii] = ShapeFromXlaShape(xla_shape.tuple_shapes(ii));
+        shape->tuple_shapes[ii] = ShapeFromXlaShape(tuple_shapes[ii]);
       }
     }
     return shape;

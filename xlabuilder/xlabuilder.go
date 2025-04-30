@@ -33,7 +33,7 @@ func CVersion() string {
 //
 // This is needed because they can go out-of-sync in developers machines -- if one updates
 // the Go library, but not the corresponding C/C++ libgomlx_xlabuilder.so library.
-var MatchingCVersion = "v0.6.3"
+var MatchingCVersion = "v0.7.0"
 
 func init() {
 	if CVersion() != MatchingCVersion {

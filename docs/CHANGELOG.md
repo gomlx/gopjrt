@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.7.0 - 2024/04/30
 
 * Renamed Gather() parameter offsetAxes to offsetOutputAxes to avoid confusion.
 * Donated buffers given for execution are automatically destroyed after the execution -- since they are invalidated.

@@ -16,6 +16,7 @@ Untitled.ipynb
 # Links to C-generated code.
 bazel-bin
 bazel-c
+bazel-gopjrt
 bazel-out
 bazel-mnt
 bazel-testlogs

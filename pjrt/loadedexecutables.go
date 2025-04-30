@@ -393,6 +393,17 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	for ii := range outputs {
 		outputs[ii] = newBuffer(e.client, outputBuffers[ii])
 	}
+
+	// Destroy donated inputs, since they are no longer valid.
+	for idx, input := range c.inputs {
+		if c.nonDonatableInputs == nil || slices.Index(c.nonDonatableInputs, idx) == -1 {
+			err := input.Destroy()
+			if err != nil {
+				err = errors.WithMessagef(err, "LoadedExecutable.Execute().Done() failed to destroy donated input %d: %v", idx, err)
+				return nil, err
+			}
+		}
+	}
 	return outputs, nil
 }
 

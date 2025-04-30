@@ -72,8 +72,8 @@ func (c *Client) CreateViewOfDeviceBuffer(rawData unsafe.Pointer, dtype dtypes.D
 	}
 
 	// Arena for memory allocations used by CGO.
-	arena := getArenaFromPool()
-	defer returnArenaToPool(arena)
+	arena := c.plugin.getArenaFromPool()
+	defer c.plugin.returnArenaToPool(arena)
 
 	// Arguments to PJRT call.
 	var args *C.PJRT_Client_CreateViewOfDeviceBuffer_Args
@@ -153,8 +153,8 @@ func (b *Buffer) UnsafePointer() (unsafe.Pointer, error) {
 	plugin := b.client.plugin
 
 	// Arena for memory allocations used by CGO.
-	arena := getArenaFromPool()
-	defer returnArenaToPool(arena)
+	arena := b.client.plugin.getArenaFromPool()
+	defer b.client.plugin.returnArenaToPool(arena)
 
 	// Arguments to PJRT call.
 	var args *C.PJRT_Buffer_UnsafePointer_Args

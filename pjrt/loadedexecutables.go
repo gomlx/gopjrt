@@ -331,7 +331,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	numInputs := len(c.inputs)
 	numOutputs := e.NumOutputs
 
-	// Allocations that will be used by CGO.
+	// Allocations that CGO will use.
 	// Except if the number of inputs/outputs is very large, used the default arena size.
 	var arena *arenaContainer
 	minSize := (numInputs+numOutputs)*3*8 /*pointer size*/ + 1024
@@ -339,8 +339,8 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		arena = newArena(arenaDefaultSize + minSize)
 		defer arena.Free()
 	} else {
-		arena = getArenaFromPool()
-		defer returnArenaToPool(arena)
+		arena = c.executable.plugin.getArenaFromPool()
+		defer c.executable.plugin.returnArenaToPool(arena)
 	}
 
 	// Create arguments structures for call to Execute.

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
+	"sync"
 	"unsafe"
 )
 
@@ -39,6 +40,9 @@ type Plugin struct {
 	//
 	// Most people don't need to worry about this, it should be an implementation detail.
 	UseStableHLO bool
+
+	// arenaPool reuses C-allocated buffers to pass parameters to the PJRT api. Pool shared across all clients.
+	arenaPool *sync.Pool
 }
 
 // pjrtPluginInitialize calls C.PJRT_Plugin_Initialize.
@@ -71,6 +75,9 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrap
 		api:          api,
 		dllHandle:    dllHandle,
 		UseStableHLO: os.Getenv("GOPJRT_NO_STABLE_HLO") == "",
+		arenaPool: &sync.Pool{
+			New: func() interface{} { return newArena(arenaDefaultSize) },
+		},
 	}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
@@ -145,4 +152,17 @@ func (p *Plugin) String() string {
 // The options (it can be left nil) are plugin specific, and should (but often aren't) documented by the plugins.
 func (p *Plugin) NewClient(options NamedValuesMap) (*Client, error) {
 	return newClient(p, options)
+}
+
+// getArenaFromPool gets an arena of the default size.
+// Must be matched with a call returnArenaToPool when it's no longer used.
+func (p *Plugin) getArenaFromPool() *arenaContainer {
+	return p.arenaPool.Get().(*arenaContainer)
+}
+
+// returnArenaToPool returns an arena acquired with getArenaFromPool.
+// It also resets the arena.
+func (p *Plugin) returnArenaToPool(a *arenaContainer) {
+	a.Reset()
+	p.arenaPool.Put(a)
 }

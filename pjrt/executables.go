@@ -118,8 +118,8 @@ func (e *Executable) GetMemoryStats() (onDevice, onHost ExecutableMemoryUsageSta
 	}
 	defer runtime.KeepAlive(e)
 
-	arena := getArenaFromPool()
-	defer returnArenaToPool(arena)
+	arena := e.plugin.getArenaFromPool()
+	defer e.plugin.returnArenaToPool(arena)
 
 	var args *C.PJRT_Executable_GetCompiledMemoryStats_Args
 

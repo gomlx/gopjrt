@@ -78,12 +78,12 @@ func TestBenchArena(t *testing.T) {
 			case "arenaPool":
 				fn = func() {
 					for _ = range repeats {
-						arena := getArenaFromPool()
+						arena := plugin.getArenaFromPool()
 						for idx := range numAllocations {
 							allocations[idx] = arenaAlloc[int](arena)
 						}
 						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
-						returnArenaToPool(arena)
+						plugin.returnArenaToPool(arena)
 					}
 				}
 			case "malloc":

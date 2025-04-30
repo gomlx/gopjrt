@@ -196,8 +196,8 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	}
 
 	// Arena for memory allocations used by CGO.
-	arena := getArenaFromPool()
-	defer returnArenaToPool(arena)
+	arena := b.client.plugin.getArenaFromPool()
+	defer b.client.plugin.returnArenaToPool(arena)
 
 	// Arguments to PJRT call.
 	var args *C.PJRT_Client_BufferFromHostBuffer_Args

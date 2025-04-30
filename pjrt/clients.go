@@ -135,7 +135,10 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 	}
 
 	// Prepare Client object: not all initialization is fatal to the construction of the client.
-	c := &Client{plugin: plugin, client: args.client}
+	c := &Client{
+		plugin: plugin,
+		client: args.client,
+	}
 	c.platform, err = pjrtClientPlatformName(plugin, c)
 	if err != nil {
 		// Non-fatal

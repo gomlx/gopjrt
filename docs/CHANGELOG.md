@@ -3,6 +3,8 @@
 # Next
 
 * Renamed Gather() parameter offsetAxes to offsetOutputAxes to avoid confusion.
+* Donated buffers given for execution are automatically destroyed after the execution -- since they are invalidated.
+* The Plugin now owns the arena pool (as opposed to being a global resource). 
 
 # v0.6.4 - 2025/04/13
 

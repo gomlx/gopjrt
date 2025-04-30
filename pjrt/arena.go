@@ -7,46 +7,26 @@ import "C"
 import (
 	"fmt"
 	"reflect"
-	"sync"
 	"unsafe"
 )
 
-// arenaContainer implements a trivial arena object to accelerate allocations that will be used in CGO calls.
+// arenaContainer implements a trivial arena object to speed up allocations that will be used in CGO calls.
 //
 // The issue it is trying to solve is that individual CGO calls are slow, including C.malloc().
 //
-// It pre-allocates the given size in bytes in C -- so it does not needs to be pinned when using CGO, and allow
-// for fast sub-allocations.
+// It pre-allocates the given size in bytes in C -- so it does not need to be pinned when using CGO and allows
+// for fast suballocations.
 // It can only be freed all at once.
 //
 // If you don't call Free at the end, it will leak the C allocated space.
 //
-// See newArena and arenaAlloc, and also arenaPool.
+// The Plugin object also provides an arenaPool that improves things a bit.
 type arenaContainer struct {
 	buf           []byte
 	size, current int
 }
 
 const arenaDefaultSize = 2048
-
-var arenaPool sync.Pool = sync.Pool{
-	New: func() interface{} {
-		return newArena(arenaDefaultSize)
-	},
-}
-
-// getArenaFromPool gets an arena of the default size.
-// Must be matched with a call returnArenaToPool when it's no longer used.
-func getArenaFromPool() *arenaContainer {
-	return arenaPool.Get().(*arenaContainer)
-}
-
-// returnArenaToPool returns an arena acquired with getArenaFromPool.
-// It also resets the arena.
-func returnArenaToPool(a *arenaContainer) {
-	a.Reset()
-	arenaPool.Put(a)
-}
 
 // newArena creates a new Arena with the given fixed size.
 //

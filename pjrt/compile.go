@@ -1,6 +1,8 @@
 package pjrt
 
+import "C"
 import (
+	"fmt"
 	"github.com/gomlx/gopjrt/cbuffer"
 	"github.com/gomlx/gopjrt/protos/compile_options"
 	"github.com/gomlx/gopjrt/protos/xla"
@@ -172,8 +174,10 @@ func (cc *CompileConfig) WithHLO(serialized []byte) *CompileConfig {
 }
 
 // WithStableHLO configures the program with a StableHLO program, encoded as a serialized `mlir.ModuleOp` object.
-// The serialized proto blob can allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
+// The serialized proto blob can be allocated in Go or in C/C++, and must be kept alive (and unchanged) until the
 // call to Done is returned.
+//
+// This also works with the program as a human-readable string (with StableHLO code).
 //
 // Either WithHLO, WithStableHLO or WithComputation must be set, before Done can be called
 // to trigger the computation, but not both.
@@ -186,6 +190,7 @@ func (cc *CompileConfig) WithStableHLO(serialized []byte) *CompileConfig {
 		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
 		return cc
 	}
+	fmt.Printf("Program:\n%s\n", string(serialized))
 
 	cc.program = serialized
 	cc.programFormat = "mlir"
@@ -206,6 +211,9 @@ type XlaComputation interface {
 
 	// SerializedStableHLO exports the computation as a StableHLO as an `mlir:ModuleOp`.
 	SerializedStableHLO() (*cbuffer.CBuffer, error)
+
+	// TextStableHLO returns the computation as a "human readable" StableHLO.
+	TextStableHLO() (string, error)
 }
 
 // WithComputation configures the program to the xlabuilder.XlaComputation -- see xlabuilder package.
@@ -226,8 +234,20 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 		return cc
 	}
 
+	fmt.Printf("prjt.Compile().WithComputation(): HasStableHLO=%v, UseStableHLO=%v, UseTextStableHLO=%v\n",
+		computation.HasStableHLO(), cc.plugin.UseStableHLO, cc.plugin.UseTextStableHLO)
+
 	// Get HLO program from computation.
-	if cc.plugin.UseStableHLO && computation.HasStableHLO() {
+	if cc.plugin.UseTextStableHLO && computation.HasStableHLO() {
+		// Convert computation graph to StableHLO
+		text, err := computation.TextStableHLO()
+		if err != nil {
+			cc.err = err
+			return cc
+		}
+		cc.cbufferToFree = cbuffer.NewFromString(text, true)
+		cc.WithStableHLO(cc.cbufferToFree.Bytes())
+	} else if cc.plugin.UseStableHLO && computation.HasStableHLO() {
 		// Convert computation graph to StableHLO
 		var err error
 		cc.cbufferToFree, err = computation.SerializedStableHLO()

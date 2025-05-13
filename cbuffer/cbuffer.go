@@ -55,8 +55,16 @@ func New(data unsafe.Pointer, size int, withStack bool) *CBuffer {
 	return b
 }
 
-// Free underlying data.
-// It sets the pointer to nil, so if it is called again it is a no-op.
+// NewFromString returns a CBuffer that holds a copy of the given string.
+//
+// Like a normal CBuffer, it needs to be freed.
+func NewFromString(s string, withStack bool) *CBuffer {
+	data := unsafe.Pointer(C.CString(s))
+	return New(data, len(s)+1, withStack)
+}
+
+// Free the underlying data.
+// It sets the pointer to nil, so if it is called again, it is a no-op.
 func (b *CBuffer) Free() {
 	if b.data == nil {
 		return

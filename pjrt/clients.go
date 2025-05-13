@@ -82,7 +82,7 @@ func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, er
 // pjrtClientCompile compiles the program. Remember to make sure that the both the program and and compileOptionsProto
 // are pinned until the C function returns.
 func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFormat string, compileOptionsProto []byte) (*LoadedExecutable, error) {
-	// Create program structure.
+	// Create the program struct.
 	var cProgram *C.PJRT_Program
 	cProgram = C.new_PJRT_Program()
 	defer cFree(cProgram)

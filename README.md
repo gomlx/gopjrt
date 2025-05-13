@@ -18,7 +18,7 @@ See example 2 below.
 (*) Not tested or partially supported by the hardware vendor.
 
 `gopjrt` aims to be minimalist and robust: it provides well maintained, extensible Go wrappers for
-[OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/client/xla_builder.h) libraries.
+[OpenXLA PJRT](https://openxla.org/#pjrt) and [OpenXLA XlaBuilder](https://github.com/openxla/xla/blob/main/xla/hlo/builder/xla_builder.h) libraries.
 
 `gopjrt` is not very ergonomic (error handling everywhere), but it's expected to be a stable building block for
 other projects to create a friendlier API on top. The same way [Jax](https://jax.readthedocs.io/en/latest/) is a friendlier API

@@ -60,7 +60,9 @@ func New(data unsafe.Pointer, size int, withStack bool) *CBuffer {
 // Like a normal CBuffer, it needs to be freed.
 func NewFromString(s string, withStack bool) *CBuffer {
 	data := unsafe.Pointer(C.CString(s))
-	return New(data, len(s)+1, withStack)
+	// Notice we don't include the '\0' in the length, even thought it's likely
+	// allocated along.
+	return New(data, len(s), withStack)
 }
 
 // Free the underlying data.

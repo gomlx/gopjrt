@@ -134,7 +134,7 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 		return nil, err
 	}
 
-	// Prepare Client object: not all initialization is fatal to the construction of the client.
+	// Prepare the Client object: not all initializations are fatal to the construction of the client.
 	c := &Client{
 		plugin: plugin,
 		client: args.client,

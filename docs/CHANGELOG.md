@@ -2,7 +2,8 @@
 
 # Next
 
-* Fixed issue (cycles and runtime finalizers) where Client objects never got garbage collected.
+* Fixed the issue where Client objects never got garbage collected, due to cycles in finalizers.
+  * Internal refactoring changing `runtime.SetFinalizer` to `runtime.AddCleanUp`.
 * Added GOPJRT_TEXT_STABLE_HLO option to force XlaBuilder to use StableHlo text representation.
   * Use with `-vmodule=compile=2` to enable logging of each program compiled. 
 

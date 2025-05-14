@@ -17,8 +17,12 @@ import (
 
 // CBuffer is a generic wrapper to a C/C++ data, which is assumed to own the underlying data.
 type CBuffer struct {
-	data  unsafe.Pointer
+	wrapper *cBufferWrapper
+}
+
+type cBufferWrapper struct {
 	size  int
+	data  unsafe.Pointer
 	stack []byte
 }
 
@@ -27,14 +31,14 @@ type CBuffer struct {
 // If `withStack` is set to true, it also stores a stack of where it was created.
 // This is used for debugging if it is garbage collected without being freed.
 func New(data unsafe.Pointer, size int, withStack bool) *CBuffer {
-	b := &CBuffer{data: data, size: size}
+	b := &CBuffer{&cBufferWrapper{data: data, size: size}}
 	if withStack {
 		buf := make([]byte, 10*1024)
 		n := runtime.Stack(buf, false)
-		b.stack = buf[:n]
+		b.wrapper.stack = buf[:n]
 	}
-	runtime.SetFinalizer(b, func(b *CBuffer) {
-		if b.data == nil {
+	runtime.AddCleanup(b, func(wrapper *cBufferWrapper) {
+		if wrapper.data == nil {
 			return // Correctly freed.
 		}
 
@@ -46,12 +50,12 @@ func New(data unsafe.Pointer, size int, withStack bool) *CBuffer {
 		// some mysterious spurious errors due to reuse of a freed pointer.
 
 		// Log about CBuffer not having been freed.
-		if b.stack == nil {
-			klog.Errorf("CBuffer of %d bytes garbage collected without the corresponding data being freed", b.size)
+		if wrapper.stack == nil {
+			klog.Errorf("CBuffer of %d bytes garbage collected without the corresponding data being freed", wrapper.size)
 		} else {
-			klog.Errorf("CBuffer of %d bytes garbage collected without the corresponding data being freed. Stack:\n%s\n", b.size, b.stack)
+			klog.Errorf("CBuffer of %d bytes garbage collected without the corresponding data being freed. Stack:\n%s\n", wrapper.size, wrapper.stack)
 		}
-	})
+	}, b.wrapper)
 	return b
 }
 
@@ -65,23 +69,27 @@ func NewFromString(s string, withStack bool) *CBuffer {
 	return New(data, len(s), withStack)
 }
 
+func (wrapper *cBufferWrapper) Free() {
+	if wrapper.data == nil {
+		return
+	}
+	C.free(wrapper.data)
+	wrapper.data = nil
+	wrapper.size = 0
+}
+
 // Free the underlying data.
 // It sets the pointer to nil, so if it is called again, it is a no-op.
 func (b *CBuffer) Free() {
-	if b.data == nil {
-		return
-	}
-	C.free(b.data)
-	b.data = nil
-	b.size = 0
+	b.wrapper.Free()
 }
 
 // Bytes returns the buffer as a byte slice.
 //
 // Ownership is not transferred: remember to free CBuffer afterward.
 func (b *CBuffer) Bytes() []byte {
-	if b.data == nil {
+	if b.wrapper.data == nil {
 		return nil
 	}
-	return unsafe.Slice((*byte)(b.data), b.size)
+	return unsafe.Slice((*byte)(b.wrapper.data), b.wrapper.size)
 }

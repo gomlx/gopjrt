@@ -190,7 +190,7 @@ func (cc *CompileConfig) WithStableHLO(serialized []byte) *CompileConfig {
 		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
 		return cc
 	}
-	fmt.Printf("Program:\n%s\n", string(serialized))
+	klog.V(2).Infof("Program:\n%s\n", string(serialized))
 
 	cc.program = serialized
 	cc.programFormat = "mlir"

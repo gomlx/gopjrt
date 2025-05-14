@@ -79,7 +79,7 @@ func (c *Client) CreateViewOfDeviceBuffer(rawData unsafe.Pointer, dtype dtypes.D
 	var args *C.PJRT_Client_CreateViewOfDeviceBuffer_Args
 	args = arenaAlloc[C.PJRT_Client_CreateViewOfDeviceBuffer_Args](arena)
 	args.struct_size = C.PJRT_Client_CreateViewOfDeviceBuffer_Args_STRUCT_SIZE
-	args.client = c.client
+	args.client = c.client.c
 	args.device_buffer_ptr = rawData
 	args.element_type = C.PJRT_Buffer_Type(dtype)
 	args.num_dims = C.size_t(len(dimensions))

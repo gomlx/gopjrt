@@ -1,5 +1,11 @@
 # Gopjrt Changelog
 
+# Next
+
+* Fixed issue (cycles and runtime finalizers) where Client objects never got garbage collected.
+* Added GOPJRT_TEXT_STABLE_HLO option to force XlaBuilder to use StableHlo text representation.
+  * Use with `-vmodule=compile=2` to enable logging of each program compiled. 
+
 # v0.7.0 - 2024/04/30
 
 * Renamed Gather() parameter offsetAxes to offsetOutputAxes to avoid confusion.

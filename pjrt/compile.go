@@ -2,7 +2,6 @@ package pjrt
 
 import "C"
 import (
-	"fmt"
 	"github.com/gomlx/gopjrt/cbuffer"
 	"github.com/gomlx/gopjrt/protos/compile_options"
 	"github.com/gomlx/gopjrt/protos/xla"
@@ -233,9 +232,8 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 		cc.err = errors.Errorf("pjrt.Client.Compile() was given the program more than once using WithHLO or WithComputation")
 		return cc
 	}
-
-	fmt.Printf("prjt.Compile().WithComputation(): HasStableHLO=%v, UseStableHLO=%v, UseTextStableHLO=%v\n",
-		computation.HasStableHLO(), cc.plugin.UseStableHLO, cc.plugin.UseTextStableHLO)
+	//fmt.Printf("prjt.Compile().WithComputation(): HasStableHLO=%v, UseStableHLO=%v, UseTextStableHLO=%v\n",
+	//	computation.HasStableHLO(), cc.plugin.UseStableHLO, cc.plugin.UseTextStableHLO)
 
 	// Get HLO program from computation.
 	if cc.plugin.UseTextStableHLO && computation.HasStableHLO() {

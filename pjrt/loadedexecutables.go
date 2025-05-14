@@ -445,11 +445,11 @@ func allocatePerDeviceBufferListWithArena(arena *arenaContainer, numDevices int,
 					deviceBuffers[bufferIdx] = nil
 					continue
 				}
-				if buffers[bufferIdx].cBuffer == nil {
-					// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
-					panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", bufferIdx)
+				if buffers[bufferIdx].wrapper == nil {
+					// Buffer given, but it's wrapper is nil -> probably it has already been destroyed.
+					panicf("buffers[%d].wrapper is nil, has it already been destroyed!?", bufferIdx)
 				}
-				deviceBuffers[bufferIdx] = buffers[bufferIdx].cBuffer
+				deviceBuffers[bufferIdx] = buffers[bufferIdx].wrapper.c
 			}
 		}
 	}

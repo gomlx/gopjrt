@@ -57,7 +57,7 @@ import "C"
 // reorganize the layout.
 func (b *Buffer) ToHost(dst []byte) error {
 	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
 		// Already destroyed ?
 		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
@@ -74,7 +74,7 @@ func (b *Buffer) ToHost(dst []byte) error {
 	pinner.Pin(dstBytes)
 	defer pinner.Unpin()
 
-	pErr := C.BufferToHost(b.client.plugin.api, b.cBuffer, dstBytes, C.int64_t(len(dst)), C.int(rank))
+	pErr := C.BufferToHost(b.client.plugin.api, b.wrapper.c, dstBytes, C.int64_t(len(dst)), C.int(rank))
 	err = toError(b.client.plugin, pErr)
 	if err != nil {
 		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")

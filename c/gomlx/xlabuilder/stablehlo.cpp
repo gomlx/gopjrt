@@ -6,8 +6,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 
-
-
 #ifdef USE_STABLEHLO
 
 // StableHLO will be linked in.

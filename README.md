@@ -352,13 +352,19 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
 
 That help control or debug how **gopjrt** work:
 
-* `PJRT_PLUGIN_LIBRARY_PATH`: Path to search for PJRT plugins. **gopjrt** also searches in `/usr/local/lib/gomlx/pjrt`,
-  the standard library paths for the system and `$LD_LIBRARY_PATH`.
+* `PJRT_PLUGIN_LIBRARY_PATH`: Path to search for PJRT plugins. 
+  **gopjrt** also searches in `/usr/local/lib/gomlx/pjrt`, `${HOME}/.local/lib/gomlx/pjrt`, in
+  the standard library paths for the system, and in the paths defined in `$LD_LIBRARY_PATH`.
 * `XLA_DEBUG_OPTIONS`: If set, it is parsed as a `DebugOptions` proto that
   is passed during the JIT-compilation (`Client.Compile()`) of a computation graph.
   It is not documented how it works in PJRT (e.g. I observed a great slow down when this is set,
   even if set to the default values), but [the proto has some documentation](https://github.com/gomlx/gopjrt/blob/main/protos/xla.proto#L40).
 * `GOPJRT_INSTALL_DIR` and `GOPJRT_NOSUDO`: used by the install scripts, see "Installing" section above.
+* `GOPJRT_NO_STABLE_HLO`: If StableHLO is linked into `xlabuilder`, it will by default try to send StableHLO
+  to the PJRT. Except if this is set, in which case it will continue using `HLOModule proto` to send to PJRT.
+* `GOPJRT_TEXT_STABLE_HLO`: If not empty, and if StableHLO is linked into `xlabuilder`, it forces `xlabuilder`
+  to use a textual StableHLO representation of the programs with PJRT. 
+  Use it in combination with `-vmodule=compile=2` flag to enable logging of each program compiled.
 
 ## Links to documentation
 

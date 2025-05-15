@@ -3,7 +3,7 @@ package pjrt
 import (
 	"flag"
 	"fmt"
-	"github.com/gomlx/gopjrt/protos/hlo"
+	"github.com/gomlx/gopjrt/internal/protos/hlo"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
@@ -65,7 +65,7 @@ func TestMinimal(t *testing.T) {
 	defer runtime.KeepAlive(plugin)
 	fmt.Printf("PJRT: %s\n", plugin.String())
 
-	// Create client.
+	// Create a client.
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 	devices := client.AddressableDevices()

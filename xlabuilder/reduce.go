@@ -48,7 +48,7 @@ const (
 	ReduceBitwiseXorType
 )
 
-//go:generate stringer -type ReduceOpType reduce.go
+//go:generate go tool enumer -type=ReduceOpType reduce.go
 
 // GetReduceComputationAndInitialValue builds or returns a cached computation that implements a reduction function with one
 // of the standard ReduceOpType: sum, multiply, max or min.

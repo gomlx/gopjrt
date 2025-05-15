@@ -46,9 +46,9 @@ import (
 //
 // All public attributes are read-only.
 type LoadedExecutable struct {
-	cLoadedExecutable *C.PJRT_LoadedExecutable
-	plugin            *Plugin
-	client            *Client
+	wrapper *loadedExecutableC
+	plugin  *Plugin
+	client  *Client
 
 	// executable is extracted as soon as LoadedExecutable is created, and with it all its fields.
 	executable *Executable
@@ -63,6 +63,28 @@ type LoadedExecutable struct {
 	OnDeviceMemoryUsageStats, OnHostMemoryUsageStats ExecutableMemoryUsageStats
 }
 
+// loadedExecutableC wraps the C pointer, so we can use runtime.addCleanUp.
+type loadedExecutableC struct {
+	c      *C.PJRT_LoadedExecutable
+	plugin *Plugin
+}
+
+func (wrapper *loadedExecutableC) Destroy() error {
+	if wrapper == nil || wrapper.plugin == nil || wrapper.c == nil {
+		// Already destroyed, no-op.
+		return nil
+	}
+	defer runtime.KeepAlive(wrapper)
+	args := C.new_PJRT_LoadedExecutable_Destroy_Args()
+	defer cFree(args)
+	args.executable = wrapper.c
+	err := toError(wrapper.plugin, C.call_PJRT_LoadedExecutable_Destroy(wrapper.plugin.api, args))
+	wrapper.plugin = nil
+	wrapper.c = nil
+	numLoadedExecutables.Add(-1)
+	return err
+}
+
 var numLoadedExecutables atomic.Int64
 
 // LoadedExecutablesAlive returns a count of the numbers of LoadedExecutables currently in memory and tracked by gopjrt.
@@ -73,12 +95,17 @@ func LoadedExecutablesAlive() int64 {
 // newLoadedExecutable creates LoadedExecutable and registers it for freeing.
 func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJRT_LoadedExecutable) (*LoadedExecutable, error) {
 	e := &LoadedExecutable{
-		plugin:            plugin,
-		client:            client,
-		cLoadedExecutable: cLoadedExecutable,
+		plugin:  plugin,
+		client:  client,
+		wrapper: &loadedExecutableC{c: cLoadedExecutable, plugin: plugin},
 	}
 	numLoadedExecutables.Add(1)
-	runtime.SetFinalizer(e, func(e *LoadedExecutable) { e.destroyOrLog() })
+	runtime.AddCleanup(e, func(e *loadedExecutableC) {
+		err := e.Destroy()
+		if err != nil {
+			klog.Errorf("Failed to destroy pjrt.LoadedExecutable: %+v", err)
+		}
+	}, e.wrapper)
 
 	// Gather information about executable:
 	var err error
@@ -109,7 +136,7 @@ func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJ
 // Destroy the LoadedExecutable, release resources, and LoadedExecutable is no longer valid.
 // This is automatically called if LoadedExecutable is garbage collected.
 func (e *LoadedExecutable) Destroy() error {
-	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
+	if e == nil || e.plugin == nil || e.wrapper == nil {
 		// Already destroyed, no-op.
 		return nil
 	}
@@ -117,14 +144,9 @@ func (e *LoadedExecutable) Destroy() error {
 	if e.executable != nil {
 		e.executable.destroyOrLog()
 	}
-	args := C.new_PJRT_LoadedExecutable_Destroy_Args()
-	defer cFree(args)
-	args.executable = e.cLoadedExecutable
-	err := toError(e.plugin, C.call_PJRT_LoadedExecutable_Destroy(e.plugin.api, args))
+	err := e.wrapper.Destroy()
 	e.plugin = nil
-	e.cLoadedExecutable = nil
-
-	numLoadedExecutables.Add(-1)
+	e.wrapper = nil
 	return err
 }
 
@@ -138,13 +160,13 @@ func (e *LoadedExecutable) destroyOrLog() {
 
 // getExecutable returns the Executable associated with the LoadedExecutable.
 func (e *LoadedExecutable) getExecutable() (*Executable, error) {
-	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
+	if e == nil || e.plugin == nil || e.wrapper == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 	args := C.new_PJRT_LoadedExecutable_GetExecutable_Args()
 	defer cFree(args)
-	args.loaded_executable = e.cLoadedExecutable
+	args.loaded_executable = e.wrapper.c
 	err := toError(e.plugin, C.call_PJRT_LoadedExecutable_GetExecutable(e.plugin.api, args))
 	if err != nil {
 		return nil, err
@@ -313,7 +335,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		return nil, c.err
 	}
 	e := c.executable
-	if e == nil || e.plugin == nil || e.cLoadedExecutable == nil {
+	if e == nil || e.plugin == nil || e.wrapper == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
@@ -347,7 +369,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	var args *C.PJRT_LoadedExecutable_Execute_Args
 	args = arenaAlloc[C.PJRT_LoadedExecutable_Execute_Args](arena)
 	args.struct_size = C.PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE
-	args.executable = e.cLoadedExecutable
+	args.executable = e.wrapper.c
 
 	var options *C.PJRT_ExecuteOptions
 	options = arenaAlloc[C.PJRT_ExecuteOptions](arena) // Extra args that for some reason(?) go on a separate struct.
@@ -423,11 +445,11 @@ func allocatePerDeviceBufferListWithArena(arena *arenaContainer, numDevices int,
 					deviceBuffers[bufferIdx] = nil
 					continue
 				}
-				if buffers[bufferIdx].cBuffer == nil {
-					// Buffer given, but it's cBuffer is nil -> probably it has already been destroyed.
-					panicf("buffers[%d].cBuffer is nil, has it already been destroyed!?", bufferIdx)
+				if buffers[bufferIdx].wrapper == nil {
+					// Buffer given, but it's wrapper is nil -> probably it has already been destroyed.
+					panicf("buffers[%d].wrapper is nil, has it already been destroyed!?", bufferIdx)
 				}
-				deviceBuffers[bufferIdx] = buffers[bufferIdx].cBuffer
+				deviceBuffers[bufferIdx] = buffers[bufferIdx].wrapper.c
 			}
 		}
 	}

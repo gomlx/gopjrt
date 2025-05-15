@@ -51,20 +51,18 @@ func pjrtDeviceDescriptionProcessIndex(dDesc *DeviceDescription) (int, error) {
 // Device-Specific Operations: Some PJRT operations (like querying device attributes or transferring data to/from the device)
 // are device-specific and operate on individual PjrtDevice objects (obtained from the PjrtClient_Devices list).
 type Device struct {
-	plugin  *Plugin
-	client  *Client
-	cDevice *C.PJRT_Device // (PJRT) `device` has the same lifetime as (PJRT) `client`. It is owned by (PJRT) `client`.
-
+	plugin          *Plugin
+	cDevice         *C.PJRT_Device // (PJRT) `device` has the same lifetime as (PJRT) `client`. It is owned by (PJRT) `client`.
 	localHardwareId int
 }
 
 // newDevice create a new Device reference.
 func newDevice(client *Client, device *C.PJRT_Device) *Device {
-	d := &Device{plugin: client.plugin, client: client, cDevice: device}
+	d := &Device{plugin: client.plugin, cDevice: device}
 	var err error
 	d.localHardwareId, err = pjrtDeviceLocalHardwareId(d)
 	if err != nil {
-		klog.Errorf("Failed to get device local_hardware_id for client %s: %v", d.client, err)
+		klog.Errorf("Failed to get device local_hardware_id for client %s: %v", client, err)
 	}
 	return d
 }
@@ -96,7 +94,7 @@ func (d *Device) GetDescription() (*DeviceDescription, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newDeviceDescription(d.plugin, d.client, args.device_description), nil
+	return newDeviceDescription(d.plugin, args.device_description), nil
 }
 
 // DeviceDescription may be associated with an actual device
@@ -107,18 +105,17 @@ func (d *Device) GetDescription() (*DeviceDescription, error) {
 // hardware later.
 type DeviceDescription struct {
 	plugin            *Plugin
-	client            *Client
 	deviceDescription *C.PJRT_DeviceDescription
 	processIndex      int
 }
 
 // newDeviceDescription create a new Device reference.
-func newDeviceDescription(plugin *Plugin, client *Client, deviceDescription *C.PJRT_DeviceDescription) *DeviceDescription {
-	dDesc := &DeviceDescription{plugin: plugin, client: client, deviceDescription: deviceDescription}
+func newDeviceDescription(plugin *Plugin, deviceDescription *C.PJRT_DeviceDescription) *DeviceDescription {
+	dDesc := &DeviceDescription{plugin: plugin, deviceDescription: deviceDescription}
 	var err error
 	dDesc.processIndex, err = pjrtDeviceDescriptionProcessIndex(dDesc)
 	if err != nil {
-		klog.Errorf("Failed to get process index for devicedescription for client %s: %v", dDesc.client, err)
+		klog.Errorf("Failed to get process index for devicedescription for client %s: %v", dDesc.plugin, err)
 	}
 	return dDesc
 }

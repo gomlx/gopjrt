@@ -10,7 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
 	"os"
+	"runtime"
 	"testing"
+	"time"
 )
 
 var flagStableHLOOutput = flag.String("hlo", "",
@@ -40,9 +42,15 @@ func (e errTester[T]) Test(t *testing.T) T {
 	return e.value
 }
 
-// getPJRTClient loads a PJRT plugin and create a client to run tests on.
+// getPJRTClient loads a PJRT plugin and creates a client to run tests on.
 // It exits the test if anything goes wrong.
 func getPJRTClient(t *testing.T) *pjrt.Client {
+	// Make sure previous clients have been freed.
+	runtime.GC()
+	time.Sleep(100 * time.Millisecond) // Give finalizer goroutine time
+	runtime.Gosched()                  // Yield CPU
+	runtime.GC()
+
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
 	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)

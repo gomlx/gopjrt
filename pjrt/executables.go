@@ -17,8 +17,12 @@ import (
 // This is usually not directly used: the LoadedExecutable when create automatically extracts the Executable
 // and related information.
 type Executable struct {
-	cExecutable *C.PJRT_Executable
-	plugin      *Plugin
+	wrapper *executableWrapper
+}
+
+type executableWrapper struct {
+	c      *C.PJRT_Executable
+	plugin *Plugin
 }
 
 // ExecutableMemoryUsageStats reports the static memory usage for a compiled program, in bytes.
@@ -42,29 +46,46 @@ func (m ExecutableMemoryUsageStats) Requirements() int64 {
 
 // newExecutable creates Executable and registers it for freeing.
 func newExecutable(plugin *Plugin, cExecutable *C.PJRT_Executable) *Executable {
-	e := &Executable{
-		plugin:      plugin,
-		cExecutable: cExecutable,
-	}
-	runtime.SetFinalizer(e, func(e *Executable) { e.destroyOrLog() })
+	e := &Executable{wrapper: &executableWrapper{
+		plugin: plugin,
+		c:      cExecutable,
+	}}
+	runtime.AddCleanup(e, func(wrapper *executableWrapper) {
+		err := wrapper.Destroy()
+		if err != nil {
+			klog.Errorf("pjrt.Executable.Destroy failed: %v", err)
+		}
+	}, e.wrapper)
 	return e
 }
 
-// Destroy the Executable, release resources, and Executable is no longer valid.
-// This is automatically called if Executable is garbage collected.
-func (e *Executable) Destroy() error {
-	if e == nil || e.plugin == nil || e.cExecutable == nil {
+func (wrapper *executableWrapper) IsValid() bool {
+	return wrapper != nil && wrapper.c != nil && wrapper.plugin != nil
+}
+
+func (wrapper *executableWrapper) Destroy() error {
+	if !wrapper.IsValid() {
 		// Already destroyed, no-op.
 		return nil
 	}
-	defer runtime.KeepAlive(e)
+	defer runtime.KeepAlive(wrapper)
 	args := C.new_PJRT_Executable_Destroy_Args()
 	defer cFree(args)
-	args.executable = e.cExecutable
-	err := toError(e.plugin, C.call_PJRT_Executable_Destroy(e.plugin.api, args))
-	e.plugin = nil
-	e.cExecutable = nil
+	args.executable = wrapper.c
+	err := toError(wrapper.plugin, C.call_PJRT_Executable_Destroy(wrapper.plugin.api, args))
+	wrapper.plugin = nil
+	wrapper.c = nil
 	return err
+}
+
+// Destroy the Executable releasing immediately its resources.
+// After this the Executable is no longer valid, and shouldn't be used.
+// This is automatically called if Executable is garbage collected.
+func (e *Executable) Destroy() error {
+	if e == nil {
+		return nil
+	}
+	return e.wrapper.Destroy()
 }
 
 // destroyOrLog destroys the Executable and log any errors.
@@ -77,14 +98,14 @@ func (e *Executable) destroyOrLog() {
 
 // NumOutputs returns the number of outputs for the given executable.
 func (e *Executable) NumOutputs() (int, error) {
-	if e == nil || e.plugin == nil || e.cExecutable == nil {
+	if e == nil || !e.wrapper.IsValid() {
 		return 0, errors.New("Executable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 	args := C.new_PJRT_Executable_NumOutputs_Args()
 	defer cFree(args)
-	args.executable = e.cExecutable
-	err := toError(e.plugin, C.call_PJRT_Executable_NumOutputs(e.plugin.api, args))
+	args.executable = e.wrapper.c
+	err := toError(e.wrapper.plugin, C.call_PJRT_Executable_NumOutputs(e.wrapper.plugin.api, args))
 	if err != nil {
 		return 0, err
 	}
@@ -93,14 +114,14 @@ func (e *Executable) NumOutputs() (int, error) {
 
 // Name returns the name of the executable.
 func (e *Executable) Name() (string, error) {
-	if e == nil || e.plugin == nil || e.cExecutable == nil {
+	if e == nil || !e.wrapper.IsValid() {
 		return "", errors.New("Executable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 	args := C.new_PJRT_Executable_Name_Args()
 	defer cFree(args)
-	args.executable = e.cExecutable
-	err := toError(e.plugin, C.call_PJRT_Executable_Name(e.plugin.api, args))
+	args.executable = e.wrapper.c
+	err := toError(e.wrapper.plugin, C.call_PJRT_Executable_Name(e.wrapper.plugin.api, args))
 	if err != nil {
 		return "", err
 	}
@@ -112,21 +133,21 @@ func (e *Executable) Name() (string, error) {
 //
 // This can be used to estimate memory requirements for the program.
 func (e *Executable) GetMemoryStats() (onDevice, onHost ExecutableMemoryUsageStats, err error) {
-	if e == nil || e.plugin == nil || e.cExecutable == nil {
+	if e == nil || !e.wrapper.IsValid() {
 		err = errors.New("Executable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
 	defer runtime.KeepAlive(e)
 
-	arena := e.plugin.getArenaFromPool()
-	defer e.plugin.returnArenaToPool(arena)
+	arena := e.wrapper.plugin.getArenaFromPool()
+	defer e.wrapper.plugin.returnArenaToPool(arena)
 
 	var args *C.PJRT_Executable_GetCompiledMemoryStats_Args
 
 	args = arenaAlloc[C.PJRT_Executable_GetCompiledMemoryStats_Args](arena)
 	args.struct_size = C.PJRT_Executable_GetCompiledMemoryStats_Args_STRUCT_SIZE
-	args.executable = e.cExecutable
-	err = toError(e.plugin, C.call_PJRT_Executable_GetCompiledMemoryStats(e.plugin.api, args))
+	args.executable = e.wrapper.c
+	err = toError(e.wrapper.plugin, C.call_PJRT_Executable_GetCompiledMemoryStats(e.wrapper.plugin.api, args))
 	if err != nil {
 		return
 	}

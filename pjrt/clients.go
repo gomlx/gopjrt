@@ -17,7 +17,7 @@ import (
 func pjrtClientPlatformName(plugin *Plugin, client *Client) (string, error) {
 	args := C.new_PJRT_Client_PlatformName_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	err := toError(plugin, C.call_PJRT_Client_PlatformName(plugin.api, args))
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func pjrtClientPlatformName(plugin *Plugin, client *Client) (string, error) {
 func pjrtClientPlatformVersion(plugin *Plugin, client *Client) (string, error) {
 	args := C.new_PJRT_Client_PlatformVersion_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	err := toError(plugin, C.call_PJRT_Client_PlatformVersion(plugin.api, args))
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func pjrtClientPlatformVersion(plugin *Plugin, client *Client) (string, error) {
 func pjrtClientProcessIndex(plugin *Plugin, client *Client) (int, error) {
 	args := C.new_PJRT_Client_ProcessIndex_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	err := toError(plugin, C.call_PJRT_Client_ProcessIndex(plugin.api, args))
 	if err != nil {
 		return -1, err
@@ -50,7 +50,7 @@ func pjrtClientProcessIndex(plugin *Plugin, client *Client) (int, error) {
 func pjrtClientDevices(plugin *Plugin, client *Client) ([]*Device, error) {
 	args := C.new_PJRT_Client_Devices_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	err := toError(plugin, C.call_PJRT_Client_Devices(plugin.api, args))
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func pjrtClientDevices(plugin *Plugin, client *Client) ([]*Device, error) {
 func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, error) {
 	args := C.new_PJRT_Client_AddressableDevices_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	err := toError(plugin, C.call_PJRT_Client_AddressableDevices(plugin.api, args))
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, er
 // pjrtClientCompile compiles the program. Remember to make sure that the both the program and and compileOptionsProto
 // are pinned until the C function returns.
 func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFormat string, compileOptionsProto []byte) (*LoadedExecutable, error) {
-	// Create program structure.
+	// Create the program struct.
 	var cProgram *C.PJRT_Program
 	cProgram = C.new_PJRT_Program()
 	defer cFree(cProgram)
@@ -96,7 +96,7 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 	// Create args for call.
 	args := C.new_PJRT_Client_Compile_Args()
 	defer cFree(args)
-	args.client = client.client
+	args.client = client.client.c
 	args.program = cProgram
 	args.compile_options = (*C.char)(unsafe.Pointer(unsafe.SliceData(compileOptionsProto)))
 	args.compile_options_size = (C.size_t)(len(compileOptionsProto))
@@ -111,11 +111,16 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 // Client manages the resources of one device: its buffers, compilation and execution of HLO code.
 type Client struct {
 	plugin                    *Plugin
-	client                    *C.PJRT_Client
+	client                    *clientC
 	platform, platformVersion string
 	processIndex              int
 	addressableDevices        []*Device
 	allowBufferViews          bool
+}
+
+type clientC struct {
+	// c holds the pointer to the C/C++ structure.
+	c *C.PJRT_Client
 }
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
@@ -134,10 +139,10 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 		return nil, err
 	}
 
-	// Prepare Client object: not all initialization is fatal to the construction of the client.
+	// Prepare the Client object: not all initializations are fatal to the construction of the client.
 	c := &Client{
 		plugin: plugin,
-		client: args.client,
+		client: &clientC{c: args.client},
 	}
 	c.platform, err = pjrtClientPlatformName(plugin, c)
 	if err != nil {
@@ -158,25 +163,39 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 	if err != nil {
 		// Fatal
 		err = errors.WithMessagef(err, "failed to retrieve addressable devices for new client (plugin %s) -- can't use client with no addressable device", plugin)
-		finalizeClient(c)
+		c.client.Destroy(plugin)
 		return nil, err
 	}
 
-	// Register finalizer.
-	runtime.SetFinalizer(c, finalizeClient)
+	// Register clean up.
+	runtime.AddCleanup(c, func(client *clientC) {
+		fmt.Println("Cleanup()")
+		err := client.Destroy(plugin)
+		if err != nil {
+			klog.Errorf("Failed to destroy client (plugin %s): %v", plugin, err)
+		}
+	}, c.client)
 	return c, nil
-}
-
-func finalizeClient(c *Client) {
-	err := c.Destroy()
-	if err != nil {
-		klog.Errorf("Client.Destroy failed: %v", err)
-	}
 }
 
 // Plugin returns the Plugin from which the Client was created.
 func (c *Client) Plugin() *Plugin {
 	return c.plugin
+}
+
+func (client *clientC) Destroy(plugin *Plugin) error {
+	fmt.Println("Client.Destroy()")
+	if plugin == nil || client == nil || client.c == nil {
+		// Already destroyed, no-op.
+		return nil
+	}
+	defer runtime.KeepAlive(client)
+	args := C.new_PJRT_Client_Destroy_Args()
+	defer cFree(args)
+	args.client = client.c
+	err := toError(plugin, C.call_PJRT_Client_Destroy(plugin.api, args))
+	client.c = nil
+	return err
 }
 
 // Destroy the client, release resources, and Client is no longer valid.
@@ -187,13 +206,7 @@ func (c *Client) Destroy() error {
 		return nil
 	}
 	defer runtime.KeepAlive(c)
-	args := C.new_PJRT_Client_Destroy_Args()
-	defer cFree(args)
-	args.client = c.client
-	err := toError(c.plugin, C.call_PJRT_Client_Destroy(c.plugin.api, args))
-	c.plugin = nil
-	c.client = nil
-	return err
+	return c.client.Destroy(c.plugin)
 }
 
 // String implements fmt.Stringer.

@@ -45,37 +45,36 @@ func main() {
 		packageName = path.Base(must.M1(os.Getwd()))
 	}
 
-	// Find original file
-	originalPath := path.Base(*flagOriginalGoFile)
+	// Find the original file
+	originalPath := *flagOriginalGoFile
 	if !path.IsAbs(originalPath) {
-		originalPath = path.Join(must.M1(os.Getwd()), originalPath)
+		currentPath := must.M1(os.Getwd())
 		for {
+			originalPath = path.Join(currentPath, *flagOriginalGoFile)
 			_, err := os.Stat(originalPath)
 			if err == nil {
 				break // Found it.
 			}
 
-			if path.Dir(originalPath) == "/" {
-				panic("Can't find original file " + originalName + " in any of the parent directories from the current directory.")
+			if currentPath == "/" {
+				panic("Can't find original file " + *flagOriginalGoFile + " in any of the parent directories from the current directory.")
 			}
-			baseDir := path.Dir(path.Dir(originalPath))
-			originalPath = path.Join(baseDir, originalName)
-			continue
+			currentPath = path.Dir(currentPath)
 		}
 	}
 
-	// Read original file.
+	// Read the original file.
 	f := must.M1(os.OpenFile(originalPath, os.O_RDONLY, os.ModePerm))
 	var b bytes.Buffer
 	_ = must.M1(io.Copy(&b, f))
 	must.M(f.Close())
 	contents := strings.Join([]string{prefix, b.String()}, "\n")
 
-	// Replace package name.
+	// Replace the package name.
 	rePackage := regexp.MustCompile(`(?m)^package\s+\w+$`)
 	contents = rePackage.ReplaceAllString(contents, fmt.Sprintf("package %s", packageName))
 
-	// Write to target file.
+	// Write to a target file.
 	must.M(os.WriteFile(targetName, []byte(contents), 0644))
 
 	fmt.Printf("Generated %q from %q, with package name %q\n", targetName, originalPath, packageName)

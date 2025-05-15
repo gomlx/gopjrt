@@ -1,4 +1,4 @@
-package gopjrt
+package internal
 
 /*
 #include <stdlib.h>

@@ -65,7 +65,7 @@ func TestMinimal(t *testing.T) {
 	defer runtime.KeepAlive(plugin)
 	fmt.Printf("PJRT: %s\n", plugin.String())
 
-	// Create client.
+	// Create a client.
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 	devices := client.AddressableDevices()

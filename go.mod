@@ -1,6 +1,6 @@
 module github.com/gomlx/gopjrt
 
-go 1.23
+go 1.24
 
 require (
 	github.com/chewxy/math32 v1.11.1

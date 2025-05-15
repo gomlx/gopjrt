@@ -74,12 +74,16 @@ package shapes
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/gomlx/exceptions"
 	. "github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"slices"
 	"strings"
 )
+
+// panicf panics with a stacktrace and the formated error.
+func panicf(format string, args ...any) {
+	panic(fmt.Errorf(format, args...))
+}
 
 // Shape represents the shape of either a Tensor or the expected shape
 // of the value from a computation node.
@@ -97,7 +101,7 @@ func Make(dtype DType, dimensions ...int) Shape {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {
 		if dim <= 0 {
-			exceptions.Panicf("shapes.Make(%s): cannot create a shape with an axis with dimension <= 0", s)
+			panicf("shapes.Make(%s): cannot create a shape with an axis with dimension <= 0", s)
 		}
 	}
 	return s
@@ -133,7 +137,7 @@ func (s Shape) Dim(axis int) int {
 		adjustedAxis += s.Rank()
 	}
 	if adjustedAxis < 0 || adjustedAxis > s.Rank() {
-		exceptions.Panicf("Shape.Dim(%d) out-of-bounds for rank %d (shape=%s)", axis, s.Rank(), s)
+		panicf("Shape.Dim(%d) out-of-bounds for rank %d (shape=%s)", axis, s.Rank(), s)
 	}
 	return s.Dimensions[adjustedAxis]
 }

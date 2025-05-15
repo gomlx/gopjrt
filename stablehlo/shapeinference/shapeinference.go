@@ -12,10 +12,10 @@
 package shapeinference
 
 import (
-	"github.com/gomlx/gomlx/backends"
-	"github.com/gomlx/gomlx/types"
-	"github.com/gomlx/gomlx/types/shapes"
 	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/stablehlo/optypes"
+	"github.com/gomlx/gopjrt/stablehlo/shapes"
+	"github.com/gomlx/gopjrt/stablehlo/types"
 	"github.com/pkg/errors"
 	"slices"
 )
@@ -23,147 +23,147 @@ import (
 var (
 	// BooleanOperations take booleans as input, aka. logical operations.
 	BooleanOperations = types.SetWith(
-		backends.OpTypeLogicalAnd,
-		backends.OpTypeLogicalOr,
-		backends.OpTypeLogicalXor,
-		backends.OpTypeLogicalNot,
+		optypes.LogicalAnd,
+		optypes.LogicalOr,
+		optypes.LogicalXor,
+		optypes.LogicalNot,
 	)
 
 	// BitwiseOperations operates only on integer (binary) numbers and won't work on floats or complex numbers.
 	BitwiseOperations = types.SetWith(
-		backends.OpTypeBitwiseAnd,
-		backends.OpTypeBitwiseOr,
-		backends.OpTypeBitwiseXor,
-		backends.OpTypeBitwiseNot,
-		backends.OpTypeBitCount,
-		backends.OpTypeShiftLeft,
-		backends.OpTypeShiftRightArithmetic,
-		backends.OpTypeShiftRightLogical,
-		backends.OpTypeBitCount,
-		backends.OpTypeClz,
+		optypes.BitwiseAnd,
+		optypes.BitwiseOr,
+		optypes.BitwiseXor,
+		optypes.BitwiseNot,
+		optypes.BitCount,
+		optypes.ShiftLeft,
+		optypes.ShiftRightArithmetic,
+		optypes.ShiftRightLogical,
+		optypes.BitCount,
+		optypes.Clz,
 	)
 
 	// NumberOperations can take any type of number as input: integers, floats, or complex numbers.
 	NumberOperations = types.SetWith(
-		backends.OpTypeAdd,
-		backends.OpTypeSub,
-		backends.OpTypeMul,
-		backends.OpTypeDiv,
-		backends.OpTypePow,
-		backends.OpTypeRem,
+		optypes.Add,
+		optypes.Sub,
+		optypes.Mul,
+		optypes.Div,
+		optypes.Pow,
+		optypes.Rem,
 
 		// Notice Abs and Sign works for unsigned ints: it's just a trivial implementation.
-		backends.OpTypeAbs,
-		backends.OpTypeSign,
+		optypes.Abs,
+		optypes.Sign,
 
-		backends.OpTypeEqual,
-		backends.OpTypeGreaterOrEqual,
-		backends.OpTypeGreaterThan,
-		backends.OpTypeLessOrEqual,
-		backends.OpTypeLessThan,
+		optypes.Equal,
+		optypes.GreaterOrEqual,
+		optypes.GreaterThan,
+		optypes.LessOrEqual,
+		optypes.LessThan,
 
-		backends.OpTypeEqualTotalOrder,
-		backends.OpTypeGreaterOrEqualTotalOrder,
-		backends.OpTypeGreaterThanTotalOrder,
-		backends.OpTypeLessOrEqualTotalOrder,
-		backends.OpTypeLessThanTotalOrder,
+		optypes.EqualTotalOrder,
+		optypes.GreaterOrEqualTotalOrder,
+		optypes.GreaterThanTotalOrder,
+		optypes.LessOrEqualTotalOrder,
+		optypes.LessThanTotalOrder,
 	)
 
 	SignedNumberOperations = types.SetWith(
-		backends.OpTypeNeg,
+		optypes.Neg,
 	)
 
 	// FloatOperations operates only on float (and not on complex numbers).
 	FloatOperations = types.SetWith(
-		backends.OpTypeErf,
-		backends.OpTypeLogistic,
-		backends.OpTypeCos,
-		backends.OpTypeSin,
-		backends.OpTypeTanh,
+		optypes.Erf,
+		optypes.Logistic,
+		optypes.Cos,
+		optypes.Sin,
+		optypes.Tanh,
 	)
 
 	// FloatOrComplexOperations operates only on float or complex numbers and won't work on integer or boolean values.
 	FloatOrComplexOperations = types.SetWith(
-		backends.OpTypeExp,
-		backends.OpTypeExpm1,
-		backends.OpTypeLog,
-		backends.OpTypeLog1p,
-		backends.OpTypeCeil,
-		backends.OpTypeFloor,
-		backends.OpTypeRound,
-		backends.OpTypeRsqrt,
-		backends.OpTypeSqrt,
-		backends.OpTypeIsFinite,
+		optypes.Exp,
+		optypes.Expm1,
+		optypes.Log,
+		optypes.Log1p,
+		optypes.Ceil,
+		optypes.Floor,
+		optypes.Round,
+		optypes.Rsqrt,
+		optypes.Sqrt,
+		optypes.IsFinite,
 	)
 
 	// ComplexOperations operates only on complex numbers.
 	ComplexOperations = types.SetWith(
-		backends.OpTypeImag,
-		backends.OpTypeReal,
-		backends.OpTypeConj,
+		optypes.Imag,
+		optypes.Real,
+		optypes.Conj,
 	)
 
 	// StandardBinaryOperations include all operations that have two operands usually named lhs (left-hand-side) and
 	// rhs (right-hand-side) and are usually commutative (invariant to order).
 	StandardBinaryOperations = types.SetWith(
-		backends.OpTypeAdd,
-		backends.OpTypeSub,
-		backends.OpTypeMul,
-		backends.OpTypeDiv,
-		backends.OpTypePow,
-		backends.OpTypeRem,
-		backends.OpTypeBitwiseAnd,
-		backends.OpTypeBitwiseOr,
-		backends.OpTypeBitwiseXor,
-		backends.OpTypeLogicalAnd,
-		backends.OpTypeLogicalOr,
-		backends.OpTypeLogicalXor,
-		backends.OpTypeMax,
-		backends.OpTypeMin,
+		optypes.Add,
+		optypes.Sub,
+		optypes.Mul,
+		optypes.Div,
+		optypes.Pow,
+		optypes.Rem,
+		optypes.BitwiseAnd,
+		optypes.BitwiseOr,
+		optypes.BitwiseXor,
+		optypes.LogicalAnd,
+		optypes.LogicalOr,
+		optypes.LogicalXor,
+		optypes.Max,
+		optypes.Min,
 	)
 
 	// ComparisonOperations include all operations that take two inputs and returns booleans with the results of
 	// a comparison.
 	ComparisonOperations = types.SetWith(
-		backends.OpTypeEqual,
-		backends.OpTypeEqualTotalOrder,
-		backends.OpTypeGreaterOrEqual,
-		backends.OpTypeGreaterOrEqualTotalOrder,
-		backends.OpTypeGreaterThan,
-		backends.OpTypeGreaterThanTotalOrder,
-		backends.OpTypeLessOrEqual,
-		backends.OpTypeLessOrEqualTotalOrder,
-		backends.OpTypeLessThan,
-		backends.OpTypeLessThanTotalOrder,
+		optypes.Equal,
+		optypes.EqualTotalOrder,
+		optypes.GreaterOrEqual,
+		optypes.GreaterOrEqualTotalOrder,
+		optypes.GreaterThan,
+		optypes.GreaterThanTotalOrder,
+		optypes.LessOrEqual,
+		optypes.LessOrEqualTotalOrder,
+		optypes.LessThan,
+		optypes.LessThanTotalOrder,
 	)
 
 	// StandardUnaryOperations include all operations that have a single operand as input, and the return shape is the
 	// same as the input (so no reductions).
 	StandardUnaryOperations = types.SetWith(
-		backends.OpTypeLogicalNot,
-		backends.OpTypeBitwiseNot,
-		backends.OpTypeBitCount,
-		backends.OpTypeClz,
-		backends.OpTypeErf,
-		backends.OpTypeExp,
-		backends.OpTypeExpm1,
-		backends.OpTypeLog,
-		backends.OpTypeLog1p,
-		backends.OpTypeLogistic,
-		backends.OpTypeCeil,
-		backends.OpTypeFloor,
-		backends.OpTypeRound,
-		backends.OpTypeRsqrt,
-		backends.OpTypeSqrt,
-		backends.OpTypeImag,
-		backends.OpTypeReal,
-		backends.OpTypeConj,
-		backends.OpTypeCos,
-		backends.OpTypeSin,
-		backends.OpTypeTanh,
-		backends.OpTypeAbs,
-		backends.OpTypeNeg,
-		backends.OpTypeSign,
+		optypes.LogicalNot,
+		optypes.BitwiseNot,
+		optypes.BitCount,
+		optypes.Clz,
+		optypes.Erf,
+		optypes.Exp,
+		optypes.Expm1,
+		optypes.Log,
+		optypes.Log1p,
+		optypes.Logistic,
+		optypes.Ceil,
+		optypes.Floor,
+		optypes.Round,
+		optypes.Rsqrt,
+		optypes.Sqrt,
+		optypes.Imag,
+		optypes.Real,
+		optypes.Conj,
+		optypes.Cos,
+		optypes.Sin,
+		optypes.Tanh,
+		optypes.Abs,
+		optypes.Neg,
+		optypes.Sign,
 	)
 )
 
@@ -173,7 +173,7 @@ var (
 //
 // It returns an error if the data type (shape.DType) is invalid for the operation -- e.g.: non-matching
 // dtypes, or LogicalAnd not having booleans (dtype.Bool) as input.
-func BinaryOp(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
+func BinaryOp(opType optypes.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
 	if !StandardBinaryOperations.Has(opType) {
 		err = errors.Errorf("operations %s is not in the StandardBinaryOperations set, cannot process it with BinaryOp", opType)
 		return
@@ -214,7 +214,7 @@ func BinaryOp(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (output s
 	return binaryOpImpl(opType, lhsShape, rhsShape)
 }
 
-func binaryOpImpl(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
+func binaryOpImpl(opType optypes.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
 	// Trivial cases: if one of the sides is a scalar, return the other side shape.
 	if lhsShape.IsScalar() {
 		return rhsShape, nil
@@ -243,7 +243,7 @@ func binaryOpImpl(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (outp
 }
 
 // ComparisonOp returns the broadcast shape with dtype set to Bool, for comparison operations (Equal, LessThan, GreaterOrEqual, etc.)
-func ComparisonOp(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
+func ComparisonOp(opType optypes.OpType, lhsShape, rhsShape shapes.Shape) (output shapes.Shape, err error) {
 	if !ComparisonOperations.Has(opType) {
 		err = errors.Errorf("operation %s is not in the ComparisonOperations set, cannot process it with ComparisonOp", opType)
 		return
@@ -268,7 +268,7 @@ func ComparisonOp(opType backends.OpType, lhsShape, rhsShape shapes.Shape) (outp
 
 // UnaryOp checks the validity of the data type for StandardUnaryOperations and returns either an error or
 // the output shape, which is the same as the operand.
-func UnaryOp(opType backends.OpType, operand shapes.Shape) (output shapes.Shape, err error) {
+func UnaryOp(opType optypes.OpType, operand shapes.Shape) (output shapes.Shape, err error) {
 	if !StandardUnaryOperations.Has(opType) {
 		err = errors.Errorf("operation %s is not in the StandardUnaryOperations set, cannot process it with UnaryOp", opType)
 		return

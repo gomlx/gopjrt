@@ -18,10 +18,10 @@ package shapes
 
 import (
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
+	"github.com/pkg/errors"
 	"reflect"
 	"unsafe"
 
-	"github.com/gomlx/exceptions"
 	. "github.com/gomlx/gopjrt/dtypes"
 	"github.com/x448/float16"
 )
@@ -81,45 +81,44 @@ func ConvertTo[T NumberNotComplex](value any) T {
 // and casts it to any.
 // It uses unsafe.Slice.
 // Set `len` to the number of `DType` elements (not the number of bytes).
-func UnsafeSliceForDType(dtype DType, unsafePtr unsafe.Pointer, len int) any {
+func UnsafeSliceForDType(dtype DType, unsafePtr unsafe.Pointer, len int) (any, error) {
 	switch dtype {
 	case Int64:
-		return unsafe.Slice((*int64)(unsafePtr), len)
+		return unsafe.Slice((*int64)(unsafePtr), len), nil
 	case Int32:
-		return unsafe.Slice((*int32)(unsafePtr), len)
+		return unsafe.Slice((*int32)(unsafePtr), len), nil
 	case Int16:
-		return unsafe.Slice((*int16)(unsafePtr), len)
+		return unsafe.Slice((*int16)(unsafePtr), len), nil
 	case Int8:
-		return unsafe.Slice((*int8)(unsafePtr), len)
+		return unsafe.Slice((*int8)(unsafePtr), len), nil
 
 	case Uint64:
-		return unsafe.Slice((*uint64)(unsafePtr), len)
+		return unsafe.Slice((*uint64)(unsafePtr), len), nil
 	case Uint32:
-		return unsafe.Slice((*uint32)(unsafePtr), len)
+		return unsafe.Slice((*uint32)(unsafePtr), len), nil
 	case Uint16:
-		return unsafe.Slice((*uint16)(unsafePtr), len)
+		return unsafe.Slice((*uint16)(unsafePtr), len), nil
 	case Uint8:
-		return unsafe.Slice((*uint8)(unsafePtr), len)
+		return unsafe.Slice((*uint8)(unsafePtr), len), nil
 
 	case Bool:
-		return unsafe.Slice((*bool)(unsafePtr), len)
+		return unsafe.Slice((*bool)(unsafePtr), len), nil
 
 	case Float16:
-		return unsafe.Slice((*float16.Float16)(unsafePtr), len)
+		return unsafe.Slice((*float16.Float16)(unsafePtr), len), nil
 	case BFloat16:
-		return unsafe.Slice((*bfloat16.BFloat16)(unsafePtr), len)
+		return unsafe.Slice((*bfloat16.BFloat16)(unsafePtr), len), nil
 	case Float32:
-		return unsafe.Slice((*float32)(unsafePtr), len)
+		return unsafe.Slice((*float32)(unsafePtr), len), nil
 	case Float64:
-		return unsafe.Slice((*float64)(unsafePtr), len)
+		return unsafe.Slice((*float64)(unsafePtr), len), nil
 
 	case Complex64:
-		return unsafe.Slice((*complex64)(unsafePtr), len)
+		return unsafe.Slice((*complex64)(unsafePtr), len), nil
 	case Complex128:
-		return unsafe.Slice((*complex128)(unsafePtr), len)
+		return unsafe.Slice((*complex128)(unsafePtr), len), nil
 	default:
-		exceptions.Panicf("unknown dtype %q (%d) in UnsafeSliceForDType", dtype, dtype)
-		panic(nil) // Quiet lint warning.
+		return nil, errors.Errorf("unknown dtype %q (%d) in UnsafeSliceForDType", dtype, dtype)
 	}
 }
 

@@ -51,7 +51,7 @@ func init() {
 // We make a copy of chelper.go for every sub-directory that needs it.
 //go:generate go run ../internal/cmd/copy_go_code --original=internal/chelper.go
 
-// panicf panics with formatted description.
+// panicf panics with a formatted description.
 //
 // It is only used for "bugs in the code" -- when parameters don't follow the specifications.
 // In principle, it should never happen -- the same way nil-pointer panics should never happen.

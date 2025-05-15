@@ -1,3 +1,4 @@
+// exec_hlo is a trivial testing program to execute HLO programs that take as input only one value.
 package main
 
 import (

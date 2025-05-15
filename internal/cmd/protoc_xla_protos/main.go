@@ -1,7 +1,7 @@
 // protoc_xla_protos compiles the .proto from the OpenXLA/XLA sources to subpackages of
-// "github.com/gomlx/gopjrt/protos".
+// "github.com/gomlx/gopjrt/internal/protos".
 //
-// It should be executed under the gopjrt/protos directory -- suggested as a go:generate --
+// It should be executed under the gopjrt/internal/protos directory -- suggested as a go:generate --
 // and it requires XLA_SRC to be set to a cloned github.com/openxla/xla clone.
 //
 // It first removes from the proto any lines with `option go_package = "...";`, since they

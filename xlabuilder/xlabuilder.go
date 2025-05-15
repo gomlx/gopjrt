@@ -45,7 +45,7 @@ func init() {
 	}
 }
 
-//go:generate go run ../cmd/xlabuilder_codegen
+//go:generate go run ../internal/cmd/xlabuilder_codegen
 
 // Since CGO C types cannot cross boundaries of a package (see issue https://github.com/golang/go/issues/13467)
 // We make a copy of chelper.go for every sub-directory that needs it.

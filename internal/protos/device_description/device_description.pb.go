@@ -22,8 +22,8 @@
 package device_description
 
 import (
-	"github.com/gomlx/gopjrt/internal/protos/autotune_results"
-	"github.com/gomlx/gopjrt/internal/protos/cuda_compute_capability"
+	autotune_results "github.com/gomlx/gopjrt/internal/protos/autotune_results"
+	cuda_compute_capability "github.com/gomlx/gopjrt/internal/protos/cuda_compute_capability"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -103,8 +103,8 @@ type GpuDeviceInfoProto struct {
 	//
 	//	*GpuDeviceInfoProto_CudaComputeCapability
 	//	*GpuDeviceInfoProto_RocmComputeCapability
-	ComputeCapability     isGpuDeviceInfoProto_ComputeCapability `protobuf_oneof:"compute_capability"`
-	RegistersPerCoreLimit int64                                  `protobuf:"varint,18,opt,name=registers_per_core_limit,json=registersPerCoreLimit,proto3" json:"registers_per_core_limit,omitempty"`
+	ComputeCapability      isGpuDeviceInfoProto_ComputeCapability `protobuf_oneof:"compute_capability"`
+	RegistersPerCoreLimit  int64                                  `protobuf:"varint,18,opt,name=registers_per_core_limit,json=registersPerCoreLimit,proto3" json:"registers_per_core_limit,omitempty"`
 	RegistersPerBlockLimit int64                                  `protobuf:"varint,19,opt,name=registers_per_block_limit,json=registersPerBlockLimit,proto3" json:"registers_per_block_limit,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache

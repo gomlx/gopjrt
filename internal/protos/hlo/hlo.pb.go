@@ -35,8 +35,8 @@
 package hlo
 
 import (
-	"github.com/gomlx/gopjrt/internal/protos/metrics"
-	"github.com/gomlx/gopjrt/internal/protos/xla_data"
+	metrics "github.com/gomlx/gopjrt/internal/protos/metrics"
+	xla_data "github.com/gomlx/gopjrt/internal/protos/xla_data"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
@@ -445,9 +445,9 @@ func (HeapSimulatorTrace_Event_Kind) EnumDescriptor() ([]byte, []int) {
 type HloInstructionProto struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Name     string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Opcode   string               `protobuf:"bytes,2,opt,name=opcode,proto3" json:"opcode,omitempty"`
-	Shape    *xla_data.ShapeProto `protobuf:"bytes,3,opt,name=shape,proto3" json:"shape,omitempty"`
-	Metadata *xla_data.OpMetadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Opcode   string                 `protobuf:"bytes,2,opt,name=opcode,proto3" json:"opcode,omitempty"`
+	Shape    *xla_data.ShapeProto   `protobuf:"bytes,3,opt,name=shape,proto3" json:"shape,omitempty"`
+	Metadata *xla_data.OpMetadata   `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Literal, only present for kConstant.
 	Literal *xla_data.LiteralProto `protobuf:"bytes,8,opt,name=literal,proto3" json:"literal,omitempty"`
 	// Parameter number is only present for kParameter.
@@ -2046,8 +2046,8 @@ func (x *HeapSimulatorTrace) GetBufferAllocationIndex() int64 {
 // across different devices.
 type HloModuleGroupProto struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	HloModules    []*HloModuleProto `protobuf:"bytes,2,rep,name=hlo_modules,json=hloModules,proto3" json:"hlo_modules,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	HloModules    []*HloModuleProto      `protobuf:"bytes,2,rep,name=hlo_modules,json=hloModules,proto3" json:"hlo_modules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

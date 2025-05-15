@@ -13,7 +13,7 @@
 package autotuning
 
 import (
-	"github.com/gomlx/gopjrt/internal/protos/dnn"
+	dnn "github.com/gomlx/gopjrt/internal/protos/dnn"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"

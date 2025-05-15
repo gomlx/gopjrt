@@ -7,9 +7,9 @@
 package compile_options
 
 import (
-	"github.com/gomlx/gopjrt/internal/protos/device_description"
-	"github.com/gomlx/gopjrt/internal/protos/xla"
-	"github.com/gomlx/gopjrt/internal/protos/xla_data"
+	device_description "github.com/gomlx/gopjrt/internal/protos/device_description"
+	xla "github.com/gomlx/gopjrt/internal/protos/xla"
+	xla_data "github.com/gomlx/gopjrt/internal/protos/xla_data"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -539,8 +539,8 @@ func (x *CompileOptionsProto) GetTargetConfig() *device_description.GpuTargetCon
 // Helper for serializing opaque executables alongside CompileOptions.
 type ExecutableAndOptionsProto struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	SerializedExecutable []byte               `protobuf:"bytes,1,opt,name=serialized_executable,json=serializedExecutable,proto3" json:"serialized_executable,omitempty"`
-	CompileOptions       *CompileOptionsProto `protobuf:"bytes,2,opt,name=compile_options,json=compileOptions,proto3" json:"compile_options,omitempty"`
+	SerializedExecutable []byte                 `protobuf:"bytes,1,opt,name=serialized_executable,json=serializedExecutable,proto3" json:"serialized_executable,omitempty"`
+	CompileOptions       *CompileOptionsProto   `protobuf:"bytes,2,opt,name=compile_options,json=compileOptions,proto3" json:"compile_options,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }

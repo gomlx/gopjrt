@@ -23,7 +23,7 @@ import (
 
 const (
 	xlaSrcEnvVar = "XLA_SRC"
-	basePackage  = "github.com/gomlx/gopjrt/protos"
+	basePackage  = "github.com/gomlx/gopjrt/internal/protos"
 )
 
 var protos = []string{

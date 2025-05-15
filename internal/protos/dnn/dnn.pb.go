@@ -652,8 +652,8 @@ func (AlgorithmProto_MathType) EnumDescriptor() ([]byte, []int) {
 // Generic tensor representation.
 type TensorDescriptorProto struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
-	Dimensions []int64  `protobuf:"varint,1,rep,packed,name=dimensions,proto3" json:"dimensions,omitempty"`
-	DataType   DataType `protobuf:"varint,2,opt,name=data_type,json=dataType,proto3,enum=stream_executor.dnn.DataType" json:"data_type,omitempty"`
+	Dimensions []int64                `protobuf:"varint,1,rep,packed,name=dimensions,proto3" json:"dimensions,omitempty"`
+	DataType   DataType               `protobuf:"varint,2,opt,name=data_type,json=dataType,proto3,enum=stream_executor.dnn.DataType" json:"data_type,omitempty"`
 	// Types that are valid to be assigned to LayoutOneof:
 	//
 	//	*TensorDescriptorProto_DataLayout

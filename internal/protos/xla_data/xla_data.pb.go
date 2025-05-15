@@ -3556,8 +3556,8 @@ func (x *Statistic) GetStatVal() float64 {
 // index of the statistic to render.
 type StatisticsViz struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	StatIndexToVisualize int64                  `protobuf:"varint,1,opt,name=stat_index_to_visualize,json=statIndexToVisualize,proto3" json:"stat_index_to_visualize,omitempty"`
-	Statistics           []*Statistic           `protobuf:"bytes,2,rep,name=statistics,proto3" json:"statistics,omitempty"`
+	StatIndexToVisualize int64        `protobuf:"varint,1,opt,name=stat_index_to_visualize,json=statIndexToVisualize,proto3" json:"stat_index_to_visualize,omitempty"`
+	Statistics           []*Statistic `protobuf:"bytes,2,rep,name=statistics,proto3" json:"statistics,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }

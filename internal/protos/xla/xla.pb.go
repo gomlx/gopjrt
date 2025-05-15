@@ -22,8 +22,8 @@
 package xla
 
 import (
-	hlo "github.com/gomlx/gopjrt/protos/hlo"
-	xla_data "github.com/gomlx/gopjrt/protos/xla_data"
+	"github.com/gomlx/gopjrt/internal/protos/hlo"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
@@ -1043,9 +1043,9 @@ type DebugOptions struct {
 	// xla_gpu_threshold_for_windowed_einsum_mib will be ignored.
 	XlaGpuOperandBytesThresholdForWindowedEinsum int64                            `protobuf:"varint,339,opt,name=xla_gpu_operand_bytes_threshold_for_windowed_einsum,json=xlaGpuOperandBytesThresholdForWindowedEinsum,proto3" json:"xla_gpu_operand_bytes_threshold_for_windowed_einsum,omitempty"`
 	XlaGpuOverrideGemmAutotuner                  string                           `protobuf:"bytes,295,opt,name=xla_gpu_override_gemm_autotuner,json=xlaGpuOverrideGemmAutotuner,proto3" json:"xla_gpu_override_gemm_autotuner,omitempty"`
-	XlaGpuPerFusionAutotuneCacheDir              string                           `protobuf:"bytes,310,opt,name=xla_gpu_per_fusion_autotune_cache_dir,json=xlaGpuPerFusionAutotuneCacheDir,proto3" json:"xla_gpu_per_fusion_autotune_cache_dir,omitempty"`
-	XlaGpuPgleAccuracyChecker                    DebugOptions_PGLEStrictnessLevel `protobuf:"varint,341,opt,name=xla_gpu_pgle_accuracy_checker,json=xlaGpuPgleAccuracyChecker,proto3,enum=xla.DebugOptions_PGLEStrictnessLevel" json:"xla_gpu_pgle_accuracy_checker,omitempty"`
-	XlaGpuPgleProfileFileOrDirectoryPath         string                           `protobuf:"bytes,210,opt,name=xla_gpu_pgle_profile_file_or_directory_path,json=xlaGpuPgleProfileFileOrDirectoryPath,proto3" json:"xla_gpu_pgle_profile_file_or_directory_path,omitempty"`
+	XlaGpuPerFusionAutotuneCacheDir      string                           `protobuf:"bytes,310,opt,name=xla_gpu_per_fusion_autotune_cache_dir,json=xlaGpuPerFusionAutotuneCacheDir,proto3" json:"xla_gpu_per_fusion_autotune_cache_dir,omitempty"`
+	XlaGpuPgleAccuracyChecker            DebugOptions_PGLEStrictnessLevel `protobuf:"varint,341,opt,name=xla_gpu_pgle_accuracy_checker,json=xlaGpuPgleAccuracyChecker,proto3,enum=xla.DebugOptions_PGLEStrictnessLevel" json:"xla_gpu_pgle_accuracy_checker,omitempty"`
+	XlaGpuPgleProfileFileOrDirectoryPath string                           `protobuf:"bytes,210,opt,name=xla_gpu_pgle_profile_file_or_directory_path,json=xlaGpuPgleProfileFileOrDirectoryPath,proto3" json:"xla_gpu_pgle_profile_file_or_directory_path,omitempty"`
 	// Paths to files with ptx code.
 	XlaGpuPtxFile []string `protobuf:"bytes,127,rep,name=xla_gpu_ptx_file,json=xlaGpuPtxFile,proto3" json:"xla_gpu_ptx_file,omitempty"`
 	// Size threshold (in bytes) for the GPU reduce-scatter combiner.
@@ -3294,27 +3294,27 @@ type HloModuleConfigProto struct {
 	// The original device assignment before being changed by a simulator.
 	// Simulators, like HybridSim, may change the device assignment to a smaller
 	// topology, to make simulation easier.
-	PreSimulationDeviceAssignment            *xla_data.DeviceAssignmentProto             `protobuf:"bytes,35,opt,name=pre_simulation_device_assignment,json=preSimulationDeviceAssignment,proto3" json:"pre_simulation_device_assignment,omitempty"`
-	AllowSeparateShardingPrograms            bool                                        `protobuf:"varint,30,opt,name=allow_separate_sharding_programs,json=allowSeparateShardingPrograms,proto3" json:"allow_separate_sharding_programs,omitempty"`
-	ShardableValueUpdatePairs                []*ShardableValueUpdatePairProto            `protobuf:"bytes,16,rep,name=shardable_value_update_pairs,json=shardableValueUpdatePairs,proto3" json:"shardable_value_update_pairs,omitempty"`
-	AliasPassthroughParams                   bool                                        `protobuf:"varint,17,opt,name=alias_passthrough_params,json=aliasPassthroughParams,proto3" json:"alias_passthrough_params,omitempty"`
-	ContentAwareComputationSorting           bool                                        `protobuf:"varint,18,opt,name=content_aware_computation_sorting,json=contentAwareComputationSorting,proto3" json:"content_aware_computation_sorting,omitempty"`
-	FusionConfigCollection                   HloModuleConfigProto_FusionConfigCollection `protobuf:"varint,19,opt,name=fusion_config_collection,json=fusionConfigCollection,proto3,enum=xla.HloModuleConfigProto_FusionConfigCollection" json:"fusion_config_collection,omitempty"`
-	FusionConfig                             []*HloModuleConfigProto_BoolList            `protobuf:"bytes,20,rep,name=fusion_config,json=fusionConfig,proto3" json:"fusion_config,omitempty"`
-	DotConfig                                map[string]*HloModuleConfigProto_Int64List  `protobuf:"bytes,21,rep,name=dot_config,json=dotConfig,proto3" json:"dot_config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	LayoutConfig                             []*HloModuleConfigProto_Int64ListList       `protobuf:"bytes,22,rep,name=layout_config,json=layoutConfig,proto3" json:"layout_config,omitempty"`
-	MemorySpaceAssignmentConfig              []uint64                                    `protobuf:"varint,23,rep,packed,name=memory_space_assignment_config,json=memorySpaceAssignmentConfig,proto3" json:"memory_space_assignment_config,omitempty"`
-	PhaseOrderingConfig                      []*HloModuleConfigProto_BoolList            `protobuf:"bytes,24,rep,name=phase_ordering_config,json=phaseOrderingConfig,proto3" json:"phase_ordering_config,omitempty"`
-	PhaseIndex                               int32                                       `protobuf:"varint,25,opt,name=phase_index,json=phaseIndex,proto3" json:"phase_index,omitempty"`
+	PreSimulationDeviceAssignment  *xla_data.DeviceAssignmentProto             `protobuf:"bytes,35,opt,name=pre_simulation_device_assignment,json=preSimulationDeviceAssignment,proto3" json:"pre_simulation_device_assignment,omitempty"`
+	AllowSeparateShardingPrograms  bool                                        `protobuf:"varint,30,opt,name=allow_separate_sharding_programs,json=allowSeparateShardingPrograms,proto3" json:"allow_separate_sharding_programs,omitempty"`
+	ShardableValueUpdatePairs      []*ShardableValueUpdatePairProto            `protobuf:"bytes,16,rep,name=shardable_value_update_pairs,json=shardableValueUpdatePairs,proto3" json:"shardable_value_update_pairs,omitempty"`
+	AliasPassthroughParams         bool                                        `protobuf:"varint,17,opt,name=alias_passthrough_params,json=aliasPassthroughParams,proto3" json:"alias_passthrough_params,omitempty"`
+	ContentAwareComputationSorting bool                                        `protobuf:"varint,18,opt,name=content_aware_computation_sorting,json=contentAwareComputationSorting,proto3" json:"content_aware_computation_sorting,omitempty"`
+	FusionConfigCollection         HloModuleConfigProto_FusionConfigCollection `protobuf:"varint,19,opt,name=fusion_config_collection,json=fusionConfigCollection,proto3,enum=xla.HloModuleConfigProto_FusionConfigCollection" json:"fusion_config_collection,omitempty"`
+	FusionConfig                   []*HloModuleConfigProto_BoolList            `protobuf:"bytes,20,rep,name=fusion_config,json=fusionConfig,proto3" json:"fusion_config,omitempty"`
+	DotConfig                      map[string]*HloModuleConfigProto_Int64List  `protobuf:"bytes,21,rep,name=dot_config,json=dotConfig,proto3" json:"dot_config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	LayoutConfig                   []*HloModuleConfigProto_Int64ListList       `protobuf:"bytes,22,rep,name=layout_config,json=layoutConfig,proto3" json:"layout_config,omitempty"`
+	MemorySpaceAssignmentConfig    []uint64                                    `protobuf:"varint,23,rep,packed,name=memory_space_assignment_config,json=memorySpaceAssignmentConfig,proto3" json:"memory_space_assignment_config,omitempty"`
+	PhaseOrderingConfig            []*HloModuleConfigProto_BoolList            `protobuf:"bytes,24,rep,name=phase_ordering_config,json=phaseOrderingConfig,proto3" json:"phase_ordering_config,omitempty"`
+	PhaseIndex                     int32                                       `protobuf:"varint,25,opt,name=phase_index,json=phaseIndex,proto3" json:"phase_index,omitempty"`
 	AllowSpmdShardingPropagationToParameters []bool                                      `protobuf:"varint,33,rep,packed,name=allow_spmd_sharding_propagation_to_parameters,json=allowSpmdShardingPropagationToParameters,proto3" json:"allow_spmd_sharding_propagation_to_parameters,omitempty"`
 	AllowSpmdShardingPropagationToOutput     []bool                                      `protobuf:"varint,27,rep,packed,name=allow_spmd_sharding_propagation_to_output,json=allowSpmdShardingPropagationToOutput,proto3" json:"allow_spmd_sharding_propagation_to_output,omitempty"`
-	AnalysisAllowanceMap                     map[string]int64                            `protobuf:"bytes,28,rep,name=analysis_allowance_map,json=analysisAllowanceMap,proto3" json:"analysis_allowance_map,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	MatrixUnitOperandPrecision               xla_data.PrecisionConfig_Precision          `protobuf:"varint,29,opt,name=matrix_unit_operand_precision,json=matrixUnitOperandPrecision,proto3,enum=xla.PrecisionConfig_Precision" json:"matrix_unit_operand_precision,omitempty"`
-	FdoProfile                               []byte                                      `protobuf:"bytes,31,opt,name=fdo_profile,json=fdoProfile,proto3" json:"fdo_profile,omitempty"`
+	AnalysisAllowanceMap           map[string]int64                            `protobuf:"bytes,28,rep,name=analysis_allowance_map,json=analysisAllowanceMap,proto3" json:"analysis_allowance_map,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	MatrixUnitOperandPrecision     xla_data.PrecisionConfig_Precision          `protobuf:"varint,29,opt,name=matrix_unit_operand_precision,json=matrixUnitOperandPrecision,proto3,enum=xla.PrecisionConfig_Precision" json:"matrix_unit_operand_precision,omitempty"`
+	FdoProfile                     []byte                                      `protobuf:"bytes,31,opt,name=fdo_profile,json=fdoProfile,proto3" json:"fdo_profile,omitempty"`
 	DeviceMemorySize                         int64                                       `protobuf:"varint,32,opt,name=device_memory_size,json=deviceMemorySize,proto3" json:"device_memory_size,omitempty"`
-	UseShardyPartitioner                     bool                                        `protobuf:"varint,34,opt,name=use_shardy_partitioner,json=useShardyPartitioner,proto3" json:"use_shardy_partitioner,omitempty"`
-	ShardingConfig                           *ShardingConfigProto                        `protobuf:"bytes,38,opt,name=sharding_config,json=shardingConfig,proto3" json:"sharding_config,omitempty"`
-	unknownFields                            protoimpl.UnknownFields
+	UseShardyPartitioner           bool                                        `protobuf:"varint,34,opt,name=use_shardy_partitioner,json=useShardyPartitioner,proto3" json:"use_shardy_partitioner,omitempty"`
+	ShardingConfig                 *ShardingConfigProto                        `protobuf:"bytes,38,opt,name=sharding_config,json=shardingConfig,proto3" json:"sharding_config,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }
 

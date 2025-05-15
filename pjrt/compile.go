@@ -2,9 +2,9 @@ package pjrt
 
 import "C"
 import (
-	"github.com/gomlx/gopjrt/cbuffer"
-	"github.com/gomlx/gopjrt/protos/compile_options"
-	"github.com/gomlx/gopjrt/protos/xla"
+	"github.com/gomlx/gopjrt/internal/cbuffer"
+	"github.com/gomlx/gopjrt/internal/protos/compile_options"
+	"github.com/gomlx/gopjrt/internal/protos/xla"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"

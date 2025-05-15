@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/protos/xla_data"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	"github.com/janpfeifer/must"
 	"github.com/pkg/errors"
 	"os"

@@ -22,7 +22,7 @@
 package autotune_results
 
 import (
-	autotuning "github.com/gomlx/gopjrt/protos/autotuning"
+	"github.com/gomlx/gopjrt/internal/protos/autotuning"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

@@ -3,7 +3,7 @@ package pjrt
 import (
 	"flag"
 	"fmt"
-	"github.com/gomlx/gopjrt/protos/hlo"
+	"github.com/gomlx/gopjrt/internal/protos/hlo"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"

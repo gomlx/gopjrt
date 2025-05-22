@@ -8,6 +8,10 @@
   * Internal refactoring changing `runtime.SetFinalizer` to `runtime.AddCleanUp`.
 * Added GOPJRT_TEXT_STABLE_HLO option to force XlaBuilder to use StableHlo text representation.
   * Use with `-vmodule=compile=2` to enable logging of each program compiled. 
+* CUDA driver:
+  * If the plugin is NVidia CUDA, set XLA_FLAGS=--xla_gpu_cuda_data_dir to the nvidia directory with drivers,
+    if one was installed.
+  * Updated `install_cuda.sh` script to create a nvidia/bin directory and link the downloaded cuda_nvcc/bin/ptxas there. 
 
 # v0.7.0 - 2024/04/30
 

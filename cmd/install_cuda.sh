@@ -61,4 +61,12 @@ if [[ "${tmp_venv_dir}" != "" ]] ; then
   echo "Cleaning up ${tmp_venv_dir}"
   rm -rf "${tmp_venv_dir}"
 fi
+
+# Create a bin/ directory and link ptxas binary, so it can be used with
+# XLA_FLAGS=--xla_gpu_cuda_data_dir=<path_to_nvidia_installed_files> to point
+# PJRT to the ptxas binary to use.
+${_SUDO} mkdir -p "${GOPJRT_INSTALL_DIR}/lib/gomlx/nvidia/bin"
+${_SUDO} ln -sf "${GOPJRT_INSTALL_DIR}/lib/gomlx/nvidia/cuda_nvcc/bin/ptxas" \
+  "${GOPJRT_INSTALL_DIR}/lib/gomlx/nvidia/bin/ptxas"
+
 echo "Done."

@@ -1,5 +1,7 @@
 # StableHLO Builder
 
+> ** UNDER CONSTRUCTION **: Don't use this yet!
+
 This package is a replacement for XlaBuilder, with the following advantages:
 
 * XlaBuilder has become a second-class citizen so to say, within OpenXLA. And things are moving torwards

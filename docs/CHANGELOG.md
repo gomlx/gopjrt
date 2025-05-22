@@ -12,6 +12,7 @@
   * If the plugin is NVidia CUDA, set XLA_FLAGS=--xla_gpu_cuda_data_dir to the nvidia directory with drivers,
     if one was installed.
   * Updated `install_cuda.sh` script to create a nvidia/bin directory and link the downloaded cuda_nvcc/bin/ptxas there. 
+* Removed reference to xla_data protos in the public API.
 
 # v0.7.0 - 2024/04/30
 

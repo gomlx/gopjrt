@@ -2,12 +2,13 @@ package xlabuilder
 
 import (
 	"fmt"
+	"slices"
+	"strings"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"slices"
-	"strings"
 )
 
 // Manual implementation of the special ops.
@@ -1357,11 +1358,22 @@ func DecodeBatchNormGrad(op *Op) (operand, scale, mean, variance, gradOutput *Op
 	return
 }
 
+// FFTType used by FFT and DecodeFFT function.
+// It must be kept in sync with the enum in xla_data.proto.
+type FFTType int32
+
+const (
+	FFTType_FFT   FFTType = 0 // Forward FFT; complex in, complex out.
+	FFTType_IFFT  FFTType = 1 // Inverse FFT; complex in, complex out.
+	FFTType_RFFT  FFTType = 2 // Forward real FFT; real in, fft_length / 2 + 1 complex out
+	FFTType_IRFFT FFTType = 3 // Inverse real FFT; fft_length / 2 + 1 complex in,
+)
+
 // FFT calls the XLA FFT operation, which implements {Forward, Inverse} x {Complex, Real} versions.
 //
 // See documentation in https://www.tensorflow.org/xla/operation_semantics.
 // Underlying, CPU FFT is backed by Eigen's TensorFFT and GPU FFT uses cuFFT.
-func FFT(operand *Op, fftType xla_data.FftType, fftLength []int) (*Op, error) {
+func FFT(operand *Op, fftType FFTType, fftLength []int) (*Op, error) {
 	builder := operand.builder
 	op := newOp(FftOp, operand)
 	op.IntArg = int(fftType)
@@ -1374,9 +1386,9 @@ func FFT(operand *Op, fftType xla_data.FftType, fftLength []int) (*Op, error) {
 }
 
 // DecodeFFT retrieves the arguments for the FFT op.
-func DecodeFFT(op *Op) (operand *Op, fftType xla_data.FftType, fftLength []int) {
+func DecodeFFT(op *Op) (operand *Op, fftType FFTType, fftLength []int) {
 	operand = op.OpInputs[0]
-	fftType = xla_data.FftType(op.IntArg)
+	fftType = FFTType(op.IntArg)
 	fftLength = op.IntsArg
 	return
 }

@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.7.1
 
 * Updated Go dependency to go1.24: needed for the safer `runtime.AddCleanUp` used in `pjrt` now.
 * Moved internal packages under a `internal` subdirectory, including code generating commands.
@@ -11,8 +11,8 @@
 * CUDA driver:
   * If the plugin is NVidia CUDA, set XLA_FLAGS=--xla_gpu_cuda_data_dir to the nvidia directory with drivers,
     if one was installed.
-  * Updated `install_cuda.sh` script to create a nvidia/bin directory and link the downloaded cuda_nvcc/bin/ptxas there. 
-* Removed reference to xla_data protos in the public API.
+  * Updated `install_cuda.sh` script to create a nvidia/bin directory and link the downloaded `cuda_nvcc/bin/ptxas` there. 
+* Removed reference to `xla_data` (or any other) protos from the public API.
 
 # v0.7.0 - 2024/04/30
 

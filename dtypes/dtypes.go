@@ -42,7 +42,7 @@ func init() {
 }
 
 // Generate automatic C-to-Go boilerplate code for pjrt_c_api.h.
-//go:generate go run ../cmd/dtypes_codegen
+//go:generate go run ../internal/cmd/dtypes_codegen
 
 // FromGenericsType returns the DType enum for the given type that this package knows about.
 func FromGenericsType[T Supported]() DType {

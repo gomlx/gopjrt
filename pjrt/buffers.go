@@ -17,15 +17,14 @@ import (
 	"unsafe"
 )
 
-// Buffer is a reference to an array storage (buffer) on device.
+// Buffer is a reference to an on-device array storage (buffer).
 type Buffer struct {
-	cBuffer *C.PJRT_Buffer
+	wrapper *bufferWrapper
 	client  *Client
 
 	// For "shared buffers", with a direct pointer to the underlying data.
 	// This is nil for non-shared-buffers.
-	isShared         bool
-	sharedRawStorage unsafe.Pointer
+	isShared bool
 
 	dimsSet bool // Whether dims is set.
 	dims    []int
@@ -33,6 +32,42 @@ type Buffer struct {
 	dtypeSet bool // Whether dtype is set.
 	dtype    dtypes.DType
 	// DEBUG: creationStackTrace error
+}
+
+// bufferWrapper wraps the C/C++ data that requires clean up.
+type bufferWrapper struct {
+	c                *C.PJRT_Buffer
+	sharedRawStorage unsafe.Pointer
+	plugin           *Plugin
+}
+
+func (wrapper *bufferWrapper) IsValid() bool {
+	return wrapper != nil && wrapper.c != nil
+}
+
+func (wrapper *bufferWrapper) Destroy() error {
+	if wrapper == nil || wrapper.plugin == nil || wrapper.c == nil {
+		// Already destroyed, no-op.
+		return nil
+	}
+	defer runtime.KeepAlive(wrapper)
+
+	arena := wrapper.plugin.getArenaFromPool()
+	defer wrapper.plugin.returnArenaToPool(arena)
+	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
+	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
+	args.buffer = wrapper.c
+	err := toError(wrapper.plugin, C.call_PJRT_Buffer_Destroy(wrapper.plugin.api, args))
+	wrapper.plugin = nil
+	wrapper.c = nil
+	buffersAlive.Add(-1)
+
+	if wrapper.sharedRawStorage != nil {
+		// Shared storage can only be freed after the buffer is destroyed.
+		AlignedFree(wrapper.sharedRawStorage)
+		wrapper.sharedRawStorage = nil
+	}
+	return err
 }
 
 var buffersAlive atomic.Int64
@@ -46,59 +81,35 @@ func BuffersAlive() int64 {
 func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 	b := &Buffer{
 		client:  client,
-		cBuffer: cBuffer,
+		wrapper: &bufferWrapper{plugin: client.plugin, c: cBuffer},
 		// DEBUG: creationStackTrace: errors.New("bufferCreation"),
 	}
 	buffersAlive.Add(1)
 
-	runtime.SetFinalizer(b, func(b *Buffer) {
-		/* DEBUG:
-		if b != nil && cBuffer != nil && b.client != nil && b.client.plugin != nil {
-			dims, _ := b.Dimensions()
-			dtype, _ := b.DType()
-			fmt.Printf("\nGC buffer: (%s)%v\n", dtype, dims)
-			fmt.Printf("\tStack trace:\n%+v\n", b.creationStackTrace)
-		}
-		*/
-		err := b.Destroy()
+	runtime.AddCleanup(b, func(wrapper *bufferWrapper) {
+		err := wrapper.Destroy()
 		if err != nil {
-			klog.Errorf("Buffer.Destroy failed: %v", err)
+			klog.Errorf("pjrt.Buffer.Destroy failed: %v", err)
 		}
-	})
+	}, b.wrapper)
 	return b
 }
 
 // Destroy the Buffer, release resources, and Buffer is no longer valid.
 // This is automatically called if Buffer is garbage collected.
 func (b *Buffer) Destroy() error {
-	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
-		// Already destroyed, no-op.
+	if !b.wrapper.IsValid() {
 		return nil
 	}
-	defer runtime.KeepAlive(b)
-
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
-	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
-	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
-	args.buffer = b.cBuffer
-	err := toError(b.client.plugin, C.call_PJRT_Buffer_Destroy(b.client.plugin.api, args))
+	err := b.wrapper.Destroy()
 	b.client = nil
-	b.cBuffer = nil
-	buffersAlive.Add(-1)
-
-	if b.sharedRawStorage != nil {
-		// Shared storage can only be freed after the buffer is destroyed.
-		AlignedFree(b.sharedRawStorage)
-		b.sharedRawStorage = nil
-	}
 	return err
 }
 
 // Dimensions of the Buffer.
 // Returned slice is owned by the buffer, to avoid creating a copy. Don't change it.
 func (b *Buffer) Dimensions() (dims []int, err error) {
-	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
@@ -111,7 +122,7 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	defer b.client.plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Dimensions_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Dimensions_Args_STRUCT_SIZE
-	args.buffer = b.cBuffer
+	args.buffer = b.wrapper.c
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Dimensions(b.client.plugin.api, args))
 	if err != nil {
 		return
@@ -127,7 +138,7 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 // DType of the Buffer (PJRT_Buffer_ElementType).
 func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	dtype = dtypes.InvalidDType
-	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
@@ -140,7 +151,7 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	defer b.client.plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_ElementType_Args](arena)
 	args.struct_size = C.PJRT_Buffer_ElementType_Args_STRUCT_SIZE
-	args.buffer = b.cBuffer
+	args.buffer = b.wrapper.c
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_ElementType(b.client.plugin.api, args))
 	if err != nil {
 		return
@@ -153,7 +164,7 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 
 // Device returns the device the buffer is stored.
 func (b *Buffer) Device() (device *Device, err error) {
-	if b == nil || b.client == nil || b.client.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
 		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 		return
 	}
@@ -163,7 +174,7 @@ func (b *Buffer) Device() (device *Device, err error) {
 	defer b.client.plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Device_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Device_Args_STRUCT_SIZE
-	args.buffer = b.cBuffer
+	args.buffer = b.wrapper.c
 	err = toError(b.client.plugin, C.call_PJRT_Buffer_Device(b.client.plugin.api, args))
 	if err != nil {
 		return
@@ -187,7 +198,7 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 // Size returns the size in bytes if required for the buffer to be transferred with ToHost.
 func (b *Buffer) Size() (int, error) {
 	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || b.cBuffer == nil {
+	if b == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
 		// Already destroyed ?
 		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
@@ -199,7 +210,7 @@ func (b *Buffer) Size() (int, error) {
 	// It uses a PJRT_Buffer_ToHostBuffer_Args but it doesn't transfer, only inquire about size.
 	args := arenaAlloc[C.PJRT_Buffer_ToHostBuffer_Args](arena)
 	args.struct_size = C.PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE
-	args.src = b.cBuffer
+	args.src = b.wrapper.c
 	args.dst = nil // Don't transfer, only inquire about size.
 	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
 	if err != nil {

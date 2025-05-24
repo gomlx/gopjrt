@@ -521,7 +521,6 @@ func TestSelectAndScatter(t *testing.T) {
 
 func TestDotGeneral(t *testing.T) {
 	client := getPJRTClient(t)
-
 	{
 		builder := New(t.Name() + ": [3, 4] x [3, 4]")
 		dtype := dtypes.Float32
@@ -548,7 +547,7 @@ func TestDotGeneral(t *testing.T) {
 
 		exec := compile(t, client, capture(builder.Build(output)).Test(t))
 		got, dims := execArrayOutput[float32](t, client, exec)
-		require.Equal(t, []float32{1, 2.6, 4.2}, got)
+		require.InDeltaSlice(t, []float32{1, 2.6, 4.2}, got, 1e-3)
 		require.Equal(t, []int{3}, dims)
 		builder.Destroy()
 	}

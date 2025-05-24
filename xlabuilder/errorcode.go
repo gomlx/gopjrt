@@ -21,7 +21,7 @@ package xlabuilder
 // errorCode is used by the underlying TensorFlow/XLA libraries, in Status objects.
 type errorCode int
 
-//go:generate stringer -type=errorCode errorcode.go
+//go:generate go tool enumer -type=errorCode errorcode.go
 
 // Values copied from tensorflow/core/protobuf/error_codes.proto.
 // TODO: convert the protos definitions to Go and use that instead.

@@ -79,7 +79,7 @@ func (c *Client) CreateViewOfDeviceBuffer(rawData unsafe.Pointer, dtype dtypes.D
 	var args *C.PJRT_Client_CreateViewOfDeviceBuffer_Args
 	args = arenaAlloc[C.PJRT_Client_CreateViewOfDeviceBuffer_Args](arena)
 	args.struct_size = C.PJRT_Client_CreateViewOfDeviceBuffer_Args_STRUCT_SIZE
-	args.client = c.client
+	args.client = c.client.c
 	args.device_buffer_ptr = rawData
 	args.element_type = C.PJRT_Buffer_Type(dtype)
 	args.num_dims = C.size_t(len(dimensions))
@@ -127,7 +127,7 @@ func (c *Client) NewSharedBuffer(dtype dtypes.DType, dimensions []int, device ..
 		buffer = nil
 		return
 	}
-	buffer.sharedRawStorage = rawStorage
+	buffer.wrapper.sharedRawStorage = rawStorage
 	buffer.isShared = true
 
 	goDType := dtype.GoType()
@@ -160,7 +160,7 @@ func (b *Buffer) UnsafePointer() (unsafe.Pointer, error) {
 	var args *C.PJRT_Buffer_UnsafePointer_Args
 	args = arenaAlloc[C.PJRT_Buffer_UnsafePointer_Args](arena)
 	args.struct_size = C.PJRT_Buffer_UnsafePointer_Args_STRUCT_SIZE
-	args.buffer = b.cBuffer
+	args.buffer = b.wrapper.c
 	err := toError(plugin, C.call_PJRT_Buffer_UnsafePointer(plugin.api, args))
 	if err != nil {
 		return nil, err

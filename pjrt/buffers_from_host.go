@@ -203,7 +203,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 	var args *C.PJRT_Client_BufferFromHostBuffer_Args
 	args = arenaAlloc[C.PJRT_Client_BufferFromHostBuffer_Args](arena)
 	args.struct_size = C.PJRT_Client_BufferFromHostBuffer_Args_STRUCT_SIZE
-	args.client = b.client.client
+	args.client = b.client.client.c
 	args.data = unsafe.Pointer(dataPtr)
 	args._type = C.PJRT_Buffer_Type(b.dtype)
 	args.num_dims = C.size_t(len(b.dimensions))

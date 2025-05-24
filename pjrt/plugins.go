@@ -41,6 +41,10 @@ type Plugin struct {
 	// Most people don't need to worry about this, it should be an implementation detail.
 	UseStableHLO bool
 
+	// UseTextStableHLO configures the plugin clients to convert XlaBuilder programs from "HLO" to textual
+	// (human-readable) "StableHLO" before compilation.
+	UseTextStableHLO bool
+
 	// arenaPool reuses C-allocated buffers to pass parameters to the PJRT api. Pool shared across all clients.
 	arenaPool *sync.Pool
 }
@@ -70,11 +74,12 @@ func pjrtPluginAttributes(plugin *Plugin) (NamedValuesMap, error) {
 // Internal: use GetPlugin instead.
 func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrapper) (*Plugin, error) {
 	plugin := &Plugin{
-		name:         name,
-		path:         pluginPath,
-		api:          api,
-		dllHandle:    dllHandle,
-		UseStableHLO: os.Getenv("GOPJRT_NO_STABLE_HLO") == "",
+		name:             name,
+		path:             pluginPath,
+		api:              api,
+		dllHandle:        dllHandle,
+		UseStableHLO:     os.Getenv("GOPJRT_NO_STABLE_HLO") == "",
+		UseTextStableHLO: os.Getenv("GOPJRT_TEXT_STABLE_HLO") != "",
 		arenaPool: &sync.Pool{
 			New: func() interface{} { return newArena(arenaDefaultSize) },
 		},
@@ -119,7 +124,7 @@ func GetPlugin(name string) (*Plugin, error) {
 	return loadNamedPlugin(name)
 }
 
-// Name returns the name of the plugin, usually it reflects its platform (cpu, gpu, tpu, etc.).
+// Name returns the name of the plugin; usually it reflects its platform (cpu, gpu, tpu, etc.).
 func (p *Plugin) Name() string {
 	return p.name
 }
@@ -142,10 +147,17 @@ func (p *Plugin) Attributes() NamedValuesMap {
 // String implements fmt.Stringer. It returns the platform and version of the plugin.
 func (p *Plugin) String() string {
 	major, minor := p.Version()
-	if p.path == p.name {
-		return fmt.Sprintf("PJRT plugin (%s) v%d.%d", p.Path(), major, minor)
+	var extra string
+	if p.UseStableHLO {
+		extra += " [StableHLO]"
 	}
-	return fmt.Sprintf("PJRT %q plugin (%s) v%d.%d", p.Name(), p.Path(), major, minor)
+	if p.UseTextStableHLO {
+		extra += " [TextStableHLO]"
+	}
+	if p.path == p.name {
+		return fmt.Sprintf("PJRT plugin (%s) v%d.%d%s", p.Path(), major, minor, extra)
+	}
+	return fmt.Sprintf("PJRT %q plugin (%s) v%d.%d%s", p.Name(), p.Path(), major, minor, extra)
 }
 
 // NewClient creates a new Client object to manage available devices.

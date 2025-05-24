@@ -7,7 +7,7 @@ import "C"
 import (
 	"fmt"
 	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/protos/xla_data"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	"github.com/pkg/errors"
 	"slices"
 	"strings"

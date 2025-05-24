@@ -1,0 +1,81 @@
+package main
+
+import (
+	"bytes"
+	"flag"
+	"fmt"
+	"github.com/janpfeifer/must"
+	"io"
+	"os"
+	"path"
+	"regexp"
+	"strings"
+)
+
+var (
+	flagOriginalGoFile = flag.String("original", "",
+		"Original file name (or full path) to copy to the current directory. "+
+			"If not an absolute path, the file is searched for in parent directories.")
+	flagTargetGoFile = flag.String("target", "gen_{{original}}",
+		"Target file name (not the path). It is written in the current directory. "+
+			"The string `{{original}}` is replaced with the value set in --original. ")
+	flagPackageName = flag.String("package", "", "Package name to use on copy. If empty uses current directory name.")
+	flagPrefix      = flag.String("prefix", `/* DO NOT EDIT: this is a copy from {{original}} file */\n`,
+		"Prefix text to include in copy. "+
+			"The string `{{original}}` is replaced with the value set in --original. "+
+			"The strings \\t and \\n are also replaced.")
+)
+
+func main() {
+	flag.Parse()
+
+	if *flagOriginalGoFile == "" {
+		fmt.Printf("--original is required\n")
+		flag.PrintDefaults()
+		return
+	}
+
+	originalName := path.Base(*flagOriginalGoFile)
+	targetName := strings.Replace(*flagTargetGoFile, "{{original}}", originalName, -1)
+	prefix := strings.Replace(*flagPrefix, "{{original}}", originalName, -1)
+	prefix = strings.Replace(prefix, `\t`, "\t", -1)
+	prefix = strings.Replace(prefix, `\n`, "\n", -1)
+	packageName := *flagPackageName
+	if packageName == "" {
+		packageName = path.Base(must.M1(os.Getwd()))
+	}
+
+	// Find the original file
+	originalPath := *flagOriginalGoFile
+	if !path.IsAbs(originalPath) {
+		currentPath := must.M1(os.Getwd())
+		for {
+			originalPath = path.Join(currentPath, *flagOriginalGoFile)
+			_, err := os.Stat(originalPath)
+			if err == nil {
+				break // Found it.
+			}
+
+			if currentPath == "/" {
+				panic("Can't find original file " + *flagOriginalGoFile + " in any of the parent directories from the current directory.")
+			}
+			currentPath = path.Dir(currentPath)
+		}
+	}
+
+	// Read the original file.
+	f := must.M1(os.OpenFile(originalPath, os.O_RDONLY, os.ModePerm))
+	var b bytes.Buffer
+	_ = must.M1(io.Copy(&b, f))
+	must.M(f.Close())
+	contents := strings.Join([]string{prefix, b.String()}, "\n")
+
+	// Replace the package name.
+	rePackage := regexp.MustCompile(`(?m)^package\s+\w+$`)
+	contents = rePackage.ReplaceAllString(contents, fmt.Sprintf("package %s", packageName))
+
+	// Write to a target file.
+	must.M(os.WriteFile(targetName, []byte(contents), 0644))
+
+	fmt.Printf("Generated %q from %q, with package name %q\n", targetName, originalPath, packageName)
+}

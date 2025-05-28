@@ -8,10 +8,11 @@ package pjrt
 import "C"
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 func pjrtClientPlatformName(plugin *Plugin, client *Client) (string, error) {
@@ -169,7 +170,6 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 
 	// Register clean up.
 	runtime.AddCleanup(c, func(client *clientC) {
-		fmt.Println("Cleanup()")
 		err := client.Destroy(plugin)
 		if err != nil {
 			klog.Errorf("Failed to destroy client (plugin %s): %v", plugin, err)
@@ -184,7 +184,6 @@ func (c *Client) Plugin() *Plugin {
 }
 
 func (client *clientC) Destroy(plugin *Plugin) error {
-	fmt.Println("Client.Destroy()")
 	if plugin == nil || client == nil || client.c == nil {
 		// Already destroyed, no-op.
 		return nil

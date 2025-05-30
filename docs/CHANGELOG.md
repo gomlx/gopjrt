@@ -1,5 +1,9 @@
 # Gopjrt Changelog
 
+# v0.7.2
+
+* Removed left-over log messages when the client got destroyed.
+
 # v0.7.1
 
 * Updated Go dependency to go1.24: needed for the safer `runtime.AddCleanUp` used in `pjrt` now.

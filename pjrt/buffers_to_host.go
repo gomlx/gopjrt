@@ -57,7 +57,7 @@ import "C"
 // This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
 // reorganize the layout.
 func (b *Buffer) ToHost(dst []byte) error {
-	plugin, err := b.Plugin()
+	plugin, err := b.getPlugin()
 	if err != nil {
 		return err
 	}

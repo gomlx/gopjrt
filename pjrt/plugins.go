@@ -86,11 +86,11 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrap
 	}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)
+		return nil, errors.WithMessagef(err, "initializing PJRT getPlugin %q", name)
 	}
 	plugin.attributes, err = pjrtPluginAttributes(plugin)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "initializing PJRT Plugin %q", name)
+		return nil, errors.WithMessagef(err, "initializing PJRT getPlugin %q", name)
 	}
 	return plugin, nil
 }

@@ -151,7 +151,7 @@ func (b *Buffer) IsShared() bool {
 // To be on the safe side, only use this if Client.HasSharedBuffers is true.
 // It uses the undocumented PJRT_Buffer_UnsafePointer.
 func (b *Buffer) UnsafePointer() (unsafe.Pointer, error) {
-	plugin, err := b.Plugin()
+	plugin, err := b.getPlugin()
 	if err != nil {
 		return nil, err
 	}

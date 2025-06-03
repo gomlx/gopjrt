@@ -117,9 +117,9 @@ func (b *Buffer) Check() error {
 	return nil
 }
 
-func (b *Buffer) Plugin() (*Plugin, error) {
-	if err := b.Check(); err != nil {
-		return nil, err
+func (b *Buffer) getPlugin() (*Plugin, error) {
+	if b == nil || b.wrapper == nil || b.wrapper.client == nil || b.wrapper.plugin == nil || !b.wrapper.IsValid() {
+		return nil, errors.New("Buffer is invalid: either it is nil or it has been destroyed, or its client has been destroyed")
 	}
 	return b.wrapper.client.plugin, nil
 }
@@ -128,7 +128,7 @@ func (b *Buffer) Plugin() (*Plugin, error) {
 // The buffer owns the returned slice to avoid creating a copy. Don't change it.
 func (b *Buffer) Dimensions() (dims []int, err error) {
 	var plugin *Plugin
-	plugin, err = b.Plugin()
+	plugin, err = b.getPlugin()
 	if err != nil {
 		return
 	}
@@ -158,7 +158,7 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	dtype = dtypes.InvalidDType
 	var plugin *Plugin
-	plugin, err = b.Plugin()
+	plugin, err = b.getPlugin()
 	if err != nil {
 		return
 	}
@@ -185,7 +185,7 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 // Device returns the device the buffer is stored.
 func (b *Buffer) Device() (device *Device, err error) {
 	var plugin *Plugin
-	plugin, err = b.Plugin()
+	plugin, err = b.getPlugin()
 	if err != nil {
 		return
 	}
@@ -218,7 +218,7 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 
 // Size returns the size in bytes if required for the buffer to be transferred with ToHost.
 func (b *Buffer) Size() (int, error) {
-	plugin, err := b.Plugin()
+	plugin, err := b.getPlugin()
 	if err != nil {
 		return 0, err
 	}

@@ -1,9 +1,10 @@
 package pjrt
 
 import (
-	"github.com/pkg/errors"
 	"runtime"
 	"unsafe"
+
+	"github.com/pkg/errors"
 )
 
 /*
@@ -56,11 +57,11 @@ import "C"
 // This always request a major-to-minor layout, the assumption of the layout in host memory -- TPUs are known to
 // reorganize the layout.
 func (b *Buffer) ToHost(dst []byte) error {
-	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
-		// Already destroyed ?
-		return errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	plugin, err := b.Plugin()
+	if err != nil {
+		return err
 	}
+	defer runtime.KeepAlive(b)
 
 	// We'll need the buffer rank to set up the layout.
 	dims, err := b.Dimensions()
@@ -74,8 +75,8 @@ func (b *Buffer) ToHost(dst []byte) error {
 	pinner.Pin(dstBytes)
 	defer pinner.Unpin()
 
-	pErr := C.BufferToHost(b.client.plugin.api, b.wrapper.c, dstBytes, C.int64_t(len(dst)), C.int(rank))
-	err = toError(b.client.plugin, pErr)
+	pErr := C.BufferToHost(plugin.api, b.wrapper.c, dstBytes, C.int64_t(len(dst)), C.int(rank))
+	err = toError(plugin, pErr)
 	if err != nil {
 		return errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer to transfer the buffer to host")
 	}

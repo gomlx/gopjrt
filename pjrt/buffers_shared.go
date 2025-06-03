@@ -18,11 +18,12 @@ void (*OnDeleteSharedBufferPtr)(void* device_buffer_ptr, void* user_arg) = &OnDe
 */
 import "C"
 import (
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/pkg/errors"
 	"reflect"
 	"slices"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/pkg/errors"
 )
 
 // CreateViewOfDeviceBuffer creates a PJRT Buffer that is backed by storage on the same device given by the caller as flatData and shape.
@@ -150,18 +151,21 @@ func (b *Buffer) IsShared() bool {
 // To be on the safe side, only use this if Client.HasSharedBuffers is true.
 // It uses the undocumented PJRT_Buffer_UnsafePointer.
 func (b *Buffer) UnsafePointer() (unsafe.Pointer, error) {
-	plugin := b.client.plugin
+	plugin, err := b.Plugin()
+	if err != nil {
+		return nil, err
+	}
 
 	// Arena for memory allocations used by CGO.
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
+	arena := plugin.getArenaFromPool()
+	defer plugin.returnArenaToPool(arena)
 
 	// Arguments to PJRT call.
 	var args *C.PJRT_Buffer_UnsafePointer_Args
 	args = arenaAlloc[C.PJRT_Buffer_UnsafePointer_Args](arena)
 	args.struct_size = C.PJRT_Buffer_UnsafePointer_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
-	err := toError(plugin, C.call_PJRT_Buffer_UnsafePointer(plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Buffer_UnsafePointer(plugin.api, args))
 	if err != nil {
 		return nil, err
 	}

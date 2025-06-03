@@ -3,12 +3,13 @@ package pjrt
 import (
 	"flag"
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/xlabuilder"
-	"github.com/stretchr/testify/require"
 	"runtime"
 	"testing"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/stretchr/testify/require"
 )
 
 func TestScalarDataToRaw(t *testing.T) {
@@ -295,4 +296,32 @@ func TestBufferData(t *testing.T) {
 	flatOutput, err := results[0].Data()
 	require.NoError(t, err)
 	require.Equal(t, []float32{1, 2, 3, 4, 5, 6}, flatOutput.([]float32))
+}
+
+func TestBufferDestroyAfterClient(t *testing.T) {
+	// Create the plugin and the client.
+	plugin := must1(GetPlugin(*flagPluginName))
+	client := must1(plugin.NewClient(nil))
+	defer runtime.KeepAlive(client)
+
+	// Create buffer
+	buffer1, err := ScalarToBuffer(client, float32(7))
+	require.NoError(t, err)
+	buffer2, err := ScalarToBuffer(client, float32(42))
+	require.NoError(t, err)
+
+	// Destroy buffer1 before the client is destroyed.
+	require.NotPanics(t, func() {
+		err = buffer1.Destroy()
+	})
+
+	// Destroy the client.
+	err = client.Destroy()
+	require.NoError(t, err)
+
+	// Destroy buffer2 after the client is destroyed: it should be safe!
+	require.NotPanics(t, func() {
+		err = buffer2.Destroy()
+	})
+	require.NoError(t, err)
 }

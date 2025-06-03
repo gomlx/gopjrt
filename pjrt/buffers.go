@@ -7,20 +7,20 @@ package pjrt
 */
 import "C"
 import (
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"reflect"
 	"runtime"
 	"slices"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // Buffer is a reference to an on-device array storage (buffer).
 type Buffer struct {
 	wrapper *bufferWrapper
-	client  *Client
 
 	// For "shared buffers", with a direct pointer to the underlying data.
 	// This is nil for non-shared-buffers.
@@ -39,6 +39,7 @@ type bufferWrapper struct {
 	c                *C.PJRT_Buffer
 	sharedRawStorage unsafe.Pointer
 	plugin           *Plugin
+	client           *Client
 }
 
 func (wrapper *bufferWrapper) IsValid() bool {
@@ -46,8 +47,12 @@ func (wrapper *bufferWrapper) IsValid() bool {
 }
 
 func (wrapper *bufferWrapper) Destroy() error {
-	if wrapper == nil || wrapper.plugin == nil || wrapper.c == nil {
+	if wrapper == nil || wrapper.plugin == nil || wrapper.c == nil || wrapper.plugin.api == nil {
 		// Already destroyed, no-op.
+		return nil
+	}
+	if !wrapper.client.IsValid() {
+		// Client is already destroyed, assume buffer is also destroyed.
 		return nil
 	}
 	defer runtime.KeepAlive(wrapper)
@@ -57,11 +62,11 @@ func (wrapper *bufferWrapper) Destroy() error {
 	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
 	args.buffer = wrapper.c
-	err := toError(wrapper.plugin, C.call_PJRT_Buffer_Destroy(wrapper.plugin.api, args))
-	wrapper.plugin = nil
 	wrapper.c = nil
+	plugin := wrapper.plugin
+	wrapper.plugin = nil
+	err := toError(plugin, C.call_PJRT_Buffer_Destroy(plugin.api, args))
 	buffersAlive.Add(-1)
-
 	if wrapper.sharedRawStorage != nil {
 		// Shared storage can only be freed after the buffer is destroyed.
 		AlignedFree(wrapper.sharedRawStorage)
@@ -80,12 +85,10 @@ func BuffersAlive() int64 {
 // newBuffer creates Buffer and registers it for freeing.
 func newBuffer(client *Client, cBuffer *C.PJRT_Buffer) *Buffer {
 	b := &Buffer{
-		client:  client,
-		wrapper: &bufferWrapper{plugin: client.plugin, c: cBuffer},
+		wrapper: &bufferWrapper{plugin: client.plugin, c: cBuffer, client: client},
 		// DEBUG: creationStackTrace: errors.New("bufferCreation"),
 	}
 	buffersAlive.Add(1)
-
 	runtime.AddCleanup(b, func(wrapper *bufferWrapper) {
 		err := wrapper.Destroy()
 		if err != nil {
@@ -102,15 +105,31 @@ func (b *Buffer) Destroy() error {
 		return nil
 	}
 	err := b.wrapper.Destroy()
-	b.client = nil
+	b.wrapper.client = nil
 	return err
 }
 
+// Check returns an error if the Buffer is invalid.
+func (b *Buffer) Check() error {
+	if b == nil || b.wrapper == nil || b.wrapper.client == nil || b.wrapper.plugin == nil || !b.wrapper.IsValid() {
+		return errors.New("Buffer is invalid: either it is nil or it has been destroyed, or its client has been destroyed")
+	}
+	return nil
+}
+
+func (b *Buffer) getPlugin() (*Plugin, error) {
+	if b == nil || b.wrapper == nil || b.wrapper.client == nil || b.wrapper.plugin == nil || !b.wrapper.IsValid() {
+		return nil, errors.New("Buffer is invalid: either it is nil or it has been destroyed, or its client has been destroyed")
+	}
+	return b.wrapper.client.plugin, nil
+}
+
 // Dimensions of the Buffer.
-// Returned slice is owned by the buffer, to avoid creating a copy. Don't change it.
+// The buffer owns the returned slice to avoid creating a copy. Don't change it.
 func (b *Buffer) Dimensions() (dims []int, err error) {
-	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
-		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	var plugin *Plugin
+	plugin, err = b.getPlugin()
+	if err != nil {
 		return
 	}
 	if b.dimsSet {
@@ -118,12 +137,12 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
+	arena := plugin.getArenaFromPool()
+	defer plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Dimensions_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Dimensions_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
-	err = toError(b.client.plugin, C.call_PJRT_Buffer_Dimensions(b.client.plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Buffer_Dimensions(plugin.api, args))
 	if err != nil {
 		return
 	}
@@ -138,8 +157,9 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 // DType of the Buffer (PJRT_Buffer_ElementType).
 func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 	dtype = dtypes.InvalidDType
-	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
-		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	var plugin *Plugin
+	plugin, err = b.getPlugin()
+	if err != nil {
 		return
 	}
 	defer runtime.KeepAlive(b)
@@ -147,12 +167,12 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 		return b.dtype, nil
 	}
 
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
+	arena := plugin.getArenaFromPool()
+	defer plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_ElementType_Args](arena)
 	args.struct_size = C.PJRT_Buffer_ElementType_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
-	err = toError(b.client.plugin, C.call_PJRT_Buffer_ElementType(b.client.plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Buffer_ElementType(plugin.api, args))
 	if err != nil {
 		return
 	}
@@ -164,28 +184,29 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 
 // Device returns the device the buffer is stored.
 func (b *Buffer) Device() (device *Device, err error) {
-	if b == nil || b.client == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
-		err = errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	var plugin *Plugin
+	plugin, err = b.getPlugin()
+	if err != nil {
 		return
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
+	arena := plugin.getArenaFromPool()
+	defer plugin.returnArenaToPool(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Device_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Device_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
-	err = toError(b.client.plugin, C.call_PJRT_Buffer_Device(b.client.plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Buffer_Device(plugin.api, args))
 	if err != nil {
 		return
 	}
-	device = newDevice(b.client, args.device)
+	device = newDevice(b.wrapper.client, args.device)
 	return
 }
 
 // Client returns the client that created this Buffer.
 func (b *Buffer) Client() *Client {
-	return b.client
+	return b.wrapper.client
 }
 
 // ScalarToRaw generates the raw values needed by BufferFromHostConfig.FromRawData to feed a simple scalar value.
@@ -197,22 +218,21 @@ func ScalarToRaw[T dtypes.Supported](value T) ([]byte, dtypes.DType, []int) {
 
 // Size returns the size in bytes if required for the buffer to be transferred with ToHost.
 func (b *Buffer) Size() (int, error) {
-	defer runtime.KeepAlive(b)
-	if b == nil || b.client.plugin == nil || !b.wrapper.IsValid() {
-		// Already destroyed ?
-		return 0, errors.New("Buffer is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	plugin, err := b.getPlugin()
+	if err != nil {
+		return 0, err
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := b.client.plugin.getArenaFromPool()
-	defer b.client.plugin.returnArenaToPool(arena)
+	arena := plugin.getArenaFromPool()
+	defer plugin.returnArenaToPool(arena)
 
 	// It uses a PJRT_Buffer_ToHostBuffer_Args but it doesn't transfer, only inquire about size.
 	args := arenaAlloc[C.PJRT_Buffer_ToHostBuffer_Args](arena)
 	args.struct_size = C.PJRT_Buffer_ToHostBuffer_Args_STRUCT_SIZE
 	args.src = b.wrapper.c
 	args.dst = nil // Don't transfer, only inquire about size.
-	err := toError(b.client.plugin, C.call_PJRT_Buffer_ToHostBuffer(b.client.plugin.api, args))
+	err = toError(plugin, C.call_PJRT_Buffer_ToHostBuffer(plugin.api, args))
 	if err != nil {
 		return 0, errors.WithMessage(err, "Failed to call PJRT_Buffer_ToHostBuffer for inquiring size of the buffer")
 	}
@@ -257,6 +277,9 @@ func ArrayToBuffer[T dtypes.Supported](client *Client, flatValues []T, dimension
 
 // BufferToArray transfers the buffer to an array defined by a slice with its flat values, and returns also its underlying dimensions.
 func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensions []int, err error) {
+	if err = buffer.Check(); err != nil {
+		return
+	}
 	var dtype dtypes.DType
 	dtype, err = buffer.DType()
 	if err != nil {
@@ -294,6 +317,9 @@ func BufferToArray[T dtypes.Supported](buffer *Buffer) (flatValues []T, dimensio
 //
 // Similar to the generic BufferToArray[T], but this returns an anonymous typed (`any`) flat slice instead of using generics.
 func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err error) {
+	if err = b.Check(); err != nil {
+		return
+	}
 	var dtype dtypes.DType
 	dtype, err = b.DType()
 	if err != nil {

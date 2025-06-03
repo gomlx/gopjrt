@@ -1,5 +1,11 @@
 # Gopjrt Changelog
 
+# v0.7.3 - 2024/06/03
+
+* Prevent buffers from being destroyed if the PJRT client has already been destroyed. 
+  This is not an issue for CPUs, but it crashes on the CUDA PJRT. 
+  Included a new test to cover for that.
+
 # v0.7.2
 
 * Removed left-over log messages when the client got destroyed.

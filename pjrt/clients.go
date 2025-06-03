@@ -168,7 +168,7 @@ func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
 		return nil, err
 	}
 
-	// Register clean up.
+	// Register cleanup.
 	runtime.AddCleanup(c, func(client *clientC) {
 		err := client.Destroy(plugin)
 		if err != nil {
@@ -195,6 +195,11 @@ func (client *clientC) Destroy(plugin *Plugin) error {
 	err := toError(plugin, C.call_PJRT_Client_Destroy(plugin.api, args))
 	client.c = nil
 	return err
+}
+
+// IsValid returns if client has been properly created and not yet destroyed.
+func (client *Client) IsValid() bool {
+	return client != nil && client.client != nil && client.client.c != nil
 }
 
 // Destroy the client, release resources, and Client is no longer valid.

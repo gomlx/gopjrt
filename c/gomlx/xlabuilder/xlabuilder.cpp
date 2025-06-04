@@ -254,7 +254,6 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     if (!shape_or.ok()) {
       return new absl::Status(std::move(shape_or.status()));
     }
-    xla::PrimitiveType primitive_type = shape_or.value().element_type();
     op = Scatter(*inputs[0], *inputs[1], *inputs[2], *(serialized_op->computation),
                  scatter_dims, indices_are_sorted, unique_indices);
     break;

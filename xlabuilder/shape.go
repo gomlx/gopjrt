@@ -6,12 +6,13 @@ package xlabuilder
 import "C"
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/internal/protos/xla_data"
-	"github.com/pkg/errors"
 	"slices"
 	"strings"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
+	"github.com/pkg/errors"
 )
 
 // Shape is a minimalistic shape representation of a tensor.
@@ -37,8 +38,8 @@ type Shape struct {
 func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {
-		if dim <= 0 {
-			panicf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+		if dim < 0 {
+			panicf("shapes.Make(%+v): cannot create a shape with an axis with negative dimension < 0", s)
 		}
 	}
 	return s

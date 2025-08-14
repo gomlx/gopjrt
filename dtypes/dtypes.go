@@ -1,15 +1,16 @@
 package dtypes
 
 import (
-	"github.com/gomlx/gopjrt/dtypes/bfloat16"
-	"github.com/pkg/errors"
-	"github.com/x448/float16"
 	"maps"
 	"math"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/gomlx/gopjrt/dtypes/bfloat16"
+	"github.com/pkg/errors"
+	"github.com/x448/float16"
 )
 
 // panicf panics with formatted description.
@@ -164,8 +165,8 @@ func (dtype DType) Size() int {
 func (dtype DType) SizeForDimensions(dimensions ...int) int {
 	numElements := 1
 	for _, dim := range dimensions {
-		if dim <= 0 {
-			panicf("cannot use dim <= 0 for SizeForDimensions, got %v", dimensions)
+		if dim < 0 {
+			panicf("dim cannot be neative for SizeForDimensions, got %v", dimensions)
 		}
 		numElements *= dim
 	}

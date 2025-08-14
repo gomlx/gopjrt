@@ -1,11 +1,12 @@
 package xlabuilder_test
 
 import (
+	"testing"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
 	"github.com/x448/float16"
-	"testing"
 )
 
 func TestLiterals(t *testing.T) {
@@ -64,4 +65,42 @@ func TestLiterals(t *testing.T) {
 	gotFlat, gotDims := execArrayOutput[float64](t, client, exec)
 	require.Equal(t, []int{3, 2}, gotDims)
 	require.Equal(t, []float64{1, 3, 5, 7, 11, 13}, gotFlat)
+}
+
+func TestZeroLiteral(t *testing.T) {
+	// NewLIteralFromShape
+	l, err := NewLiteralFromShape(MakeShape(dtypes.Float64, 1, 1, 0, 1))
+	require.NoError(t, err)
+	require.NotPanics(t, func() { l.Destroy() })
+	require.NotPanics(t, func() { _ = NewScalarLiteral[float32](0) })
+	require.NotPanics(t, func() { _ = NewScalarLiteral[complex128](complex(1.0, 0.0)) })
+	require.NotPanics(t, func() { NewScalarLiteral[int8](0).Destroy() })
+
+	// NewArrayLiteral
+	l, err = NewArrayLiteral([]int32{}, 1, 1, 0, 256)
+	require.NoError(t, err)
+	l.Destroy()
+
+	// no way right now to pass in nil like NewArrayLiteral(nil, 1, 1, 0), I think might have to change function signature? not too sure...
+	var flat []float32
+	l, err = NewArrayLiteral(flat, 1, 1, 0, 256)
+	require.NoError(t, err)
+	l.Destroy()
+	// MakeShape
+	dims := []int{1, 0, 0, 3}
+	newShape := MakeShape(dtypes.Float64, dims...)
+	require.Equal(t, newShape.Dimensions, dims)
+
+	//MakeShapeOrError
+	newShape, _ = MakeShapeOrError(dtypes.F32, dims...)
+	require.Equal(t, newShape.Dimensions, dims)
+	badDims := []int{1, -1, 4, 0}
+	_, err = MakeShapeOrError(dtypes.Int64, badDims...)
+	require.NotEqual(t, nil, err)
+	badFunc := func() {
+		MakeShape(dtypes.Float32, badDims...)
+	}
+	require.Panics(t, badFunc)
+
+	// TODO: Literal.Data modifications, NewArrayLiteral modifications
 }

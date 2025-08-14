@@ -6,12 +6,13 @@ package xlabuilder
 import "C"
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/internal/protos/xla_data"
-	"github.com/pkg/errors"
 	"slices"
 	"strings"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
+	"github.com/pkg/errors"
 )
 
 // Shape is a minimalistic shape representation of a tensor.
@@ -33,23 +34,23 @@ type Shape struct {
 
 // MakeShape filled with the values given.
 //
-// The dimensions must be >= 1, and it doesn't work for tuple shapes.
+// The dimensions must be >= 0, and it doesn't work for tuple shapes.
 func MakeShape(dtype dtypes.DType, dimensions ...int) Shape {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {
-		if dim <= 0 {
-			panicf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+		if dim < 0 {
+			panicf("shapes.Make(%+v): cannot create a shape with an axis with negative dimension < 0", s)
 		}
 	}
 	return s
 }
 
-// MakeShapeOrError is the same as MakeShape, but it returns an error instead if the dimensions are <= 0.
+// MakeShapeOrError is the same as MakeShape, but it returns an error instead if the dimensions are < 0.
 func MakeShapeOrError(dtype dtypes.DType, dimensions ...int) (Shape, error) {
 	s := Shape{Dimensions: slices.Clone(dimensions), DType: dtype}
 	for _, dim := range dimensions {
-		if dim <= 0 {
-			return Shape{}, errors.Errorf("shapes.Make(%+v): cannot create a shape with an axis with dimension <= 0", s)
+		if dim < 0 {
+			return Shape{}, errors.Errorf("shapes.Make(%+v): cannot create a shape with an axis with dimension < 0", s)
 		}
 	}
 	return s, nil

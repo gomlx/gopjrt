@@ -2,11 +2,12 @@ package pjrt
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/gomlx/gopjrt/internal/protos/hlo"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"testing"
 )
 
 type testFileInfo struct {

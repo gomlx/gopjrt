@@ -34,12 +34,13 @@ PJRT_Error *Dummy(void *api) {
 */
 import "C"
 import (
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/pkg/errors"
 	"reflect"
 	"runtime"
 	"slices"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/pkg/errors"
 )
 
 // BufferFromHostConfig is used to configure the transfer from a buffer from host memory to on-device memory, it is
@@ -135,8 +136,8 @@ func (b *BufferFromHostConfig) FromFlatDataWithDimensions(flat any, dimensions [
 	// Checks dimensions.
 	expectedSize := 1
 	for _, dim := range dimensions {
-		if dim <= 0 {
-			b.err = errors.Errorf("FromFlatDataWithDimensions cannot be given zero or negative dimensions, got %v", dimensions)
+		if dim < 0 {
+			b.err = errors.Errorf("FromFlatDataWithDimensions cannot be given negative dimensions, got %v", dimensions)
 			return b
 		}
 		expectedSize *= dim
@@ -175,9 +176,7 @@ func (b *BufferFromHostConfig) Done() (*Buffer, error) {
 		// Return first error saved during configuration.
 		return nil, b.err
 	}
-	if len(b.data) == 0 {
-		return nil, errors.New("BufferFromHost requires one to configure the host data to transfer, none was configured.")
-	}
+
 	defer runtime.KeepAlive(b)
 
 	// Makes sure program data is not moved around by the GC during the C/C++ call.

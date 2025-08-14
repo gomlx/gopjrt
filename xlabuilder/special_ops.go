@@ -349,8 +349,8 @@ func BroadcastInDim(x *Op, outputShape Shape, broadcastAxes []int) (*Op, error) 
 		return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot change the DType of the shape", x.Shape, outputShape, broadcastAxes)
 	}
 	for _, dim := range outputShape.Dimensions {
-		if dim <= 0 {
-			return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot create a shape with an axis with dimension <= 0", x.Shape, outputShape, broadcastAxes)
+		if dim < 0 {
+			return nil, errors.Errorf("BroadcastInDim(x.shape=%s, outputShape=%s, broadcastAxes=%v): cannot create a shape with an axis with dimension < 0", x.Shape, outputShape, broadcastAxes)
 		}
 	}
 	if x.Shape.Rank() != len(broadcastAxes) {

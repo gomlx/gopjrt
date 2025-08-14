@@ -12,12 +12,13 @@
 package shapeinference
 
 import (
+	"slices"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/stablehlo/optypes"
 	"github.com/gomlx/gopjrt/stablehlo/shapes"
 	"github.com/gomlx/gopjrt/stablehlo/types"
 	"github.com/pkg/errors"
-	"slices"
 )
 
 var (
@@ -408,7 +409,7 @@ func BroadcastOp(operand shapes.Shape, prefixDims []int) (output shapes.Shape, e
 		return operand, nil
 	}
 	for _, dim := range prefixDims {
-		if dim <= 0 {
+		if dim < 0 {
 			err = errors.Errorf("Invalid prefix dimensions %v for BroadcastOp, they must be positive", prefixDims)
 			return
 		}

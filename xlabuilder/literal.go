@@ -5,13 +5,14 @@ package xlabuilder
 */
 import "C"
 import (
+	"reflect"
+	"runtime"
+	"unsafe"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
 	"github.com/pkg/errors"
 	"github.com/x448/float16"
-	"reflect"
-	"runtime"
-	"unsafe"
 )
 
 // Literal defines a constant value for the graph, and is treated as immutable.
@@ -31,8 +32,8 @@ func NewLiteralFromShape(shape Shape) (*Literal, error) {
 	if shape.DType == dtypes.InvalidDType {
 		return nil, errors.Errorf("cannot create literal of invalid dtype, shape=%s", shape)
 	}
-	if shape.Size() <= 0 {
-		return nil, errors.Errorf("cannot create literal of size <= 0, shape=%s", shape)
+	if shape.Size() < 0 {
+		return nil, errors.Errorf("cannot create literal of size < 0, shape=%s", shape)
 	}
 	cShape := cShapeFromShape(shape) // Ownership is given to the new Literal structure.
 	cLiteral := C.MakeLiteralFromShape(cShape)

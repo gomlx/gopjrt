@@ -4,6 +4,7 @@
 
 * Added support for tensors with 0-dimension axes.
 * `xlabuilder.cc`: added `vector<>.reserve()`.
+* Updated XLA dependency.
 
 # v0.7.3 - 2025/06/03
 

@@ -1,6 +1,12 @@
 # Gopjrt Changelog
 
-# v0.7.3 - 2024/06/03
+# v0.7.4 - 2025/08/15
+
+* Added support for tensors with 0-dimension axes.
+* `xlabuilder.cc`: added `vector<>.reserve()`.
+* Updated XLA dependency.
+
+# v0.7.3 - 2025/06/03
 
 * Prevent buffers from being destroyed if the PJRT client has already been destroyed. 
   This is not an issue for CPUs, but it crashes on the CUDA PJRT. 

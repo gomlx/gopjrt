@@ -6,8 +6,7 @@
 ###############################################################################
 module(
     name = "gopjrt",  # Choose a name for your workspace module
-    version = "0.4.2",  # Assign a version to your module
+    version = "0.7.4",  # Assign a version to your module
 )
 
 bazel_dep(name = "rules_pkg", version = "1.0.1")  # Use the latest version
-

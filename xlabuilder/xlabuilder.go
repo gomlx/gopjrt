@@ -7,10 +7,11 @@ package xlabuilder
 import "C"
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"runtime"
 	"unsafe"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // CVersion returns the version of the XlaBuilder C/C++ wrapper.
@@ -31,9 +32,9 @@ func CVersion() string {
 // MatchingCVersion is the Gopjrt XlaBuilder C/C++ wrapper version that matches the
 // Go library.
 //
-// This is needed because they can go out-of-sync in developers machines -- if one updates
+// This is needed because they can go out-of-sync in developers' machines -- if one updates
 // the Go library, but not the corresponding C/C++ libgomlx_xlabuilder.so library.
-var MatchingCVersion = "v0.7.0"
+var MatchingCVersion = "v0.7.4"
 
 func init() {
 	if CVersion() != MatchingCVersion {

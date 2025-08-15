@@ -2,12 +2,13 @@ package xlabuilder_test
 
 import (
 	"fmt"
+	"math"
+	"testing"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	. "github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math"
-	"testing"
 )
 
 // TestMax tests the Max function, as part of the ReduceMax test.
@@ -42,8 +43,8 @@ func TestReduce(t *testing.T) {
 	client := getPJRTClient(t)
 
 	// Test with ReduceMax:
-	{
-		builder := New(fmt.Sprintf("%s-ReduceMax", t.Name()))
+	t.Run("with normal values", func(t *testing.T) {
+		builder := New(t.Name())
 		input := capture(Iota(builder, MakeShape(dtypes.Float32, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		maxColumns := capture(ReduceMax(input, 0)).Test(t)
@@ -61,10 +62,30 @@ func TestReduce(t *testing.T) {
 		require.Equal(t, []float32{6.2, 7.5, 8.8}, got)
 		require.Equal(t, []int{3}, dims)
 		builder.Destroy()
-	}
+	})
 
-	{
-		builder := New(fmt.Sprintf("%s-ReduceMax with NaN as constant", t.Name()))
+	t.Run("with 0-dimension tensor", func(t *testing.T) {
+		builder := New(t.Name())
+		literal := capture(NewArrayLiteral([]float32{}, 2, 0, 2)).Test(t)
+		input := capture(Constant(builder, literal)).Test(t)
+		output := capture(ReduceMax(input, 2)).Test(t)
+		comp := capture(builder.Build(output)).Test(t)
+		//fmt.Printf("HLO:\n%s\n", comp.TextHLO())
+		exec := compile(t, client, comp)
+		results, err := exec.Execute().Done()
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		dims, err := results[0].Dimensions()
+		require.NoError(t, err)
+		require.Equal(t, []int{2, 0}, dims)
+		s, err := results[0].Size()
+		require.NoError(t, err)
+		require.Equal(t, 0, s)
+		builder.Destroy()
+	})
+
+	t.Run("with NaN as constant", func(t *testing.T) {
+		builder := New(t.Name())
 		literal := capture(NewArrayLiteral([]float32{float32(math.NaN()), 1}, 2)).Test(t)
 		input := capture(Constant(builder, literal)).Test(t)
 		output := capture(ReduceMax(input, 0)).Test(t)
@@ -74,10 +95,10 @@ func TestReduce(t *testing.T) {
 		got := execWithScalars[float32](t, client, exec)
 		require.True(t, math.IsNaN(float64(got)))
 		builder.Destroy()
-	}
+	})
 
-	{
-		builder := New(fmt.Sprintf("%s-ReduceMax with NaN as parameter", t.Name()))
+	t.Run("with NaN as parameter", func(t *testing.T) {
+		builder := New(t.Name())
 		input := capture(Parameter(builder, "x", 0, MakeShape(dtypes.Float32, 2))).Test(t)
 		output := capture(ReduceMax(input, 0)).Test(t)
 		comp := capture(builder.Build(output)).Test(t)
@@ -90,11 +111,11 @@ func TestReduce(t *testing.T) {
 		// See https://github.com/openxla/xla/issues/21461
 		// require.True(t, math.IsNaN(float64(got[0])))
 		builder.Destroy()
-	}
+	})
 
 	// Test with ReduceSum and ReduceProduct
-	{
-		builder := New(fmt.Sprintf("%s-ReduceProduct-ReduceSum", t.Name()))
+	t.Run("with ReduceSum and ReduceProduct", func(t *testing.T) {
+		builder := New(t.Name())
 		input := capture(Iota(builder, MakeShape(dtypes.Float64, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		columnsProduct := capture(ReduceProduct(input, 0)).Test(t)
@@ -109,11 +130,11 @@ func TestReduce(t *testing.T) {
 		require.Equal(t, []float64{0.003, 28.012, 80.021}, got)
 		require.Equal(t, []int{3}, dims)
 		builder.Destroy()
-	}
+	})
 
 	// Test ReduceMin on all dimensions.
-	{
-		builder := New(fmt.Sprintf("%s-ReduceMin", t.Name()))
+	t.Run("with ReduceMin on all dimensions", func(t *testing.T) {
+		builder := New(t.Name())
 		input := capture(Iota(builder, MakeShape(dtypes.Int64, 9), 0)).Test(t)
 		input = capture(Reshape(input, 3, 3)).Test(t)
 		five := capture(Constant(builder, NewScalarLiteral(int64(5)))).Test(t)
@@ -123,7 +144,7 @@ func TestReduce(t *testing.T) {
 		got := execScalarOutput[int64](t, client, exec)
 		require.Equal(t, int64(5), got)
 		builder.Destroy()
-	}
+	})
 }
 
 func TestReduceLogicalOps(t *testing.T) {

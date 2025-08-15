@@ -42,7 +42,7 @@ using namespace std;
 // This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
 // we don't bump the version of the C/C++ code if it doesn't change.
 // But when it changes, it matches the Gopjrt version it's being released with.
-const char *GopjrtXlaBuilderVersion = "v0.7.0";
+const char *GopjrtXlaBuilderVersion = "v0.7.4";
 
 // ShapeFromXlaShape allocates and sets a new Shape struct set with the same
 // shape defined by xla::Shape. C++ only.
@@ -149,6 +149,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     break;
   case CallOp: {
     vector<xla::XlaOp> operands;
+    operands.reserve(serialized_op->num_op_inputs);
     for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
@@ -260,6 +261,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   }
   case ConcatenateOp: {
     vector<xla::XlaOp> operands;
+    operands.reserve(serialized_op->num_op_inputs);
     for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
@@ -417,6 +419,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
                  dims.mutable_rhs_contracting_dimensions(),
                  dims.mutable_rhs_batch_dimensions()};
     std::vector<int> listsLens;
+    listsLens.reserve(lists.size());
     for (int ii = 0; ii < lists.size(); ii++) {
       listsLens.push_back(decode());
     }

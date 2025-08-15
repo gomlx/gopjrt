@@ -149,6 +149,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     break;
   case CallOp: {
     vector<xla::XlaOp> operands;
+    operands.reserve(serialized_op->num_op_inputs);
     for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
@@ -260,6 +261,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   }
   case ConcatenateOp: {
     vector<xla::XlaOp> operands;
+    operands.reserve(serialized_op->num_op_inputs);
     for (int ii = 0; ii < serialized_op->num_op_inputs; ii++) {
       operands.push_back(*inputs[ii]);
     }
@@ -417,6 +419,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
                  dims.mutable_rhs_contracting_dimensions(),
                  dims.mutable_rhs_batch_dimensions()};
     std::vector<int> listsLens;
+    listsLens.reserve(lists.size());
     for (int ii = 0; ii < lists.size(); ii++) {
       listsLens.push_back(decode());
     }

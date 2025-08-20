@@ -211,6 +211,22 @@ PJRT_Client_LookupAddressableDevice_Args* new_PJRT_Client_LookupAddressableDevic
 	return p;
 }
 
+// new_PJRT_ProcessInfo allocates a zero-initialized C.PJRT_ProcessInfo structure, sets its .struct_size, and returns it.
+// TODO: mwhittaker - Add the remaining fields from
+// tensorflow::CoordinatedTaskStateInfo.
+PJRT_ProcessInfo* new_PJRT_ProcessInfo() {
+	PJRT_ProcessInfo* p = malloc(sizeof(PJRT_ProcessInfo));
+	return p;
+}
+
+// new_PJRT_Client_UpdateGlobalProcessInfo_Args allocates a zero-initialized C.PJRT_Client_UpdateGlobalProcessInfo_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_UpdateGlobalProcessInfo_Args* new_PJRT_Client_UpdateGlobalProcessInfo_Args() {
+	PJRT_Client_UpdateGlobalProcessInfo_Args* p = malloc(sizeof(PJRT_Client_UpdateGlobalProcessInfo_Args));
+	memset(p, 0, sizeof(PJRT_Client_UpdateGlobalProcessInfo_Args));
+	p->struct_size = PJRT_Client_UpdateGlobalProcessInfo_Args_STRUCT_SIZE;
+	return p;
+}
+
 // new_PJRT_Client_AddressableMemories_Args allocates a zero-initialized C.PJRT_Client_AddressableMemories_Args structure, sets its .struct_size, and returns it.
 PJRT_Client_AddressableMemories_Args* new_PJRT_Client_AddressableMemories_Args() {
 	PJRT_Client_AddressableMemories_Args* p = malloc(sizeof(PJRT_Client_AddressableMemories_Args));
@@ -307,6 +323,14 @@ PJRT_Buffer_MemoryLayout* new_PJRT_Buffer_MemoryLayout() {
 	PJRT_Buffer_MemoryLayout* p = malloc(sizeof(PJRT_Buffer_MemoryLayout));
 	memset(p, 0, sizeof(PJRT_Buffer_MemoryLayout));
 	p->struct_size = PJRT_Buffer_MemoryLayout_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_Client_CreateUninitializedBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateUninitializedBuffer_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_CreateUninitializedBuffer_Args* new_PJRT_Client_CreateUninitializedBuffer_Args() {
+	PJRT_Client_CreateUninitializedBuffer_Args* p = malloc(sizeof(PJRT_Client_CreateUninitializedBuffer_Args));
+	memset(p, 0, sizeof(PJRT_Client_CreateUninitializedBuffer_Args));
+	p->struct_size = PJRT_Client_CreateUninitializedBuffer_Args_STRUCT_SIZE;
 	return p;
 }
 
@@ -944,6 +968,14 @@ PJRT_TopologyDescription_Serialize_Args* new_PJRT_TopologyDescription_Serialize_
 	PJRT_TopologyDescription_Serialize_Args* p = malloc(sizeof(PJRT_TopologyDescription_Serialize_Args));
 	memset(p, 0, sizeof(PJRT_TopologyDescription_Serialize_Args));
 	p->struct_size = PJRT_TopologyDescription_Serialize_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_TopologyDescription_Deserialize_Args allocates a zero-initialized C.PJRT_TopologyDescription_Deserialize_Args structure, sets its .struct_size, and returns it.
+PJRT_TopologyDescription_Deserialize_Args* new_PJRT_TopologyDescription_Deserialize_Args() {
+	PJRT_TopologyDescription_Deserialize_Args* p = malloc(sizeof(PJRT_TopologyDescription_Deserialize_Args));
+	memset(p, 0, sizeof(PJRT_TopologyDescription_Deserialize_Args));
+	p->struct_size = PJRT_TopologyDescription_Deserialize_Args_STRUCT_SIZE;
 	return p;
 }
 

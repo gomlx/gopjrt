@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/janpfeifer/must"
 	"os"
 	"regexp"
 	"slices"
 	"text/template"
+
+	"github.com/janpfeifer/must"
 )
 
 const (
@@ -40,9 +41,11 @@ var (
 {{range .}}
 // new_{{.Name}} allocates a zero-initialized C.{{.Name}} structure, sets its .struct_size, and returns it.
 {{.Comments}}{{.Name}}* new_{{.Name}}() {
-	{{.Name}}* p = malloc(sizeof({{.Name}}));{{if .HasStructSize}}
+	{{.Name}}* p = malloc(sizeof({{.Name}}));
+{{- if .HasStructSize}}
 	memset(p, 0, sizeof({{.Name}}));
-	p->struct_size = {{.Name}}_STRUCT_SIZE;{{end}}
+	p->struct_size = {{.Name}}_STRUCT_SIZE;
+{{- end}}
 	return p;
 }
 {{end}}
@@ -77,15 +80,15 @@ func generateNewStruct(contents string) {
 			Name:     cStructMatches[4],
 			Comments: cStructMatches[2],
 		}
-		info.HasStructSize = slices.Index([]string{"PJRT_SendCallbackInfo", "PJRT_RecvCallbackInfo"}, info.Name) == -1
+		info.HasStructSize = slices.Index([]string{"PJRT_SendCallbackInfo", "PJRT_RecvCallbackInfo", "PJRT_ProcessInfo"}, info.Name) == -1
 		allInfo = append(allInfo, info)
 	}
 
 	f := must.M1(os.Create(NewStructCFileName))
 	must.M(newStructCTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", NewStructCFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", NewStructCFileName)
 
 	f = must.M1(os.Create(NewStructHFileName))
 	must.M(newStructHTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", NewStructHFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", NewStructHFileName)
 }

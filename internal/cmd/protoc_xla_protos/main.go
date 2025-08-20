@@ -11,7 +11,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +18,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -30,7 +31,7 @@ var protos = []string{
 	"xla/tsl/protobuf/dnn.proto",
 	"xla/autotune_results.proto",
 	"xla/autotuning.proto",
-	"xla/pjrt/compile_options.proto",
+	"xla/pjrt/proto/compile_options.proto",
 	"xla/service/hlo.proto",
 	"xla/service/metrics.proto",
 	"xla/stream_executor/cuda/cuda_compute_capability.proto",

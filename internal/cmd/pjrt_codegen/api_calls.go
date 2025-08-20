@@ -82,9 +82,9 @@ func generateAPICalls(contents string) {
 
 	f := must.M1(os.Create(apiCallsCFileName))
 	must.M(apiCallsCTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", apiCallsCFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", apiCallsCFileName)
 
 	f = must.M1(os.Create(apiCallsHFileName))
 	must.M(apiCallsHTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", apiCallsHFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", apiCallsHFileName)
 }

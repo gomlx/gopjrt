@@ -270,14 +270,14 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
   }
   case ConvGeneralDilatedOp: {
     int64_t num_spatial_dims = decode();
-    int64_t filter_group_count = decode();
+    int64_t feature_group_count = decode();
     int64_t batch_group_count = decode();
 
     // Array lengths.
     int64_t len_strides = decode();
     int64_t len_padding = decode();
-    int64_t len_input_dilation = decode();
-    int64_t len_filter_dilation = decode();
+    int64_t len_input_dilations = decode();
+    int64_t len_kernel_dilations = decode();
 
     // Decode ConvolutionDimensionNumbers.
     xla::ConvolutionDimensionNumbers conv_dims;
@@ -306,8 +306,8 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
       padding[ii].first = decode();
       padding[ii].second = decode();
     }
-    absl::Span<const int64_t> input_dilation = decodeSpan(len_input_dilation);
-    absl::Span<const int64_t> filter_dilation = decodeSpan(len_filter_dilation);
+    absl::Span<const int64_t> input_dilations = decodeSpan(len_input_dilations);
+    absl::Span<const int64_t> kernel_dilations = decodeSpan(len_kernel_dilations);
 
     // Other undocumented parameters not used.
     const xla::PrecisionConfig *precision_config = nullptr;
@@ -317,7 +317,7 @@ XlaStatus *XlaBuilderAddOp(XlaBuilder *builder, SerializedOp *serialized_op) {
     op = ConvGeneralDilated(
         *inputs[0], *inputs[1], window_strides,
         /* absl::Span<const std::pair<int64_t, int64_t>> */ padding,
-        input_dilation, filter_dilation, conv_dims, filter_group_count,
+        input_dilations, kernel_dilations, conv_dims, feature_group_count,
         batch_group_count, precision_config, preferred_element_type,
         window_reversal);
     break;

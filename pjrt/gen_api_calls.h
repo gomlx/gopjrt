@@ -111,6 +111,15 @@ extern PJRT_Error* call_PJRT_Client_LookupDevice(const PJRT_Api *api, PJRT_Clien
 // PJRT_DeviceDescription_LocalHardwareId.
 extern PJRT_Error* call_PJRT_Client_LookupAddressableDevice(const PJRT_Api *api, PJRT_Client_LookupAddressableDevice_Args* args);
 
+// call_PJRT_Client_UpdateGlobalProcessInfo calls the corresponding PJRT API method.
+// Updates the PjRt client with information about all global processes.
+//
+// Recall that a distributed program may consist of multiple PjRt clients
+// spanning multiple machines. These clients perform collective operations, like
+// AllGather, to execute a distributed program. UpdateGlobalProcessInfo updates
+// a PjRt client with information about all processes.
+extern PJRT_Error* call_PJRT_Client_UpdateGlobalProcessInfo(const PJRT_Api *api, PJRT_Client_UpdateGlobalProcessInfo_Args* args);
+
 // call_PJRT_Client_AddressableMemories calls the corresponding PJRT API method.
 // Returns a list of memories that are addressable from the client. Addressable
 // memories are those that the client can directly transfer data to and from.
@@ -155,6 +164,9 @@ extern PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_SetBufferError(con
 
 // call_PJRT_AsyncHostToDeviceTransferManager_AddMetadata calls the corresponding PJRT API method.
 extern PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_AddMetadata(const PJRT_Api *api, PJRT_AsyncHostToDeviceTransferManager_AddMetadata_Args* args);
+
+// call_PJRT_Client_CreateUninitializedBuffer calls the corresponding PJRT API method.
+extern PJRT_Error* call_PJRT_Client_CreateUninitializedBuffer(const PJRT_Api *api, PJRT_Client_CreateUninitializedBuffer_Args* args);
 
 // call_PJRT_Client_BufferFromHostBuffer calls the corresponding PJRT API method.
 // Asynchronously copies a buffer stored on host to device memory.
@@ -572,6 +584,9 @@ extern PJRT_Error* call_PJRT_TopologyDescription_GetDeviceDescriptions(const PJR
 // call_PJRT_TopologyDescription_Serialize calls the corresponding PJRT API method.
 // Serializes the TopologyDescription to a string for use in cache keys.
 extern PJRT_Error* call_PJRT_TopologyDescription_Serialize(const PJRT_Api *api, PJRT_TopologyDescription_Serialize_Args* args);
+
+// call_PJRT_TopologyDescription_Deserialize calls the corresponding PJRT API method.
+extern PJRT_Error* call_PJRT_TopologyDescription_Deserialize(const PJRT_Api *api, PJRT_TopologyDescription_Deserialize_Args* args);
 
 // call_PJRT_TopologyDescription_Attributes calls the corresponding PJRT API method.
 // Returns platform-specific topology attributes.

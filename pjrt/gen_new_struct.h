@@ -88,6 +88,14 @@ extern PJRT_Client_LookupDevice_Args* new_PJRT_Client_LookupDevice_Args();
 // new_PJRT_Client_LookupAddressableDevice_Args allocates a zero-initialized C.PJRT_Client_LookupAddressableDevice_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_LookupAddressableDevice_Args* new_PJRT_Client_LookupAddressableDevice_Args();
 
+// new_PJRT_ProcessInfo allocates a zero-initialized C.PJRT_ProcessInfo structure, sets its .struct_size, and returns it.
+// TODO: mwhittaker - Add the remaining fields from
+// tensorflow::CoordinatedTaskStateInfo.
+extern PJRT_ProcessInfo* new_PJRT_ProcessInfo();
+
+// new_PJRT_Client_UpdateGlobalProcessInfo_Args allocates a zero-initialized C.PJRT_Client_UpdateGlobalProcessInfo_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_UpdateGlobalProcessInfo_Args* new_PJRT_Client_UpdateGlobalProcessInfo_Args();
+
 // new_PJRT_Client_AddressableMemories_Args allocates a zero-initialized C.PJRT_Client_AddressableMemories_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_AddressableMemories_Args* new_PJRT_Client_AddressableMemories_Args();
 
@@ -126,6 +134,9 @@ extern PJRT_Buffer_MemoryLayout_Strides* new_PJRT_Buffer_MemoryLayout_Strides();
 // optional tilings (each tile is a list of dimensions), or (2) a list of
 // strides.
 extern PJRT_Buffer_MemoryLayout* new_PJRT_Buffer_MemoryLayout();
+
+// new_PJRT_Client_CreateUninitializedBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateUninitializedBuffer_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_CreateUninitializedBuffer_Args* new_PJRT_Client_CreateUninitializedBuffer_Args();
 
 // new_PJRT_Client_BufferFromHostBuffer_Args allocates a zero-initialized C.PJRT_Client_BufferFromHostBuffer_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_BufferFromHostBuffer_Args* new_PJRT_Client_BufferFromHostBuffer_Args();
@@ -367,6 +378,9 @@ extern PJRT_TopologyDescription_GetDeviceDescriptions_Args* new_PJRT_TopologyDes
 
 // new_PJRT_TopologyDescription_Serialize_Args allocates a zero-initialized C.PJRT_TopologyDescription_Serialize_Args structure, sets its .struct_size, and returns it.
 extern PJRT_TopologyDescription_Serialize_Args* new_PJRT_TopologyDescription_Serialize_Args();
+
+// new_PJRT_TopologyDescription_Deserialize_Args allocates a zero-initialized C.PJRT_TopologyDescription_Deserialize_Args structure, sets its .struct_size, and returns it.
+extern PJRT_TopologyDescription_Deserialize_Args* new_PJRT_TopologyDescription_Deserialize_Args();
 
 // new_PJRT_TopologyDescription_Attributes_Args allocates a zero-initialized C.PJRT_TopologyDescription_Attributes_Args structure, sets its .struct_size, and returns it.
 extern PJRT_TopologyDescription_Attributes_Args* new_PJRT_TopologyDescription_Attributes_Args();

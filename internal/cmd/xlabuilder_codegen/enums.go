@@ -63,13 +63,13 @@ func generateOpsEnums(opsInfo []OpInfo) {
 	f := must.M1(os.Create(enumGoFileName))
 	must.M(enumGoTemplate.Execute(f, declarations))
 	must.M(exec.Command("gofmt", "-w", enumGoFileName).Run())
-	fmt.Printf("Generated %q based on %q\n", enumGoFileName, OpTypesFileName)
+	fmt.Printf("✅ Successfully generated %q based on %q\n", enumGoFileName, OpTypesFileName)
 	// Generate enum names with Go stringer.
 	must.M(exec.Command("stringer", "-type=OpType", enumGoFileName).Run())
 
 	// C Enums
 	f = must.M1(os.Create(enumCFileName))
 	must.M(enumCTemplate.Execute(f, opsInfo))
-	fmt.Printf("Generated %q based on %q\n", enumCFileName, OpTypesFileName)
+	fmt.Printf("✅ Successfully generated %q based on %q\n", enumCFileName, OpTypesFileName)
 
 }

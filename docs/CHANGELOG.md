@@ -1,5 +1,14 @@
 # Gopjrt Changelog
 
+# v0.8.0 - 2025/08/20 Convolution API changes
+
+* **API change to convolutions**:
+  * `ConvGeneralDilated()` renamed to `ConvGeneral()`. Fixed (standardized) name of the parameters,
+  	but they remain the same.
+  * The `ConvolveAxesConfig` structure had its field names slightly changed, by replacing "Channel"
+    by "Feature".
+* Updated XLA protos.
+
 # v0.7.4 - 2025/08/15
 
 * Added support for tensors with 0-dimension axes.

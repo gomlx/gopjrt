@@ -42,6 +42,7 @@ Pad:special
 Gather:special
 Scatter:special
 SelectAndScatter:special
+# ConvGeneralDilated is called simply "ConvGeneral" in package xlabuilder
 ConvGeneralDilated:special
 Reverse:special
 DotGeneral:special

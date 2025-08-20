@@ -216,8 +216,6 @@ PJRT_Client_LookupAddressableDevice_Args* new_PJRT_Client_LookupAddressableDevic
 // tensorflow::CoordinatedTaskStateInfo.
 PJRT_ProcessInfo* new_PJRT_ProcessInfo() {
 	PJRT_ProcessInfo* p = malloc(sizeof(PJRT_ProcessInfo));
-	memset(p, 0, sizeof(PJRT_ProcessInfo));
-	p->struct_size = PJRT_ProcessInfo_STRUCT_SIZE;
 	return p;
 }
 

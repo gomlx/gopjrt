@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.8.0 - 2025/08/20 Convolution API changes
 
 * **API change to convolutions**:
   * `ConvGeneralDilated()` renamed to `ConvGeneral()`. Fixed (standardized) name of the parameters,

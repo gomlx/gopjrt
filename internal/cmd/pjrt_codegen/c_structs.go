@@ -83,9 +83,9 @@ func generateNewStruct(contents string) {
 
 	f := must.M1(os.Create(NewStructCFileName))
 	must.M(newStructCTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", NewStructCFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", NewStructCFileName)
 
 	f = must.M1(os.Create(NewStructHFileName))
 	must.M(newStructHTemplate.Execute(f, allInfo))
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", NewStructHFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", NewStructHFileName)
 }

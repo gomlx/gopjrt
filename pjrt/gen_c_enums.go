@@ -29,6 +29,18 @@ const (
 
 	// PJRT_Extension_Type_Triton is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
 	PJRT_Extension_Type_Triton PJRT_Extension_Type = 7
+
+	// PJRT_Extension_Type_Example is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_Example PJRT_Extension_Type = 8
+
+	// PJRT_Extension_Type_Unknown is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_Unknown PJRT_Extension_Type = 9
+
+	// PJRT_Extension_Type_CrossHostTransfers is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_CrossHostTransfers PJRT_Extension_Type = 10
+
+	// PJRT_Extension_Type_ExecutableMetadata is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_ExecutableMetadata PJRT_Extension_Type = 11
 )
 
 // PJRT_Error_Code is mapping of the corresponded C enum defined in pjrt_c_api.h.
@@ -102,6 +114,26 @@ const (
 
 	// PJRT_NamedValue_kBool is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
 	PJRT_NamedValue_kBool PJRT_NamedValue_Type = 4
+)
+
+// PJRT_ProcessState is mapping of the corresponded C enum defined in pjrt_c_api.h.
+type PJRT_ProcessState int
+
+const (
+	// PJRT_ProcessState_kUnspecified is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_ProcessState_kUnspecified PJRT_ProcessState = 0
+
+	// PJRT_ProcessState_kUninitialized is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_ProcessState_kUninitialized PJRT_ProcessState = 1
+
+	// PJRT_ProcessState_kDisconnected is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_ProcessState_kDisconnected PJRT_ProcessState = 2
+
+	// PJRT_ProcessState_kConnected is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_ProcessState_kConnected PJRT_ProcessState = 3
+
+	// PJRT_ProcessState_kError is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_ProcessState_kError PJRT_ProcessState = 4
 )
 
 // PJRT_HostBufferSemantics is mapping of the corresponded C enum defined in pjrt_c_api.h.

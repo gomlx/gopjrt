@@ -162,7 +162,7 @@ func GenerateSimpleGoOps(opsInfo []OpInfo) {
 	f := must.M1(os.Create(fileName))
 	must.M(simpleGoOpsTemplate.Execute(f, opsInfo))
 	must.M(exec.Command("gofmt", "-w", fileName).Run())
-	fmt.Printf("Generated %q based on %q\n", fileName, OpTypesFileName)
+	fmt.Printf("✅ Successfully generated %q based on %q\n", fileName, OpTypesFileName)
 
 	// For testing we skip some that require special types.
 	skip := []string{
@@ -176,5 +176,5 @@ func GenerateSimpleGoOps(opsInfo []OpInfo) {
 	f = must.M1(os.Create(fileName))
 	must.M(simpleGoOpsTestTemplate.Execute(f, filteredOps))
 	must.M(exec.Command("gofmt", "-w", fileName).Run())
-	fmt.Printf("Generated %q based on %q\n", fileName, OpTypesFileName)
+	fmt.Printf("✅ Successfully generated %q based on %q\n", fileName, OpTypesFileName)
 }

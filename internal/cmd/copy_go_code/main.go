@@ -77,5 +77,5 @@ func main() {
 	// Write to a target file.
 	must.M(os.WriteFile(targetName, []byte(contents), 0644))
 
-	fmt.Printf("Generated %q from %q, with package name %q\n", targetName, originalPath, packageName)
+	fmt.Printf("✅ Successfully generated %q from %q, with package name %q\n", targetName, originalPath, packageName)
 }

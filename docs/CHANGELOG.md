@@ -2,11 +2,12 @@
 
 # Next
 
-* Small API change to convolutions:
+* **API change to convolutions**:
   * `ConvGeneralDilated()` renamed to `ConvGeneral()`. Fixed (standardized) name of the parameters,
   	but they remain the same.
   * The `ConvolveAxesConfig` structure had its field names slightly changed, by replacing "Channel"
     by "Feature".
+* Updated XLA protos.
 
 # v0.7.4 - 2025/08/15
 

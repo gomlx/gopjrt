@@ -97,5 +97,5 @@ func generateEnums(contents string) {
 	f := must.M1(os.Create(enumsFromCGoFileName))
 	must.M(enumsFromCTemplate.Execute(f, allEnums))
 	must.M(exec.Command("gofmt", "-w", enumsFromCGoFileName).Run())
-	fmt.Printf("Generated %q based on pjrt_c_api.h\n", enumsFromCGoFileName)
+	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", enumsFromCGoFileName)
 }

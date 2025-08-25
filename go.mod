@@ -3,7 +3,6 @@ module github.com/gomlx/gopjrt
 go 1.24
 
 require (
-	github.com/chewxy/math32 v1.11.1
 	github.com/janpfeifer/go-benchmarks v0.1.1
 	github.com/janpfeifer/gonb v0.10.6
 	github.com/janpfeifer/must v0.2.0

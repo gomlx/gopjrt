@@ -113,6 +113,7 @@ func Scalar[T Number]() Shape {
 	return Shape{DType: FromGenericsType[T]()}
 }
 
+
 // Invalid returns an invalid shape.
 //
 // Invalid().IsOk() == false.
@@ -159,6 +160,37 @@ func (s Shape) String() string {
 		return fmt.Sprintf("(%s)", s.DType)
 	}
 	return fmt.Sprintf("(%s)%v", s.DType, s.Dimensions)
+}
+
+// ToStableHLO returns the StableHLO representation of the shape's type.
+func (s Shape) ToStableHLO() string {
+	if s.IsTuple() {
+		var sb strings.Builder
+		sb.WriteString("tuple<")
+		for i, subShape := range s.TupleShapes {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(subShape.ToStableHLO())
+		}
+		sb.WriteString(">")
+		return sb.String()
+	}
+
+	var sb strings.Builder
+	sb.WriteString("tensor<")
+	if s.Rank() > 0 {
+		for i, dim := range s.Dimensions {
+			if i > 0 {
+				sb.WriteString("x")
+			}
+			fmt.Fprintf(&sb, "%d", dim)
+		}
+		sb.WriteString("x")
+	}
+	sb.WriteString(DTypeToStableHLO(s.DType))
+	sb.WriteString(">")
+	return sb.String()
 }
 
 // Size returns the number of elements of DType are needed for this shape. It's the product of all dimensions.

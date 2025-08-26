@@ -2,7 +2,7 @@ package stablehlo
 
 import (
 	"fmt"
-	"strings"
+	"io"
 
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/stablehlo/optypes"
@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Function represents a `func.func` in StableHLO.
+// Function represents a `func.func` in ToStableHLO.
 type Function struct {
 	// Name of the function. It should not include the "@" prefix.
 	Name string
@@ -32,44 +32,23 @@ type Function struct {
 	values []*Value
 }
 
-// Value represents a value in a StableHLO program, like `%0` or `%arg0`.
-// It has a name and a shape.
-type Value struct {
-	id    int
-	shape shapes.Shape
-}
-
-// Statement represents a single operation line in StableHLO.
-type Statement struct {
-	// OpType is the type of the operation.
-	OpType optypes.OpType
-
-	// Inputs to the operation.
-	Inputs []*Value
-
-	// Attributes of the operation.
-	Attributes map[string]any
-
-	// Result of the operation.
-	Result *Value
-}
-
 // NewConstant creates a new constant statement and returns the resulting value.
 func (f *Function) NewConstant(value any) (*Value, error) {
 	// The shape of the constant is inferred from the value.
-	shape, err := scalarShapeForValue(value)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get shape for constant value")
+	dtype := dtypes.FromAny(value)
+	if dtype == dtypes.INVALID {
+		return nil, errors.Errorf("unsupported constant value type %T", value)
 	}
+	shape := shapes.Make(dtype)
 	c := &Statement{
 		OpType: optypes.Constant,
 		Attributes: map[string]any{
 			"value": value,
 		},
-		Result: f.newValue(shape),
+		Outputs: f.newValue(shape),
 	}
 	f.Statements = append(f.Statements, c)
-	return c.Result, nil
+	return c.Outputs, nil
 }
 
 // AddOp adds a new operation to the function.
@@ -85,12 +64,12 @@ func (f *Function) AddOp(opType optypes.OpType, inputs ...*Value) (*Value, error
 	}
 
 	stmt := &Statement{
-		OpType: opType,
-		Inputs: inputs,
-		Result: f.newValue(outputShape),
+		OpType:  opType,
+		Inputs:  inputs,
+		Outputs: f.newValue(outputShape),
 	}
 	f.Statements = append(f.Statements, stmt)
-	return stmt.Result, nil
+	return stmt.Outputs, nil
 }
 
 // newValue creates a new unique value within the function's scope.
@@ -123,104 +102,79 @@ func inferShape(opType optypes.OpType, inputs ...shapes.Shape) (shapes.Shape, er
 		}
 		return shapeinference.ComparisonOp(opType, inputs[0], inputs[1])
 	}
-
 	return shapes.Invalid(), errors.Errorf("shape inference for op %s not implemented", opType)
 }
 
-// String methods for generation of StableHLO text format.
+// Return adds a return statement to the function with the given return values.
+func (f *Function) Return(values ...*Value) {
+	outputShapes := make([]shapes.Shape, len(values))
+	for i, value := range values {
+		outputShapes[i] = value.shape
+	}
+	f.Outputs = outputShapes
 
-func (v *Value) String() string {
-	return fmt.Sprintf("%%%d", v.id)
+	stmt := &Statement{
+		OpType: optypes.FuncReturn,
+		Inputs: values,
+	}
+	f.Statements = append(f.Statements, stmt)
 }
 
-func (s *Statement) String() string {
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "  %s = \"stablehlo.%s\"", s.Result, strings.ToLower(s.OpType.String()))
-	sb.WriteString("(")
-	for i, input := range s.Inputs {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(input.String())
+func (f *Function) Write(w io.Writer) error {
+	if _, err := io.WriteString(w, "func.func "); err != nil {
+		return err
 	}
-	sb.WriteString(")")
-
-	// Attributes
-	if len(s.Attributes) > 0 {
-		sb.WriteString(" {")
-		first := true
-		for key, value := range s.Attributes {
-			if !first {
-				sb.WriteString(", ")
-			}
-			first = false
-			fmt.Fprintf(&sb, "%s = %s", key, attributeToString(value))
-		}
-		sb.WriteString("}")
-	}
-
-	// Signature
-	sb.WriteString(" : (")
-	for i, input := range s.Inputs {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(input.shape.ToStableHLO())
-	}
-	sb.WriteString(") -> ")
-	sb.WriteString(s.Result.shape.ToStableHLO())
-
-	return sb.String()
-}
-
-func (f *Function) String() string {
-	var sb strings.Builder
-	sb.WriteString("func.func ")
 	if f.IsPublic {
-		sb.WriteString("public ")
+		if _, err := io.WriteString(w, "public "); err != nil {
+			return err
+		}
 	}
-	fmt.Fprintf(&sb, "@%s(", f.Name)
+	if _, err := fmt.Fprintf(w, "@%s(", f.Name); err != nil {
+		return err
+	}
 	for i, input := range f.Inputs {
 		if i > 0 {
-			sb.WriteString(", ")
+			if _, err := io.WriteString(w, ", "); err != nil {
+				return err
+			}
 		}
-		fmt.Fprintf(&sb, "%s: %s", input, input.shape.ToStableHLO())
+		if err := input.Write(w); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, ": %s", input.shape.ToStableHLO()); err != nil {
+			return err
+		}
 	}
-	sb.WriteString(") -> (")
+	if _, err := io.WriteString(w, ") -> ("); err != nil {
+		return err
+	}
 	for i, output := range f.Outputs {
 		if i > 0 {
-			sb.WriteString(", ")
+			if _, err := io.WriteString(w, ", "); err != nil {
+				return err
+			}
 		}
-		sb.WriteString(output.ToStableHLO())
+		if _, err := io.WriteString(w, output.ToStableHLO()); err != nil {
+			return err
+		}
 	}
-	sb.WriteString(") {\n")
+	if _, err := io.WriteString(w, ") {\n"); err != nil {
+		return err
+	}
 
 	for _, stmt := range f.Statements {
-		sb.WriteString(stmt.String())
-		sb.WriteString("\n")
-	}
-
-	// Return statement
-	sb.WriteString(`  "func.return"`)
-	if len(f.Outputs) > 0 {
-		// Assuming the last statement's result is the return value.
-		// This is a simplification and will need to be improved.
-		if len(f.Statements) > 0 {
-			lastResult := f.Statements[len(f.Statements)-1].Result
-			fmt.Fprintf(&sb, "(%s)", lastResult)
+		if err := stmt.Write(w); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(w, "\n"); err != nil {
+			return err
 		}
 	}
-	sb.WriteString(" : (")
-	for i, output := range f.Outputs {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(output.ToStableHLO())
-	}
-	sb.WriteString(") -> ()\n")
 
-	sb.WriteString("}")
-	return sb.String()
+	if _, err := io.WriteString(w, "}"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // scalarShapeForValue is a local helper to get the shape for a scalar value.
@@ -255,27 +209,4 @@ func scalarShapeForValue(value any) (shapes.Shape, error) {
 		return shapes.Shape{}, errors.Errorf("unsupported scalar value type %T", value)
 	}
 	return shapes.Make(dtype), nil
-}
-
-// attributeToString converts an attribute value to its StableHLO string representation.
-// This is a simplified version and will need to be extended.
-func attributeToString(attr any) string {
-	switch v := attr.(type) {
-	case string:
-		return fmt.Sprintf(`"%s"`, v)
-	case float32, float64:
-		shape, err := scalarShapeForValue(v)
-		if err != nil {
-			panic(err)
-		}
-		return fmt.Sprintf("dense<%e> : %s", v, shape.ToStableHLO())
-	case int, int32, int64:
-		shape, err := scalarShapeForValue(v)
-		if err != nil {
-			panic(err)
-		}
-		return fmt.Sprintf("dense<%d> : %s", v, shape.ToStableHLO())
-	default:
-		return fmt.Sprintf("%#v", v)
-	}
 }

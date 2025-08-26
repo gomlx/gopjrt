@@ -1,13 +1,14 @@
 package stablehlo
 
 import (
+	"io"
 	"strings"
 
 	"github.com/gomlx/gopjrt/stablehlo/shapes"
 	"github.com/pkg/errors"
 )
 
-// Builder is used to construct a StableHLO program.
+// Builder is used to construct a ToStableHLO program.
 // See New.
 type Builder struct {
 	name   string
@@ -28,13 +29,18 @@ func New(name string) *Builder {
 	}
 }
 
+// elementWriter represents elements of ToStableHLO that know how to write themselves.
+type elementWriter interface {
+	Write(w io.Writer) error
+}
+
 // NewFunction creates a new function and adds it to the program.
-func (b *Builder) NewFunction(name string, isPublic bool, inputs []*Value, outputs []shapes.Shape) *Function {
+// The function outputs will be determined by the last statement in the function body.
+func (b *Builder) NewFunction(name string, isPublic bool, inputs []*Value) *Function {
 	fn := &Function{
-		Name:    name,
+		Name:     name,
 		IsPublic: isPublic,
-		Inputs:  inputs,
-		Outputs: outputs,
+		Inputs:   inputs,
 	}
 	b.functions = append(b.functions, fn)
 	return fn
@@ -59,7 +65,7 @@ func (b *Builder) Build() (*Computation, error) {
 		// This is a simplification and will be improved later.
 		if len(fn.Statements) > 0 {
 			lastStmt := fn.Statements[len(fn.Statements)-1]
-			fn.Outputs = []shapes.Shape{lastStmt.Result.shape}
+			fn.Outputs = []shapes.Shape{lastStmt.Outputs.shape}
 		}
 		sb.WriteString(fn.String())
 	}

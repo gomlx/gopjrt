@@ -17,12 +17,13 @@
 package shapes
 
 import (
-	"github.com/gomlx/gopjrt/dtypes/bfloat16"
-	"github.com/pkg/errors"
 	"reflect"
 	"unsafe"
 
-	. "github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/dtypes/bfloat16"
+	"github.com/pkg/errors"
+
+	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/x448/float16"
 )
 
@@ -32,7 +33,7 @@ import (
 // It doesn't work for if T (the output type) is a complex number.
 // If value is a complex number, it converts by taking the real part of the number and
 // discarding the imaginary part.
-func ConvertTo[T NumberNotComplex](value any) T {
+func ConvertTo[T dtypes.NumberNotComplex](value any) T {
 	t, ok := value.(T)
 	if ok {
 		return t
@@ -81,41 +82,41 @@ func ConvertTo[T NumberNotComplex](value any) T {
 // and casts it to any.
 // It uses unsafe.Slice.
 // Set `len` to the number of `DType` elements (not the number of bytes).
-func UnsafeSliceForDType(dtype DType, unsafePtr unsafe.Pointer, len int) (any, error) {
+func UnsafeSliceForDType(dtype dtypes.DType, unsafePtr unsafe.Pointer, len int) (any, error) {
 	switch dtype {
-	case Int64:
+	case dtypes.Int64:
 		return unsafe.Slice((*int64)(unsafePtr), len), nil
-	case Int32:
+	case dtypes.Int32:
 		return unsafe.Slice((*int32)(unsafePtr), len), nil
-	case Int16:
+	case dtypes.Int16:
 		return unsafe.Slice((*int16)(unsafePtr), len), nil
-	case Int8:
+	case dtypes.Int8:
 		return unsafe.Slice((*int8)(unsafePtr), len), nil
 
-	case Uint64:
+	case dtypes.Uint64:
 		return unsafe.Slice((*uint64)(unsafePtr), len), nil
-	case Uint32:
+	case dtypes.Uint32:
 		return unsafe.Slice((*uint32)(unsafePtr), len), nil
-	case Uint16:
+	case dtypes.Uint16:
 		return unsafe.Slice((*uint16)(unsafePtr), len), nil
-	case Uint8:
+	case dtypes.Uint8:
 		return unsafe.Slice((*uint8)(unsafePtr), len), nil
 
-	case Bool:
+	case dtypes.Bool:
 		return unsafe.Slice((*bool)(unsafePtr), len), nil
 
-	case Float16:
+	case dtypes.Float16:
 		return unsafe.Slice((*float16.Float16)(unsafePtr), len), nil
-	case BFloat16:
+	case dtypes.BFloat16:
 		return unsafe.Slice((*bfloat16.BFloat16)(unsafePtr), len), nil
-	case Float32:
+	case dtypes.Float32:
 		return unsafe.Slice((*float32)(unsafePtr), len), nil
-	case Float64:
+	case dtypes.Float64:
 		return unsafe.Slice((*float64)(unsafePtr), len), nil
 
-	case Complex64:
+	case dtypes.Complex64:
 		return unsafe.Slice((*complex64)(unsafePtr), len), nil
-	case Complex128:
+	case dtypes.Complex128:
 		return unsafe.Slice((*complex128)(unsafePtr), len), nil
 	default:
 		return nil, errors.Errorf("unknown dtype %q (%d) in UnsafeSliceForDType", dtype, dtype)
@@ -135,28 +136,28 @@ var (
 // the given DType.
 //
 // It doesn't work for complex numbers.
-func CastAsDType(value any, dtype DType) any {
+func CastAsDType(value any, dtype dtypes.DType) any {
 	typeOf := reflect.TypeOf(value)
 	valueOf := reflect.ValueOf(value)
 	newTypeOf := typeForSliceDType(typeOf, dtype)
 	if typeOf.Kind() != reflect.Slice && typeOf.Kind() != reflect.Array {
 		// Scalar value.
-		if dtype == Bool {
+		if dtype == dtypes.Bool {
 			return !valueOf.IsZero()
 		}
-		if dtype == Complex64 {
+		if dtype == dtypes.Complex64 {
 			r := valueOf.Convert(float32Type).Interface().(float32)
 			return complex(r, float32(0))
 		}
-		if dtype == Complex128 {
+		if dtype == dtypes.Complex128 {
 			r := valueOf.Convert(float64Type).Interface().(float64)
 			return complex(r, float64(0))
 		}
-		if dtype == Float16 {
+		if dtype == dtypes.Float16 {
 			v32 := valueOf.Convert(float32Type).Interface().(float32)
 			return float16.Fromfloat32(v32)
 		}
-		if dtype == BFloat16 {
+		if dtype == dtypes.BFloat16 {
 			v32 := valueOf.Convert(float32Type).Interface().(float32)
 			return bfloat16.FromFloat32(v32)
 		}
@@ -176,7 +177,7 @@ func CastAsDType(value any, dtype DType) any {
 // typeForSliceDType recursively converts a type that is a (multi-dimension-) slice
 // of some type, to a `reflect.Type` of a (multi-dimension-) slice of `dtype`.
 // Arrays are converted to slices.
-func typeForSliceDType(valueType reflect.Type, dtype DType) reflect.Type {
+func typeForSliceDType(valueType reflect.Type, dtype dtypes.DType) reflect.Type {
 	if valueType.Kind() != reflect.Slice && valueType.Kind() != reflect.Array {
 		// Base case for recursion, simply return the `reflect.Type` for the DType.
 		return dtype.GoType()

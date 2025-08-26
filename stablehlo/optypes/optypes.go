@@ -1,16 +1,20 @@
 // Package optypes defines OpType and lists the supported operations.
 package optypes
 
-// OpType is an enum of all generic operations that StableHLO can support -- not all are implemented yet.
+import "fmt"
+
+// OpType is an enum of all generic operations that ToStableHLO can support -- not all are implemented yet.
 type OpType int
 
-//go:generate go tool enumer -type OpType optypes.go
+//go:generate go tool enumer -type=OpType -transform=snake optypes.go
 
 const (
 	Invalid OpType = iota
 	Parameter
+	FuncReturn
 	Constant
 	Identity
+
 	ReduceWindow
 	RngBitGenerator
 	BatchNormForInference
@@ -112,3 +116,13 @@ const (
 	// Last should always be kept the last, it is used as a counter/marker for .
 	Last
 )
+
+// ToStableHLO returns the ToStableHLO name of the operation.
+func (op OpType) ToStableHLO() string {
+	switch op {
+	case FuncReturn:
+		return "func.return"
+	default:
+		return fmt.Sprintf("stablehlo.%s", op)
+	}
+}

@@ -1,5 +1,10 @@
 # Gopjrt Changelog
 
+# Next
+
+* Moved `stablehlo` to its own repository.
+* Updated dependencies.
+
 # v0.8.0 - 2025/08/20 Convolution API changes
 
 * **API change to convolutions**:

@@ -13,7 +13,7 @@ import (
 	"github.com/x448/float16"
 )
 
-// panicf panics with formatted description.
+// panicf panics with the formatted description.
 //
 // It is only used for "bugs in the code" -- when parameters don't follow the specifications.
 // In principle, it should never happen -- the same way nil-pointer panics should never happen.
@@ -28,7 +28,7 @@ func init() {
 		panicf("cannot use int of %d bits with gopjrt -- only platforms with int32 or int64 are supported", strconv.IntSize)
 	}
 
-	// Add mapping to lower-case version of dtypes.
+	// Add a mapping to the lower-case version of dtypes.
 	keys := slices.Collect(maps.Keys(MapOfNames))
 	for _, key := range keys {
 		lowerKey := strings.ToLower(key)
@@ -92,7 +92,7 @@ func FromGenericsType[T Supported]() DType {
 	return InvalidDType
 }
 
-// FromGoType returns the DType for the given [reflect.Type].
+// FromGoType returns the DType for the given "reflect.Type".
 // It panics for unknown DType values.
 func FromGoType(t reflect.Type) DType {
 	if t == float16Type {
@@ -146,22 +146,27 @@ func FromGoType(t reflect.Type) DType {
 	return InvalidDType
 }
 
-// FromAny introspects the underlying type of any and return the corresponding DType.
-// Non-scalar types, or not supported types returns a InvalidType.
+// FromAny introspects the underlying type of any and returns the corresponding DType.
+// Non-scalar types, or unsupported types return an InvalidType.
 func FromAny(value any) DType {
 	return FromGoType(reflect.TypeOf(value))
 }
 
-// Size returns the number of bytes for the given DType.
-// If the size is < 1 (like a 4-bits quantity), consider the SizeForDimensions method.
+// Size returns the number of bytes for the given DType, or 0 if the dtype uses fraction(s) of bytes.
+// If the size is 0 (like a 4-bits quantity), consider the Bits or SizeForDimensions method.
 func (dtype DType) Size() int {
 	return int(dtype.GoType().Size())
+}
+
+// Bits returns the number of bits for the given DType.
+func (dtype DType) Bits() int {
+	return dtype.Size() * 8
 }
 
 // SizeForDimensions returns the size in bytes used for the given dimensions.
 // This is a safer method than Size in case the dtype uses an underlying size that is not multiple of 8 bits.
 //
-// It works also for scalar (one element), where dimensions list is empty.
+// It works also for scalar (one element) shapes where the list of dimensions is empty.
 func (dtype DType) SizeForDimensions(dimensions ...int) int {
 	numElements := 1
 	for _, dim := range dimensions {
@@ -325,7 +330,7 @@ func (dtype DType) HighestValue() any {
 	}
 }
 
-// SmallestNonZeroValueForDType is the smallest non-zero value dtypes.
+// SmallestNonZeroValueForDType is the smallest non-zero-value dtypes.
 // Only useful for float types.
 // The return value is converted to the corresponding Go type.
 // There is no smallest non-zero value for complex numbers, since they are not ordered.
@@ -426,23 +431,22 @@ func (dtype DType) IsSupported() bool {
 // on the platform.
 type Supported interface {
 	bool | float16.Float16 | bfloat16.BFloat16 |
-		float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
-		complex64 | complex128
+	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
+	complex64 | complex128
 }
 
-// Number represents the Go numeric types that are supported by graph package.
+// Number represents the Go numeric types corresponding to supported DType's.
 // Used as traits for generics.
 //
 // It includes complex numbers.
-// It doesn't include float16.Float16 or bfloat16.BFloat16 because they are not a native number type.
+// It doesn't include float16.Float16 or bfloat16.BFloat16 because they are not native number types.
 type Number interface {
 	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | complex64 | complex128
 }
 
-// NumberNotComplex represents the Go numeric types that are supported by graph package except the complex numbers.
+// NumberNotComplex represents the Go numeric types corresponding to supported DType's.
 // Used as a Generics constraint.
 //
-// It doesn't include float16.Float16 (not a native number type).
 // See also Number.
 type NumberNotComplex interface {
 	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64

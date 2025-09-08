@@ -1,7 +1,5 @@
 # Gopjrt Changelog
 
-<<<<<<< main
-=======
 # Next
 
 * Moved `stablehlo` to its own repository.
@@ -10,7 +8,6 @@
     * Added `DType.Bits` field indicating the number of bits in the data type -- supporting sub-byte types including
       quantized types.
 
->>>>>>> local
 # v0.8.0 - 2025/08/20 Convolution API changes
 
 * **API change to convolutions**:

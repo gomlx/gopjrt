@@ -570,7 +570,7 @@ type PadAxis struct {
 	Start, End, Interior int
 }
 
-// Pad injects padding on the start, end or interior (in between each element) of the given operand.
+// Pad injects padding on the start, end, or interior (in between each element) of the given operand.
 // There must be at most `operand.Rank()` axesConfig values. Missing PadAxis are assumed to be zeros,
 // that is, no padding for those axes.
 func Pad(x, fillValue *Op, axesConfig ...PadAxis) (*Op, error) {
@@ -889,8 +889,11 @@ func DecodeScatter(op *Op) (
 	return
 }
 
-// SelectAndScatterCustom runs windows (similar to ReduceWindow) over the operand, selects values (selectComputation) to updates the output (like Scatter)
-// using the scatterComputation with values from source. The output is initialized with defaultValue.
+// SelectAndScatterCustom runs windows (similar to ReduceWindow) over the operand, selects one value (selectComputation) to update,
+// and aggregates the output using the scatterComputation.
+//
+// The output is initialized with defaultValue.
+//
 // See details in https://openxla.org/xla/operation_semantics#selectandscatter
 func SelectAndScatterCustom(operand, source, defaultValue *Op, selectComputation, scatterComputation *XlaComputation,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
@@ -950,7 +953,7 @@ func SelectAndScatterCustom(operand, source, defaultValue *Op, selectComputation
 	return op, nil
 }
 
-// SelectAndScatterMax calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and an appropriate selectComputation
+// SelectAndScatterMax calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation, and an appropriate selectComputation
 // to implement a SelectAndScatter that updates the max value in the windows.
 // Details in SelectAndScatterCustom.
 func SelectAndScatterMax(operand, source *Op,
@@ -962,7 +965,7 @@ func SelectAndScatterMax(operand, source *Op,
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
 
-// SelectAndScatterMin calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and an appropriate selectComputation
+// SelectAndScatterMin calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation, and an appropriate selectComputation
 // to implement a SelectAndScatter that updates the max value in the windows.
 // Details in SelectAndScatterCustom.
 func SelectAndScatterMin(operand, source *Op,
@@ -974,9 +977,11 @@ func SelectAndScatterMin(operand, source *Op,
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
 
-// SelectAndScatterSum calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation and a selectComputation that always selects.
+// SelectAndScatterSum calls SelectAndScatterCustom with a zero defaultValue, sum for updateComputation, and a selectComputation that always selects.
 // to implement a SelectAndScatter that updates the max value in the windows.
 // Details in SelectAndScatterCustom.
+//
+// Deprecated: this function is wrong and doesn't do what it is supposed to do -- and SelcectAndScatter can't achieve it.
 func SelectAndScatterSum(operand, source *Op,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
 	if err := validateOpsBuilders("SelectAndScatterSum", operand, source); err != nil {
@@ -986,7 +991,7 @@ func SelectAndScatterSum(operand, source *Op,
 	return selectAndScatterImpl(operand, source, reduceType, windowDimensions, windowStrides, paddings)
 }
 
-// selectAndScatterImpl calls SelectAndScatterCustom with initialValue, selectComp and scatterComp specialized
+// selectAndScatterImpl calls SelectAndScatterCustom with initialValue, selectComp, and scatterComp specialized
 // for a reduceType (ReduceMaxType, ReduceMinType, ReduceAddType).
 func selectAndScatterImpl(operand, source *Op, reduceType ReduceOpType,
 	windowDimensions, windowStrides []int, paddings [][2]int) (*Op, error) {
@@ -1010,7 +1015,7 @@ func selectAndScatterImpl(operand, source *Op, reduceType ReduceOpType,
 }
 
 // GetSelectAndScatterComputation builds or returns a cached computation that implements a select and scatter functions with one
-// of the standard ReduceOpType: sum, multiply, max or min.
+// of the standard ReduceOpType: sum, multiply, max, or min.
 // This is used for SelectAndScatter family of operations.
 func (b *XlaBuilder) GetSelectAndScatterComputation(reduction ReduceOpType, dtype dtypes.DType) (selectComputation, scatterComputation *XlaComputation, err error) {
 	if b.IsNil() {
@@ -1273,7 +1278,7 @@ func DecodeBatchNormForInference(op *Op) (operand, scale, offset, mean, variance
 // BatchNormForTraining implements Batch Norm for training. See details in
 // https://www.tensorflow.org/xla/operation_semantics#batchnormtraining
 //
-// It returns the normalized tensor, the batchMean and the batchVariance.
+// It returns the normalized tensor, the batchMean, and the batchVariance.
 //
 // Based on paper "Batch Normalization: Accelerating Deep Network Training by Reducing
 // Internal Covariate Shift" (Sergey Ioffe, Christian Szegedy), https://arxiv.org/abs/1502.03167.

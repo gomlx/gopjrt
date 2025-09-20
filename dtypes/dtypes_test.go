@@ -1,11 +1,12 @@
 package dtypes
 
 import (
+	"math"
+	"testing"
+
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
 	"github.com/stretchr/testify/require"
 	"github.com/x448/float16"
-	"math"
-	"testing"
 )
 
 func TestDType_HighestLowestSmallestValues(t *testing.T) {
@@ -51,4 +52,10 @@ func TestSizeForDimensions(t *testing.T) {
 	require.Equal(t, 2*3*8, Int64.SizeForDimensions(2, 3))
 	require.Equal(t, 4, Float32.SizeForDimensions())
 	require.Equal(t, 2, BFloat16.SizeForDimensions(1, 1, 1))
+}
+
+func TestIsPromotoable(t *testing.T) {
+	require.True(t, Float32.IsPromotableTo(Float64))
+	require.False(t, Float64.IsPromotableTo(Float32))
+	require.False(t, Int8.IsPromotableTo(Float32))
 }

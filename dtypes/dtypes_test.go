@@ -54,7 +54,7 @@ func TestSizeForDimensions(t *testing.T) {
 	require.Equal(t, 2, BFloat16.SizeForDimensions(1, 1, 1))
 }
 
-func TestIsPromotoable(t *testing.T) {
+func TestIsPromotableTo(t *testing.T) {
 	require.True(t, Float32.IsPromotableTo(Float64))
 	require.False(t, Float64.IsPromotableTo(Float32))
 	require.False(t, Int8.IsPromotableTo(Float32))

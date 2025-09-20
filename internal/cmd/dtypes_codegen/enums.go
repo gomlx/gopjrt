@@ -2,19 +2,25 @@ package main
 
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/internal/protos/xla_data"
-	"github.com/janpfeifer/must"
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
+	"github.com/janpfeifer/must"
+	"github.com/pkg/errors"
 )
 
 const (
+	// DTypeEnumGoFileName holds the enum definition as well as some standard conversions to/from proto constants.
 	DTypeEnumGoFileName = "gen_dtype_enum.go"
+
+	// DTypeEnumerGoFileName holds the string versions of the enumeration as well as marshalling/unmarshalling functions.
+	DTypeEnumerGoFileName = "gen_dtype_enumer.go"
 )
 
 // panicf panics with formatted description.
@@ -177,9 +183,15 @@ func generateEnums(contents string) {
 		enumV = nil
 	}
 
-	f := must.M1(os.Create(DTypeEnumGoFileName))
+	curDir := must.M1(os.Getwd())
+	fullPath := path.Join(curDir, DTypeEnumGoFileName)
+	f := must.M1(os.Create(fullPath))
 	must.M(enumsFromCTemplate.Execute(f, allValues))
-	must.M(exec.Command("gofmt", "-w", DTypeEnumGoFileName).Run())
-	fmt.Printf("✅ Successfully generated %q based on pjrt_c_api.h\n", DTypeEnumGoFileName)
-	must.M(exec.Command("enumer", "-type=DType", "-yaml", "-json", "-text", "-values", DTypeEnumGoFileName).Run())
+	must.M(exec.Command("go", "fmt", fullPath).Run())
+	fmt.Printf("✅ Successfully generated:\t%q\tbased on pjrt_c_api.h\n", DTypeEnumGoFileName)
+	must.M(exec.Command("go", "tool", "github.com/dmarkham/enumer",
+		"-type=DType", "-yaml", "-json", "-text", "-values",
+		fmt.Sprintf("-output=%s", DTypeEnumerGoFileName),
+		DTypeEnumGoFileName).Run())
+	fmt.Printf("✅ Successfully generated:\t%q\tusing github.com/dmarkham/enumer\n", DTypeEnumerGoFileName)
 }

@@ -428,6 +428,8 @@ func (dtype DType) IsSupported() bool {
 // For example, Int32 can be promoted to Int64, but not to Uint64.
 //
 // See https://openxla.org/stablehlo/spec#functions_on_types for reference.
+//
+//goland:noinspection ALL
 func (dtype DType) IsPromotableTo(target DType) bool {
 	if dtype == target {
 		return true

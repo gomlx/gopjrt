@@ -9,6 +9,8 @@
       quantized types.
     * Added `DType.IsPromotableTo(target)` to check if types are promotable to the target type -- it follows the StableHLO rule.
     * Cleaned up generators for `dtypes` package.
+* Package `xlabuilder`:
+  * Deprecated `SelectAndScatterSum`.
 
 # v0.8.0 - 2025/08/20 Convolution API changes
 

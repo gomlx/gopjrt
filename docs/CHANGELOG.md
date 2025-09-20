@@ -7,6 +7,8 @@
 * Package `dtypes`:
     * Added `DType.Bits` field indicating the number of bits in the data type -- supporting sub-byte types including
       quantized types.
+    * Added `DType.IsPromotableTo(target)` to check if types are promotable to the target type -- it follows the StableHLO rule.
+    * Cleaned up generators for `dtypes` package.
 
 # v0.8.0 - 2025/08/20 Convolution API changes
 

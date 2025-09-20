@@ -423,6 +423,35 @@ func (dtype DType) IsSupported() bool {
 	return dtype == Bool || dtype == Float16 || dtype == BFloat16 || dtype == Float32 || dtype == Float64 || dtype == Int64 || dtype == Int32 || dtype == Int16 || dtype == Int8 || dtype == Uint32 || dtype == Uint16 || dtype == Uint8 || dtype == Complex64 || dtype == Complex128
 }
 
+// IsPromotableTo returns whether dtype can be promoted to target.
+//
+// For example, Int32 can be promoted to Int64, but not to Uint64.
+//
+// See https://openxla.org/stablehlo/spec#functions_on_types for reference.
+//
+//goland:noinspection ALL
+func (dtype DType) IsPromotableTo(target DType) bool {
+	if dtype == target {
+		return true
+	}
+
+	// Check for same dtypeV category:
+	isSameType := (dtype == Bool && target == Bool) ||
+		(dtype.IsInt() && target.IsInt()) ||
+		(dtype.IsFloat() && target.IsFloat()) ||
+		(dtype.IsComplex() && target.IsComplex())
+
+	if !isSameType {
+		return false
+	}
+
+	// For integer and float types, check bitwidth
+	if dtype.IsInt() || dtype.IsFloat() || dtype.IsComplex() {
+		return dtype.Bits() <= target.Bits()
+	}
+	return false
+}
+
 // Supported lists the Go types that `gopjrt` knows how to convert -- there are more types that can be manually
 // converted.
 // Used as traits for generics.
@@ -431,8 +460,8 @@ func (dtype DType) IsSupported() bool {
 // on the platform.
 type Supported interface {
 	bool | float16.Float16 | bfloat16.BFloat16 |
-	float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
-	complex64 | complex128
+		float32 | float64 | int | int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 |
+		complex64 | complex128
 }
 
 // Number represents the Go numeric types corresponding to supported DType's.

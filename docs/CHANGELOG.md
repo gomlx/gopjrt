@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.8.1 = 2025/09/21 Changes in support [github.com/openxla/stablehlo](https://github.com/openxla/stablehlo) 
 
 * Moved `stablehlo` to its own repository.
 * Updated dependencies.

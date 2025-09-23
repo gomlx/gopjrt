@@ -7,6 +7,7 @@
 #
 # Arguments (environment variables):
 #
+# - GOPJRT_VERSION: The version to of gopjrt to be installed, defaults to 'latest'
 # - GOPJRT_INSTALL_DIR: if not empty, defines the directory where to install the library. If empty, it install into `/usr/local`.
 #   Notice that ${GOPJRT_INSTALL_DIR}/lib must be set in your LD_LIBRARY_CONF -- `/usr/local/lib` usually is included in the path.
 # - GOPJRT_NOSUDO: if not empty, it prevents using sudo to install.
@@ -19,6 +20,7 @@
 set -e
 
 PLATFORM="darwin_amd64"
+VERSION="${GOPJRT_VERSION:-latest}"
 
 # Base installation directory:
 GOPJRT_INSTALL_DIR="${GOPJRT_INSTALL_DIR:-/usr/local}"
@@ -37,15 +39,28 @@ else
   _SUDO=""
 fi
 
-# Fetch address of resources for latest release:
+# Fetch address of resources for this release version
+release_url=https://api.github.com/repos/gomlx/gopjrt/releases/latest
+if [[ "${VERSION}" != "latest" ]]; then
+  release_url="https://api.github.com/repos/gomlx/gopjrt/releases/tags/v${VERSION}"
+fi
+
+printf "\nUsing ${release_url} to find the address of ${VERSION}\n"
+
 download_urls=$(mktemp --tmpdir gopjrt_urls.XXXXXXXX)
-curl -s https://api.github.com/repos/gomlx/gopjrt/releases/latest \
+curl -s "$release_url" \
   | grep "browser_download_url" \
   | egrep -wo "https.*gz" \
   > ${download_urls}
 
 # Download XlaBuilder C wrapper library and PJRT CPU plugin.
 url="$(grep gomlx_xlabuilder_${PLATFORM}.tar.gz "${download_urls}" | head -n 1)"
+
+if [[ "${url}" == "" ]] ; then
+  echo "Unable to find version ${VERSION} for platform ${PLATFORM}"
+  exit 1
+fi
+
 printf "\nDownloading PJRT CPU plugin from ${url}\n"
 
 mkdir -p "${GOPJRT_INSTALL_DIR}"

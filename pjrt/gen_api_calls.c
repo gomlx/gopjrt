@@ -235,6 +235,16 @@ PJRT_Error* call_PJRT_Client_CreateUninitializedBuffer(const PJRT_Api *api, PJRT
 	return api->PJRT_Client_CreateUninitializedBuffer(args);
 }
 
+// call_PJRT_Client_CreateAliasBuffer calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_Client_CreateAliasBuffer(const PJRT_Api *api, PJRT_Client_CreateAliasBuffer_Args* args) {
+	return api->PJRT_Client_CreateAliasBuffer(args);
+}
+
+// call_PJRT_Client_FulfillAliasBuffer calls the corresponding PJRT API method.
+PJRT_Error* call_PJRT_Client_FulfillAliasBuffer(const PJRT_Api *api, PJRT_Client_FulfillAliasBuffer_Args* args) {
+	return api->PJRT_Client_FulfillAliasBuffer(args);
+}
+
 // call_PJRT_Client_BufferFromHostBuffer calls the corresponding PJRT API method.
 // Asynchronously copies a buffer stored on host to device memory.
 PJRT_Error* call_PJRT_Client_BufferFromHostBuffer(const PJRT_Api *api, PJRT_Client_BufferFromHostBuffer_Args* args) {

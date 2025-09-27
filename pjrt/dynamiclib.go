@@ -24,8 +24,6 @@ package pjrt
 */
 import "C"
 import (
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"os"
 	"path"
 	"path/filepath"
@@ -34,6 +32,9 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // This file holds common definitions for the different implementations of dynamiclib (linux, windows, mac?).
@@ -255,38 +256,6 @@ func checkPlugin(name, pluginPath string) (err error) {
 		return
 	}
 	return
-}
-
-// SuppressAbseilLoggingHack prevents some irrelevant logging from PJRT plugins, by duplicating the file descriptor (fd) 2,
-// reassigning the new fd to Go's os.Stderr, and then closing fd 2, so PJRT plugins won't be able to write anything.
-//
-// Usually this is only needed during creation of the Client of the CPU plugin. So you can just wrap that part.
-//
-// Now since many things rely on fd 2 being stderr, it only does that, executes fn given and reverts the change.
-//
-// The issue of doing this permanently is that Go's default panic handler outputs the stack tracke the the fd 2,
-// and this would suppress that as well.
-//
-// It's an overkill, because this may prevent valid logging, in some truly exceptional situation, but it's the only
-// solution I can think of for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
-//
-// Since file descriptors are a global resource, this function is not reentrant, and you should
-// make sure no two goroutines are calling this at the same time.
-func SuppressAbseilLoggingHack(fn func()) {
-	newFd, err := suppressLogging()
-	if err != nil {
-		klog.Errorf("Failed to temporarily suppress absl::logging: %+v", err)
-	} else {
-		defer func() {
-			// Revert suppression: revert back newFd to 2
-			err := syscall.Dup3(newFd, 2, 0)
-			if err != nil {
-				klog.Errorf("Failed sycall.Dup3 while reverting suppression of logging: %v", err)
-			}
-		}()
-	}
-
-	fn()
 }
 
 func suppressLogging() (newFd int, err error) {

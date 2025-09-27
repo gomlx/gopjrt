@@ -138,6 +138,12 @@ extern PJRT_Buffer_MemoryLayout* new_PJRT_Buffer_MemoryLayout();
 // new_PJRT_Client_CreateUninitializedBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateUninitializedBuffer_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_CreateUninitializedBuffer_Args* new_PJRT_Client_CreateUninitializedBuffer_Args();
 
+// new_PJRT_Client_CreateAliasBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateAliasBuffer_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_CreateAliasBuffer_Args* new_PJRT_Client_CreateAliasBuffer_Args();
+
+// new_PJRT_Client_FulfillAliasBuffer_Args allocates a zero-initialized C.PJRT_Client_FulfillAliasBuffer_Args structure, sets its .struct_size, and returns it.
+extern PJRT_Client_FulfillAliasBuffer_Args* new_PJRT_Client_FulfillAliasBuffer_Args();
+
 // new_PJRT_Client_BufferFromHostBuffer_Args allocates a zero-initialized C.PJRT_Client_BufferFromHostBuffer_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Client_BufferFromHostBuffer_Args* new_PJRT_Client_BufferFromHostBuffer_Args();
 

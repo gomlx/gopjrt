@@ -168,6 +168,12 @@ extern PJRT_Error* call_PJRT_AsyncHostToDeviceTransferManager_AddMetadata(const 
 // call_PJRT_Client_CreateUninitializedBuffer calls the corresponding PJRT API method.
 extern PJRT_Error* call_PJRT_Client_CreateUninitializedBuffer(const PJRT_Api *api, PJRT_Client_CreateUninitializedBuffer_Args* args);
 
+// call_PJRT_Client_CreateAliasBuffer calls the corresponding PJRT API method.
+extern PJRT_Error* call_PJRT_Client_CreateAliasBuffer(const PJRT_Api *api, PJRT_Client_CreateAliasBuffer_Args* args);
+
+// call_PJRT_Client_FulfillAliasBuffer calls the corresponding PJRT API method.
+extern PJRT_Error* call_PJRT_Client_FulfillAliasBuffer(const PJRT_Api *api, PJRT_Client_FulfillAliasBuffer_Args* args);
+
 // call_PJRT_Client_BufferFromHostBuffer calls the corresponding PJRT API method.
 // Asynchronously copies a buffer stored on host to device memory.
 extern PJRT_Error* call_PJRT_Client_BufferFromHostBuffer(const PJRT_Api *api, PJRT_Client_BufferFromHostBuffer_Args* args);

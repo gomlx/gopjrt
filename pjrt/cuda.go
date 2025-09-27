@@ -94,6 +94,7 @@ func cudaPluginCheckDrivers(name string) {
 			plugin.Path(), nvidiaPath, plugin.Path(), nvidiaPath)
 		return
 	}
+	fmt.Printf("\t- nvidiaPath=%q\n", nvidiaPath)
 	cudaSetCUDADir(nvidiaPath)
 }
 
@@ -108,7 +109,7 @@ func cudaNVidiaPath(plugin *Plugin) (nvidiaExpectedPath string, found bool) {
 // XlaFlagsEnv is the name of the environment variable to set XLA_FLAGS.
 const XlaFlagsEnv = "XLA_FLAGS"
 
-// cudaSetCUDADir as a flag set into the environment variable XLA_PLUGIN.
+// cudaSetCUDADir as a flag set into the environment variable XLA_FLAGS.
 func cudaSetCUDADir(nvidiaPath string) {
 	existingXLAFlags := os.Getenv(XlaFlagsEnv)
 	var newValue string

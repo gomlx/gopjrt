@@ -99,8 +99,12 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 	defer cFree(args)
 	args.client = client.client.c
 	args.program = cProgram
-	args.compile_options = (*C.char)(unsafe.Pointer(unsafe.SliceData(compileOptionsProto)))
-	args.compile_options_size = (C.size_t)(len(compileOptionsProto))
+	if len(compileOptionsProto) != 0 {
+		args.compile_options = (*C.char)(C.CBytes(compileOptionsProto))
+		//args.compile_options = (*C.char)(unsafe.Pointer(unsafe.SliceData(compileOptionsProto)))
+		args.compile_options_size = (C.size_t)(len(compileOptionsProto))
+		defer cFree(args.compile_options)
+	}
 	cErr := C.call_PJRT_Client_Compile(plugin.api, args)
 	err := toError(plugin, cErr)
 	if err != nil {
@@ -126,6 +130,8 @@ type clientC struct {
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
 func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
+	fmt.Printf("newClient: options=%v\n", options)
+
 	// Create C.PJRT_Client object.
 	args := C.new_PJRT_Client_Create_Args()
 	defer cFree(args)

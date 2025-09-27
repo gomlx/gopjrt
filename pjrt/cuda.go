@@ -94,7 +94,6 @@ func cudaPluginCheckDrivers(name string) {
 			plugin.Path(), nvidiaPath, plugin.Path(), nvidiaPath)
 		return
 	}
-	fmt.Printf("\t- nvidiaPath=%q\n", nvidiaPath)
 	cudaSetCUDADir(nvidiaPath)
 }
 

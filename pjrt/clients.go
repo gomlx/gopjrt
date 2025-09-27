@@ -130,8 +130,6 @@ type clientC struct {
 
 // newClient is called by Plugin.NewClient to create a new PJRT_Client wrapper.
 func newClient(plugin *Plugin, options NamedValuesMap) (*Client, error) {
-	fmt.Printf("newClient: options=%v\n", options)
-
 	// Create C.PJRT_Client object.
 	args := C.new_PJRT_Client_Create_Args()
 	defer cFree(args)

@@ -1,5 +1,11 @@
 # Gopjrt Changelog
 
+# Next
+
+* Updated PJRT's `pjrt_c_api.h` and protos from github.com/openxla/xla, and regenerated wrapper code.
+* Added `cmd/install_cuda13.sh` script to install "jax\[cuda13\]" drivers.
+* Updated README.md to stard adverstising of `xlabuilder` deprecation.  
+
 # v0.8.1 = 2025/09/21 Changes in support [github.com/openxla/stablehlo](https://github.com/openxla/stablehlo) 
 
 * Moved `stablehlo` to its own repository.

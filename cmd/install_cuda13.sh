@@ -33,7 +33,7 @@ if [[ "${JAX_VENV_DIR}" == "" ]] ; then
   python3 -m venv "${JAX_VENV_DIR}"
 fi
 
-# Install jax[cuda12].
+# Install jax[cuda13].
 source "${JAX_VENV_DIR}/bin/activate"
 printf "\nInstalling jax[cuda13] in ${JAX_VENV_DIR}:\n"
 pip install "jax[cuda13]"

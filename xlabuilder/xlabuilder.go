@@ -19,12 +19,12 @@ import (
 // This uses the same "semantic versioning" numbers (e.g. "v0.6.0") used by the Go,
 // and follows (with a lag) the Gopjrt version.
 //
-// This often lags behind Gopjrt version, if/when the C/C++ wrapper doesn't change --
+// This often lags behind the Gopjrt version if/when the C/C++ wrapper doesn't change --
 // we don't bump the version of the C/C++ code if it doesn't change.
 // But when it changes, it matches the Gopjrt version it's being released with.
 //
 // At initialization this value is checked if it matches the version required by
-// Gopjrt, and will print a warning if it doesn't match.
+// the Gopjrt and will print a warning if it doesn't match.
 func CVersion() string {
 	return C.GoString(C.GopjrtXlaBuilderVersion)
 }

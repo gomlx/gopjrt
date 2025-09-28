@@ -41,12 +41,18 @@ const (
 
 	// PJRT_Extension_Type_ExecutableMetadata is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
 	PJRT_Extension_Type_ExecutableMetadata PJRT_Extension_Type = 11
+
+	// PJRT_Extension_Type_Callback is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Extension_Type_Callback PJRT_Extension_Type = 12
 )
 
 // PJRT_Error_Code is mapping of the corresponded C enum defined in pjrt_c_api.h.
 type PJRT_Error_Code int
 
 const (
+	// PJRT_Error_Code_OK is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
+	PJRT_Error_Code_OK PJRT_Error_Code = 0
+
 	// PJRT_Error_Code_CANCELLED is a 1:1 mapping of the corresponding C enum value defined in pjrt_c_api.h.
 	PJRT_Error_Code_CANCELLED PJRT_Error_Code = 1
 

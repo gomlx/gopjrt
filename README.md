@@ -29,7 +29,7 @@ for lower level access to XLA and other accelerator use cases -- like running Ja
 
 It provides 2 independent packages (often used together, but not necessarily):
 
-## `github.com/gomlx/gopjrt/pjrt`: loading and using PJRT plugins
+## `github.com/gomlx/gopjrt/pjrt`: compiling and executing computation graphs with PJRT plugins
 
 "**PjRt**" stands for "Pretty much Just another RunTime".
 
@@ -92,7 +92,14 @@ allows for a more convenient self-contained binary (except to the `libc` and `li
 are usually present everywhere).
 
 
-## `github.com/gomlx/gopjrt/xlabuilder`
+## `github.com/gomlx/gopjrt/xlabuilder`: creating programs to be executed with PJRT
+
+> [!Note]
+> This is in the process of being replaced by `github.com/gomlx/stablehlo`(https://github.com/gomlx/stablehlo). 
+> XLA itself is in the process of deprecating its XlaBUilder library in favor of the [StableHLO](https://openxla.org/stablehlo)
+> intermediary language. The CPU PJRT still accepts both, but some PJRT (like Apple Metal) accepts only StableHLO.
+>
+> GoMLX is also moving to use `stablehlo` 
 
 This provides a Go API for build accelerated computation using the [XLA Operations](https://openxla.org/xla/operation_semantics).
 The output of building the computation using `xlabuilder` is an IR (intermediate representation, more specifically "HLO", 
@@ -225,6 +232,8 @@ and execution with `PJRT` for comparison, with some benchmarks.
 of your computation graph). The following scripts install the required files under `/usr/local/lib` and `/usr/local/include`
 by default (but they can be changed, see the scripts for all options).
 
+If installing locally, we recommend installing with `GOPJRT_INSTALL_DIR=${HOME}/.local/lib` and `GOPJRT_NOSUDO=1`.
+
 ### **TLDR;** Linux/amd64 (or Windows+WSL)
 
 *For Linux or Windows+WSL*, run the following script ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh)) to install under `/usr/local/{lib,include}`:
@@ -233,11 +242,21 @@ by default (but they can be changed, see the scripts for all options).
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_linux_amd64.sh | bash
 ```
 
-To add CUDA (NVidia GPU) support, in addition run ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)):
+To add CUDA (NVidia GPU) support, in addition install the PJRT CUDA 12 ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh)) or
+PJRT CUDA 13 ([see source](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda13.sh)), it requires nvidia driver 580 or above, and the open 
+source version of the driver) with:
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda.sh | bash
 ```
+
+or
+
+```bash
+curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_cuda13.sh | bash
+```
+
+
 
 ### **TLDR;** Darwin/arm64 (M1, M2, ... chips)
 
@@ -279,10 +298,13 @@ curl -sSf https://raw.githubusercontent.com/gomlx/gopjrt/main/cmd/install_darwin
 The installation scripts 
 [`cmd/install_linux_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_linux_amd64.sh),
 [`cmd/install_cuda.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda.sh),
+[`cmd/install_cuda13.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_cuda13.sh),
 [`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) and
 [`cmd/install_darwin_amd64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_amd64.sh)
 can be controlled to install in any arbitrary directory (by setting `GOPJRT_INSTALL_DIR`) and not to use `sudo` 
 (by setting `GOPJRT_NOSUDO`).
+
+If installing locally, we recommend installing with `GOPJRT_INSTALL_DIR=${HOME}/.local/lib` and `GOPJRT_NOSUDO=1`.
 
 You many need to set your `LD_LIBRARY_PATH` if the installation directory is not standard, and the `PJRT_PLUGIN_LIBRARY_PATH`
 to tell gopjrt where to find the plugins -- if not using static linking.
@@ -298,10 +320,16 @@ The releases come with prebuilt:
 2. The PJRT for CPU as a standalone plugin (can be preloaded/pre-linked or loaded on the fly with `dlopen`; and
    as a static library, that can be pre-linked: slower but more convenient for deployment. 
 
-There is also the CUDA PJRT plugin downloader script, and the 
+The CUDA PJRT has 2 versions: CUDA 12 (`install_cuda.sh`) and CUDA 13 (`install_cuda13`).
+The former (CUDA 12) has been failling recently (version of Sept 16th 2025) for some models with RTX 5090 (but may work for older hardware) -- it's likely an Nvidia issue.
+The later (CUDA 13) requires drivers 580 or later, and for the newer cards (nvidia RTX 50XX / Blackwell) one needs the open source version of Nvidia drivers.
+ 
+The 
 [`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) script can
 download the Apple/Metal PJRT Plugin if the environment variable `GOPJRT_METAL=1` 
 (**EXPERIMENTAL** and not fully working, see notes in installation script).
+In this case, considering using [the new `stablehlo`](https://github.com/gomlx/stablelho) instead of `xlabuilder` to build your program,
+since it only accepts StableHLO as input.
 
 The `gopjrt/pjrt` package if asked to load a PJRT plugin (see `pjrt.GetPlugin(name string)`) and it's not already 
 loaded (or pre-linked), then it will search for PJRT plugins in `/usr/local/lib/gomlx/pjrt` and all standard library 

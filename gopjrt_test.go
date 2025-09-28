@@ -3,13 +3,14 @@ package gopjrt
 import (
 	"flag"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/pjrt"
 	"github.com/gomlx/gopjrt/xlabuilder"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
-	"os"
-	"testing"
 )
 
 var (
@@ -51,6 +52,7 @@ func TestEndToEnd(t *testing.T) {
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
 	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
 	fmt.Printf("Loaded %s\n", plugin)
+	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
 	fmt.Printf("	client: %s\n", client)

@@ -36,12 +36,65 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type CudaComputeCapabilityProto_FeatureExtension int32
+
+const (
+	CudaComputeCapabilityProto_UNSPECIFIED                 CudaComputeCapabilityProto_FeatureExtension = 0
+	CudaComputeCapabilityProto_NONE                        CudaComputeCapabilityProto_FeatureExtension = 1
+	CudaComputeCapabilityProto_ACCELERATED_FEATURES        CudaComputeCapabilityProto_FeatureExtension = 2
+	CudaComputeCapabilityProto_FORWARD_COMPATIBLE_FEATURES CudaComputeCapabilityProto_FeatureExtension = 3
+)
+
+// Enum value maps for CudaComputeCapabilityProto_FeatureExtension.
+var (
+	CudaComputeCapabilityProto_FeatureExtension_name = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "NONE",
+		2: "ACCELERATED_FEATURES",
+		3: "FORWARD_COMPATIBLE_FEATURES",
+	}
+	CudaComputeCapabilityProto_FeatureExtension_value = map[string]int32{
+		"UNSPECIFIED":                 0,
+		"NONE":                        1,
+		"ACCELERATED_FEATURES":        2,
+		"FORWARD_COMPATIBLE_FEATURES": 3,
+	}
+)
+
+func (x CudaComputeCapabilityProto_FeatureExtension) Enum() *CudaComputeCapabilityProto_FeatureExtension {
+	p := new(CudaComputeCapabilityProto_FeatureExtension)
+	*p = x
+	return p
+}
+
+func (x CudaComputeCapabilityProto_FeatureExtension) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CudaComputeCapabilityProto_FeatureExtension) Descriptor() protoreflect.EnumDescriptor {
+	return file_xla_stream_executor_cuda_cuda_compute_capability_proto_enumTypes[0].Descriptor()
+}
+
+func (CudaComputeCapabilityProto_FeatureExtension) Type() protoreflect.EnumType {
+	return &file_xla_stream_executor_cuda_cuda_compute_capability_proto_enumTypes[0]
+}
+
+func (x CudaComputeCapabilityProto_FeatureExtension) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CudaComputeCapabilityProto_FeatureExtension.Descriptor instead.
+func (CudaComputeCapabilityProto_FeatureExtension) EnumDescriptor() ([]byte, []int) {
+	return file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDescGZIP(), []int{0, 0}
+}
+
 type CudaComputeCapabilityProto struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Major         int32                  `protobuf:"varint,1,opt,name=major,proto3" json:"major,omitempty"`
-	Minor         int32                  `protobuf:"varint,2,opt,name=minor,proto3" json:"minor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState                      `protogen:"open.v1"`
+	Major            int32                                       `protobuf:"varint,1,opt,name=major,proto3" json:"major,omitempty"`
+	Minor            int32                                       `protobuf:"varint,2,opt,name=minor,proto3" json:"minor,omitempty"`
+	FeatureExtension CudaComputeCapabilityProto_FeatureExtension `protobuf:"varint,3,opt,name=feature_extension,json=featureExtension,proto3,enum=stream_executor.CudaComputeCapabilityProto_FeatureExtension" json:"feature_extension,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CudaComputeCapabilityProto) Reset() {
@@ -88,6 +141,13 @@ func (x *CudaComputeCapabilityProto) GetMinor() int32 {
 	return 0
 }
 
+func (x *CudaComputeCapabilityProto) GetFeatureExtension() CudaComputeCapabilityProto_FeatureExtension {
+	if x != nil {
+		return x.FeatureExtension
+	}
+	return CudaComputeCapabilityProto_UNSPECIFIED
+}
+
 var File_xla_stream_executor_cuda_cuda_compute_capability_proto protoreflect.FileDescriptor
 
 var file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDesc = string([]byte{
@@ -95,12 +155,26 @@ var file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDesc = string
 	0x63, 0x75, 0x74, 0x6f, 0x72, 0x2f, 0x63, 0x75, 0x64, 0x61, 0x2f, 0x63, 0x75, 0x64, 0x61, 0x5f,
 	0x63, 0x6f, 0x6d, 0x70, 0x75, 0x74, 0x65, 0x5f, 0x63, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69,
 	0x74, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0f, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d,
-	0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x22, 0x48, 0x0a, 0x1a, 0x43, 0x75, 0x64,
-	0x61, 0x43, 0x6f, 0x6d, 0x70, 0x75, 0x74, 0x65, 0x43, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c, 0x69,
-	0x74, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x61, 0x6a, 0x6f, 0x72,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6d, 0x61, 0x6a, 0x6f, 0x72, 0x12, 0x14, 0x0a,
-	0x05, 0x6d, 0x69, 0x6e, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6d, 0x69,
-	0x6e, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f, 0x72, 0x22, 0x9d, 0x02, 0x0a, 0x1a, 0x43, 0x75,
+	0x64, 0x61, 0x43, 0x6f, 0x6d, 0x70, 0x75, 0x74, 0x65, 0x43, 0x61, 0x70, 0x61, 0x62, 0x69, 0x6c,
+	0x69, 0x74, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x61, 0x6a, 0x6f,
+	0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6d, 0x61, 0x6a, 0x6f, 0x72, 0x12, 0x14,
+	0x0a, 0x05, 0x6d, 0x69, 0x6e, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6d,
+	0x69, 0x6e, 0x6f, 0x72, 0x12, 0x69, 0x0a, 0x11, 0x66, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x5f,
+	0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32,
+	0x3c, 0x2e, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x6f,
+	0x72, 0x2e, 0x43, 0x75, 0x64, 0x61, 0x43, 0x6f, 0x6d, 0x70, 0x75, 0x74, 0x65, 0x43, 0x61, 0x70,
+	0x61, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x46, 0x65, 0x61,
+	0x74, 0x75, 0x72, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x10, 0x66,
+	0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x22,
+	0x68, 0x0a, 0x10, 0x46, 0x65, 0x61, 0x74, 0x75, 0x72, 0x65, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73,
+	0x69, 0x6f, 0x6e, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x4f, 0x4e, 0x45, 0x10, 0x01, 0x12, 0x18,
+	0x0a, 0x14, 0x41, 0x43, 0x43, 0x45, 0x4c, 0x45, 0x52, 0x41, 0x54, 0x45, 0x44, 0x5f, 0x46, 0x45,
+	0x41, 0x54, 0x55, 0x52, 0x45, 0x53, 0x10, 0x02, 0x12, 0x1f, 0x0a, 0x1b, 0x46, 0x4f, 0x52, 0x57,
+	0x41, 0x52, 0x44, 0x5f, 0x43, 0x4f, 0x4d, 0x50, 0x41, 0x54, 0x49, 0x42, 0x4c, 0x45, 0x5f, 0x46,
+	0x45, 0x41, 0x54, 0x55, 0x52, 0x45, 0x53, 0x10, 0x03, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 })
 
 var (
@@ -115,16 +189,19 @@ func file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDescGZIP() [
 	return file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDescData
 }
 
+var file_xla_stream_executor_cuda_cuda_compute_capability_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_xla_stream_executor_cuda_cuda_compute_capability_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_xla_stream_executor_cuda_cuda_compute_capability_proto_goTypes = []any{
-	(*CudaComputeCapabilityProto)(nil), // 0: stream_executor.CudaComputeCapabilityProto
+	(CudaComputeCapabilityProto_FeatureExtension)(0), // 0: stream_executor.CudaComputeCapabilityProto.FeatureExtension
+	(*CudaComputeCapabilityProto)(nil),               // 1: stream_executor.CudaComputeCapabilityProto
 }
 var file_xla_stream_executor_cuda_cuda_compute_capability_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: stream_executor.CudaComputeCapabilityProto.feature_extension:type_name -> stream_executor.CudaComputeCapabilityProto.FeatureExtension
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_xla_stream_executor_cuda_cuda_compute_capability_proto_init() }
@@ -137,13 +214,14 @@ func file_xla_stream_executor_cuda_cuda_compute_capability_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDesc), len(file_xla_stream_executor_cuda_cuda_compute_capability_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_xla_stream_executor_cuda_cuda_compute_capability_proto_goTypes,
 		DependencyIndexes: file_xla_stream_executor_cuda_cuda_compute_capability_proto_depIdxs,
+		EnumInfos:         file_xla_stream_executor_cuda_cuda_compute_capability_proto_enumTypes,
 		MessageInfos:      file_xla_stream_executor_cuda_cuda_compute_capability_proto_msgTypes,
 	}.Build()
 	File_xla_stream_executor_cuda_cuda_compute_capability_proto = out.File

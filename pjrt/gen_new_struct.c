@@ -334,6 +334,22 @@ PJRT_Client_CreateUninitializedBuffer_Args* new_PJRT_Client_CreateUninitializedB
 	return p;
 }
 
+// new_PJRT_Client_CreateAliasBuffer_Args allocates a zero-initialized C.PJRT_Client_CreateAliasBuffer_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_CreateAliasBuffer_Args* new_PJRT_Client_CreateAliasBuffer_Args() {
+	PJRT_Client_CreateAliasBuffer_Args* p = malloc(sizeof(PJRT_Client_CreateAliasBuffer_Args));
+	memset(p, 0, sizeof(PJRT_Client_CreateAliasBuffer_Args));
+	p->struct_size = PJRT_Client_CreateAliasBuffer_Args_STRUCT_SIZE;
+	return p;
+}
+
+// new_PJRT_Client_FulfillAliasBuffer_Args allocates a zero-initialized C.PJRT_Client_FulfillAliasBuffer_Args structure, sets its .struct_size, and returns it.
+PJRT_Client_FulfillAliasBuffer_Args* new_PJRT_Client_FulfillAliasBuffer_Args() {
+	PJRT_Client_FulfillAliasBuffer_Args* p = malloc(sizeof(PJRT_Client_FulfillAliasBuffer_Args));
+	memset(p, 0, sizeof(PJRT_Client_FulfillAliasBuffer_Args));
+	p->struct_size = PJRT_Client_FulfillAliasBuffer_Args_STRUCT_SIZE;
+	return p;
+}
+
 // new_PJRT_Client_BufferFromHostBuffer_Args allocates a zero-initialized C.PJRT_Client_BufferFromHostBuffer_Args structure, sets its .struct_size, and returns it.
 PJRT_Client_BufferFromHostBuffer_Args* new_PJRT_Client_BufferFromHostBuffer_Args() {
 	PJRT_Client_BufferFromHostBuffer_Args* p = malloc(sizeof(PJRT_Client_BufferFromHostBuffer_Args));

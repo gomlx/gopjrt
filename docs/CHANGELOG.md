@@ -4,7 +4,7 @@
 
 * Updated PJRT's `pjrt_c_api.h` and protos from github.com/openxla/xla, and regenerated wrapper code.
 * Added `cmd/install_cuda13.sh` script to install "jax\[cuda13\]" drivers.
-* Updated README.md to stard adverstising of `xlabuilder` deprecation.  
+* Updated README.md to start adverstising of `xlabuilder` deprecation.  
 * Moved `pjrt.SuppressAbseilLoggingHack` implementation to the "per-platform" files `pjrt/dynamiclib_posix.go` and 
   `pjrt/dynamiclib_darwin.go`: the first using `syscall.Dup3()` and the second using `syscall.Dup2()`.
 

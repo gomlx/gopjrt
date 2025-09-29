@@ -42,7 +42,7 @@ fi
 # Fetch address of resources for this release version
 release_url=https://api.github.com/repos/gomlx/gopjrt/releases/latest
 if [[ "${VERSION}" != "latest" ]]; then
-  release_url="https://api.github.com/repos/gomlx/gopjrt/releases/tags/v${VERSION}"
+  release_url="https://api.github.com/repos/gomlx/gopjrt/releases/tags/${VERSION}"
 fi
 
 printf "\nUsing ${release_url} to find the address of ${VERSION}\n"

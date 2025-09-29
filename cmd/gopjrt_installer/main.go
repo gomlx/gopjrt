@@ -6,11 +6,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
+const AmazonLinux = "amazonlinux"
+
 var (
-	pluginValues = []string{"linux", "amazonlinux", "cuda12", "cuda13"}
+	pluginValues = []string{"linux", AmazonLinux, "cuda12", "cuda13"}
 	flagPlugin   = flag.String("plugin", "",
 		fmt.Sprintf("PJRT plugin to install, one of: %s. "+
 			"The CUDA plugins will download the PJRT and Nvidia drivers included in Jax distribution for "+
@@ -33,7 +36,8 @@ func main() {
 	if *flagPlugin == "" || *flagPath == "" || *flagVersion == "" {
 		questions := []Question{
 			{Name: "Plugin to install", Flag: flag.CommandLine.Lookup("plugin"), Values: pluginValues, CustomValues: false},
-			{Name: "Plugin version", Flag: flag.CommandLine.Lookup("version"), Values: []string{"latest"}, CustomValues: true},
+			{Name: "Plugin version", Flag: flag.CommandLine.Lookup("version"), Values: []string{"latest"}, CustomValues: true,
+				ValidateFn: ValidateVersion},
 			{Name: "Path where to install", Flag: flag.CommandLine.Lookup("path"), Values: pathSuggestions, CustomValues: true},
 		}
 		err := Interact(os.Args[0], questions)
@@ -46,4 +50,11 @@ func main() {
 	version := *flagVersion
 	installPath := ReplaceTildeInDir(*flagPath)
 	fmt.Printf("Installing PJRT plugin %q@%q to %q \n", pluginName, version, installPath)
+}
+
+func ValidateVersion() error {
+	if *flagPlugin == "linux" || *flagPlugin == AmazonLinux {
+		return LinuxValidateVersion()
+	}
+	return errors.Errorf("version validation not implemented for plugin %q", *flagPlugin)
 }

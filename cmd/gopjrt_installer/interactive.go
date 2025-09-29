@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/term"
 	"github.com/pkg/errors"
@@ -35,9 +36,9 @@ type Question struct {
 	// CustomValues indicates whether this flag accepts arbitrary custom values
 	CustomValues bool
 
-	// ValidateFn if set is called to validate the value selected by the user.
+	// ValidateFn is called to validate the value selected by the user.
 	// If it returns an error, the error is printed and the user is prompted again.
-	ValidateFn func(string) error
+	ValidateFn func() error
 }
 
 const ReservedCustomValue = "#custom"
@@ -61,7 +62,7 @@ func Interact(command string, questions []Question) error {
 	var numLinesHeader int
 	displayCommandFn := func() {
 		if !firstDisplay {
-			// Move cursor up numLinesHeader lines and erase them
+			// Move the cursor up numLinesHeader lines and erase them
 			fmt.Printf("\033[%dA", numLinesHeader)
 			// Erases from cursor to end of screen
 			fmt.Printf("\033[0J")
@@ -70,7 +71,7 @@ func Interact(command string, questions []Question) error {
 		}
 		fmt.Println("Command to run:")
 		var sb strings.Builder
-		sb.WriteString("command")
+		sb.WriteString(command)
 		for _, question := range questions {
 			_, _ = fmt.Fprintf(&sb, " -%s=%s", question.Flag.Name, question.Flag.Value.String())
 		}
@@ -85,7 +86,7 @@ func Interact(command string, questions []Question) error {
 	}
 
 	// Loop over questions: notice the user may mover forward and backward, revisiting decisions,
-	// so the for is no a range over the questions.
+	// so the for does not range over the questions.
 	questionIdx := 0
 	for questionIdx < len(questions) {
 		if questionIdx < 0 {
@@ -103,7 +104,7 @@ func Interact(command string, questions []Question) error {
 		}
 		value := question.Flag.Value.String()
 		selection := huh.NewSelect[string]().
-			Title(question.Name).
+			Title(fmt.Sprintf("(%d of %d) - %s", questionIdx+1, len(questions), question.Name)).
 			Description(question.Flag.Usage).
 			Options(options...).
 			Value(&value)
@@ -111,7 +112,7 @@ func Interact(command string, questions []Question) error {
 			WithTheme(theme).
 			WithKeyMap(keyMap)
 		//err := form.Run()
-		model := formModel{form: form}
+		model := &formModel{form: form}
 		prog := tea.NewProgram(model)
 		_, err := prog.Run()
 		if err != nil {
@@ -120,6 +121,9 @@ func Interact(command string, questions []Question) error {
 		if model.IsEscExit {
 			questionIdx--
 			continue
+		}
+		if model.form.State == huh.StateAborted {
+			return ErrUserAborted
 		}
 		if question.CustomValues && value == ReservedCustomValue {
 			value = ""
@@ -137,6 +141,30 @@ func Interact(command string, questions []Question) error {
 		err = question.Flag.Value.Set(value)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set -%s to %q", question.Flag.Name, value)
+		}
+
+		// Validate selections:
+		if question.ValidateFn != nil {
+			var validationErr error
+			err := spinner.New().
+				Title(fmt.Sprintf("Validating %q ….", question.Flag.Name)).
+				Action(func() { validationErr = question.ValidateFn() }).
+				Run()
+			if err != nil {
+				return err
+			}
+			if validationErr != nil {
+				err := huh.NewConfirm().
+					Title(question.Name).
+					Description(validationErr.Error()).
+					Affirmative("Ok").
+					Negative("").Run()
+				if err != nil {
+					return err
+				}
+				// Don't increment the questionIdx: the question will be asked again.
+				continue
+			}
 		}
 		questionIdx++
 	}
@@ -166,14 +194,14 @@ type formModel struct {
 }
 
 // Init is the first command that is run when the program starts.
-func (m formModel) Init() tea.Cmd {
+func (m *formModel) Init() tea.Cmd {
 	return m.form.Init()
 }
 
 var escKey = key.NewBinding(key.WithKeys("esc"))
 
 // Update is called when a message is received.
-func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msgT := msg.(type) {
 	// 1. Intercept specific key presses BEFORE they are sent to the form.
 	case tea.KeyMsg:
@@ -181,11 +209,22 @@ func (m formModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.IsEscExit = true
 		}
 	}
-	return m.form.Update(msg)
+
+	// Pass all other messages to the form for processing.
+	form, cmd := m.form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.form = f
+	}
+
+	// If the form is done, we need to quit.
+	if m.form.State == huh.StateCompleted || m.form.State == huh.StateAborted {
+		return m, tea.Quit
+	}
+	return m, cmd
 }
 
 // View renders the UI.
-func (m formModel) View() string {
+func (m *formModel) View() string {
 	// Delegate the view rendering to the huh.Form.
 	return m.form.View()
 }

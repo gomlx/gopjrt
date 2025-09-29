@@ -320,14 +320,14 @@ The releases come with prebuilt:
 2. The PJRT for CPU as a standalone plugin (can be preloaded/pre-linked or loaded on the fly with `dlopen`; and
    as a static library, that can be pre-linked: slower but more convenient for deployment. 
 
-The CUDA PJRT has 2 versions: CUDA 12 (`install_cuda.sh`) and CUDA 13 (`install_cuda13`).
-The former (CUDA 12) has been failling recently (version of Sept 16th 2025) for some models with RTX 5090 (but may work for older hardware) -- it's likely an Nvidia issue.
-The later (CUDA 13) requires drivers 580 or later, and for the newer cards (nvidia RTX 50XX / Blackwell) one needs the open source version of Nvidia drivers.
+There are two CUDA PJRT versions: CUDA 12 (`install_cuda.sh`) and CUDA 13 (`install_cuda13.sh`).
+The former (CUDA 12) has been failing recently (version of Sept 16th 2025) for some models with RTX 5090 (but may work for older hardware) -- it's likely an Nvidia issue (??).
+The later (CUDA 13) requires drivers 580 or later, and for the newer cards (nvidia RTX 50XX / Blackwell) one needs the open source version of Nvidia drivers (usually available in most distributions).
  
 The 
 [`cmd/install_darwin_arm64.sh`](https://github.com/gomlx/gopjrt/blob/main/cmd/install_darwin_arm64.sh) script can
 download the Apple/Metal PJRT Plugin if the environment variable `GOPJRT_METAL=1` 
-(**EXPERIMENTAL** and not fully working, see notes in installation script).
+(**EXPERIMENTAL** and not fully working, see notes in the installation script).
 In this case, considering using [the new `stablehlo`](https://github.com/gomlx/stablelho) instead of `xlabuilder` to build your program,
 since it only accepts StableHLO as input.
 

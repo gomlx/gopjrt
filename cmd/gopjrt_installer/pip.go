@@ -164,3 +164,70 @@ func PipSelectRelease(releaseInfos []PipReleaseInfo, platform *regexp.Regexp) (*
 	}
 	return result, nil
 }
+
+// PipCompareVersion compares two PIP version strings (they include only numbers separated by dots).
+func PipCompareVersion(v1, v2 string) int {
+	v1Parts := strings.Split(v1, ".")
+	v2Parts := strings.Split(v2, ".")
+	minLen := min(len(v1Parts), len(v2Parts))
+
+	// Compare common parts
+	for i := 0; i < minLen; i++ {
+		var n1, n2 int
+		fmt.Sscanf(v1Parts[i], "%d", &n1)
+		fmt.Sscanf(v2Parts[i], "%d", &n2)
+		if n1 < n2 {
+			return -1
+		}
+		if n1 > n2 {
+			return 1
+		}
+	}
+
+	// If common parts are equal, whoever has the longer version is greater.
+	if len(v1Parts) == len(v2Parts) {
+		return 0
+	}
+	if len(v1Parts) > len(v2Parts) {
+		return 1
+	}
+	return -1
+}
+
+// IsValid checks if the given version satisfies the dependency constraints.
+func (dep *PipDependency) IsValid(version string) bool {
+	// Check that the exact version matches if specified
+	if dep.Exact != "" && version != dep.Exact {
+		return false
+	}
+
+	// Check minimum version
+	if dep.Minimum != "" {
+		if PipCompareVersion(version, dep.Minimum) < 0 {
+			return false
+		}
+	}
+
+	// Check lower bound (exclusive)
+	if dep.LowerBound != "" {
+		if PipCompareVersion(version, dep.LowerBound) <= 0 {
+			return false
+		}
+	}
+
+	// Check maximum version
+	if dep.Maximum != "" {
+		if PipCompareVersion(version, dep.Maximum) > 0 {
+			return false
+		}
+	}
+
+	// Check upper bound (exclusive)
+	if dep.UpperBound != "" {
+		if PipCompareVersion(version, dep.UpperBound) >= 0 {
+			return false
+		}
+	}
+
+	return true
+}

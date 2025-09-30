@@ -139,8 +139,61 @@ func ExtractFileFromZip(zipFilePath, targetFileName, outputPath string) error {
 			return extractZipFile(f, outputPath)
 		}
 	}
+	return os.ErrNotExist // File was not found in the archive.
+}
 
-	return os.ErrNotExist // File not found in the archive
+// ExtractDirFromZip extracts from zipFilePath all files and directories under dirInZipFile, and saves them with the
+// same directory structure under outputPath.
+//
+// Notice dirInZipFile is not repeated in outputPath.
+func ExtractDirFromZip(zipFilePath, dirInZipFile, outputPath string) error {
+	r, err := zip.OpenReader(zipFilePath)
+	if err != nil {
+		return err
+	}
+	defer func() { ReportError(r.Close()) }()
+
+	// Normalize paths for comparison
+	normalizedPrefix := filepath.Clean(dirInZipFile) + "/"
+
+	// Iterate through the files in the archive
+	for _, f := range r.File {
+		// Normalize the file path
+		normalizedPath := filepath.Clean(f.Name)
+
+		// Check if this file is under the requested directory
+		if !strings.HasPrefix(normalizedPath, normalizedPrefix) {
+			continue
+		}
+
+		// Calculate relative path from the prefix
+		relPath := strings.TrimPrefix(normalizedPath, normalizedPrefix)
+		if relPath == "" {
+			continue // Skip the directory itself
+		}
+
+		// Create the full output path
+		fullPath := filepath.Join(outputPath, relPath)
+
+		if f.FileInfo().IsDir() {
+			// Create directory
+			if err := os.MkdirAll(fullPath, 0755); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Create parent directories if they don't exist
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			return err
+		}
+
+		if err := extractZipFile(f, fullPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // extractZipFile is a helper to perform the actual extraction

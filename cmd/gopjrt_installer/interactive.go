@@ -53,6 +53,13 @@ func Interact(command string, questions []Question) error {
 	theme.Focused.Base.Border(lipgloss.HiddenBorder())
 	fmt.Println()
 
+	// Header:
+	fmt.Println(theme.Focused.Title.Render("Welcome to the Gopjrt installer!"))
+	fmt.Println(theme.Focused.Description.Render("This tool will guide you through the installation choices " +
+		"for Gopjrt, and will display you the flags you need to use. In the end you can choose to run the command " +
+		"according to your selection, or just exit -- you can copy&paste your flags selection to execute later."))
+	fmt.Println()
+
 	// Key map: use arrow keys to navigate, enter to confirm, escape to go back.
 	keyMap := huh.NewDefaultKeyMap()
 	keyMap.Quit = key.NewBinding(key.WithKeys("ctrl+c", "q"))
@@ -72,7 +79,7 @@ func Interact(command string, questions []Question) error {
 		} else {
 			firstDisplay = false
 		}
-		fmt.Println("Command to run:")
+		fmt.Println("Selected flags to run:")
 		var sb strings.Builder
 		sb.WriteString(command)
 		for _, question := range questions {
@@ -84,7 +91,7 @@ func Interact(command string, questions []Question) error {
 			commandLines = 1
 			klog.Errorf("Failed to calculate number of lines for terminal: %v", err)
 		}
-		fmt.Printf("%s\n\n", coloredCommand)
+		fmt.Printf("\t%s\n\n", coloredCommand)
 		numLinesHeader = 2 + commandLines
 	}
 

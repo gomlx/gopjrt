@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"maps"
-	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -28,20 +26,48 @@ func CudaInstall() error {
 	// Create the target directory.
 	installPath := ReplaceTildeInDir(*flagPath)
 	if err := os.MkdirAll(installPath, 0755); err != nil {
-		return errors.Wrap(err, "failed to create install directory")
+		return errors.Wrapf(err, "failed to create install directory in %s", installPath)
+	}
+
+	var err error
+	version := *flagVersion
+	if false {
+		version, err = CudaInstallPJRT(installPath)
+		if err != nil {
+			return err
+		}
+	} else if version == "latest" {
+		version = "0.7.2"
+	}
+
+	err = CudaInstallNvidiaLibraries(*flagPlugin, version, installPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("- Installed CUDA PJRT version %s\n", version)
+	return nil
+}
+
+func CudaInstallPJRT(installPath string) (version string, err error) {
+	// Make the directory that will hold the PJRT files.
+	pjrtDir := filepath.Join(installPath, "/lib/gomlx/pjrt")
+	pjrtOutputPath := path.Join(pjrtDir, "pjrt_c_api_cuda_plugin.so")
+	if err := os.MkdirAll(pjrtDir, 0755); err != nil {
+		return "", errors.Wrapf(err, "failed to create PJRT install directory in %s", pjrtDir)
 	}
 
 	// Get CUDA PJRT wheel from pypi.org
-	info, packageName, err := CudaGetPipInfo(*flagPlugin)
+	info, packageName, err := CudaGetPJRTPipInfo(*flagPlugin)
 	if err != nil {
-		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", *flagPlugin)
+		return "", errors.WithMessagef(err, "can't fetch pypi.org information for %s", *flagPlugin)
 	}
 	if info.Info.AuthorEmail != "jax-dev@google.com" {
-		return errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
+		return "", errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
 	}
 
 	// Translate "latest" to the actual version if needed.
-	version := *flagVersion
+	version = *flagVersion
 	if version == "latest" {
 		version = info.Info.Version
 	}
@@ -50,32 +76,31 @@ func CudaInstall() error {
 	if !ok {
 		versions := slices.Collect(maps.Keys(info.Releases))
 		slices.Sort(versions)
-		return errors.Errorf("version %q not found for %q (from pip package %q) -- lastest is %q and existing versions are: %s",
+		return "", errors.Errorf("version %q not found for %q (from pip package %q) -- lastest is %q and existing versions are: %s",
 			*flagVersion, *flagPlugin, packageName, info.Info.Version, strings.Join(versions, ", "))
 	}
 
-	releaseInfo, err := pipSelectRelease(releaseInfos, pipPackageLinuxAMD64)
+	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find release for %s, version %s", *flagPlugin, *flagVersion)
+		return "", errors.Wrapf(err, "failed to find release for %s, version %s", *flagPlugin, *flagVersion)
 	}
 	if releaseInfo.PackageType != "bdist_wheel" {
-		return errors.Errorf("release %s is not a \"binary wheel\" type", releaseInfo.Filename)
+		return "", errors.Errorf("release %s is not a \"binary wheel\" type", releaseInfo.Filename)
 	}
 
 	downloadedJaxPJRTWHL, err := DownloadURLToTemp(releaseInfo.URL, "gopjrt_jax_pjrt_cuda_*.whl")
 	if err != nil {
-		return errors.Wrap(err, "failed to download cuda PJRT wheel")
+		return "", errors.Wrap(err, "failed to download cuda PJRT wheel")
 	}
 	if !klog.V(1).Enabled() {
 		defer func() { ReportError(os.Remove(downloadedJaxPJRTWHL)) }()
 	}
-	pjrtOutputPath := filepath.Join(installPath, "/lib/gomlx/pjrt/pjrt_c_api_cuda_plugin.so")
 	err = ExtractFileFromZip(downloadedJaxPJRTWHL, "xla_cuda_plugin.so", pjrtOutputPath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to extract CUDA PJRT file from %q wheel", packageName)
+		return "", errors.Wrapf(err, "failed to extract CUDA PJRT file from %q wheel", packageName)
 	}
 	fmt.Printf("- Installed CUDA PJRT to %s\n", pjrtOutputPath)
-	return nil
+	return version, nil
 }
 
 // CudaValidateVersion checks whether the cuda version selected by "-version" exists.
@@ -85,7 +110,7 @@ func CudaValidateVersion() error {
 		return nil
 	}
 
-	info, packageName, err := CudaGetPipInfo(*flagPlugin)
+	info, packageName, err := CudaGetPJRTPipInfo(*flagPlugin)
 	if err != nil {
 		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", *flagPlugin)
 	}
@@ -104,8 +129,8 @@ func CudaValidateVersion() error {
 	return nil
 }
 
-// CudaGetPipInfo returns the JSON info for the PIP package that corresponds to the plugin.
-func CudaGetPipInfo(plugin string) (*PipPackageInfo, string, error) {
+// CudaGetPJRTPipInfo returns the JSON info for the PIP package that corresponds to the plugin.
+func CudaGetPJRTPipInfo(plugin string) (*PipPackageInfo, string, error) {
 	var packageName string
 	switch *flagPlugin {
 	case "cuda12":
@@ -115,78 +140,45 @@ func CudaGetPipInfo(plugin string) (*PipPackageInfo, string, error) {
 	default:
 		return nil, "", errors.Errorf("unknown plugin %q selected", plugin)
 	}
-	info, err := getPipInfo(packageName)
+	info, err := GetPipInfo(packageName)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to get package info for %s", packageName)
 	}
 	return info, packageName, nil
 }
 
-func getPipInfo(packageName string) (*PipPackageInfo, error) {
-	url := "https://pypi.org/pypi/" + packageName + "/json"
+func CudaInstallNvidiaLibraries(plugin, version, installPath string) error {
+	// Remove any previous version of the nvidia libraries and recreate it.
+	nvidiaLibsDir := filepath.Join(installPath, "/lib/gomlx/nvidia")
+	if err := os.RemoveAll(nvidiaLibsDir); err != nil {
+		return errors.Wrapf(err, "failed to remove existing nvidia libraries directory %s", nvidiaLibsDir)
+	}
+	if err := os.MkdirAll(nvidiaLibsDir, 0755); err != nil {
+		return errors.Wrapf(err, "failed to create nvidia libraries directory in %s", nvidiaLibsDir)
+	}
 
-	resp, err := http.Get(url)
+	// Find required nvidia packages:
+	packageName := "jax-" + plugin + "-plugin"
+	jaxCudaPluginInfo, err := GetPipInfo(packageName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch package info from %s", url)
+		return errors.Wrapf(err, "failed to get package info for %s", packageName)
 	}
-	defer func() { ReportError(resp.Body.Close()) }()
-
-	body, err := io.ReadAll(resp.Body)
+	fmt.Println("Dependencies:")
+	deps, err := jaxCudaPluginInfo.ParseDependencies()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read response body")
+		return errors.Wrapf(err, "failed to parse dependencies for %s", packageName)
 	}
-
-	var result PipPackageInfo
-	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, errors.Wrap(err, "failed to parse JSON response")
-	}
-
-	return &result, nil
-}
-
-// PipPackageInfo is the JSON response from pypi.org for a given package.
-type PipPackageInfo struct {
-	// Top-level object returned by the API
-	Info struct {
-		Name           string `json:"name"`
-		Version        string `json:"version"` // This is the LATEST version
-		Summary        string `json:"summary"`
-		HomePage       string `json:"home_page"`
-		Author         string `json:"author"`
-		AuthorEmail    string `json:"author_email"`
-		License        string `json:"license"`
-		ProjectURL     string `json:"project_url"`
-		RequiresPython string `json:"requires_python"`
-
-		// This is a list of dependencies/requirements
-		RequiresDist []string `json:"requires_dist"`
-	} `json:"info"`
-
-	// Releases is a map of all versions, where the key is the version string (e.g., "1.2.3")
-	Releases map[string][]PipReleaseInfo `json:"releases"`
-}
-
-// PipReleaseInfo is the JSON response from pypi.org for a given package version, for some platform.
-type PipReleaseInfo struct {
-	// You can add more fields here if you need file-specific details
-	PackageType string            `json:"packagetype"`
-	Filename    string            `json:"filename"`
-	URL         string            `json:"url"`
-	Digests     map[string]string `json:"digests"`
-}
-
-func pipSelectRelease(releaseInfos []PipReleaseInfo, platform *regexp.Regexp) (*PipReleaseInfo, error) {
-	var result *PipReleaseInfo
-	for i, release := range releaseInfos {
-		if platform.MatchString(release.Filename) {
-			if result != nil {
-				return nil, errors.Errorf("multiple releases found for platform %q: %q and %q", platform, result.Filename, release.Filename)
-			}
-			result = &releaseInfos[i]
+	nvidiaDependencies := slices.DeleteFunc(deps, func(dep PipDependency) bool {
+		// This is a simplification that works for now: in the future we many need to check "sys_platform" conditions.
+		if !strings.HasPrefix(dep.Package, "nvidia") {
+			return true
 		}
+		return false
+	})
+
+	for _, dep := range nvidiaDependencies {
+		err = cudaInstallNvidiaLibrary(nvidiaLibsDir, dep)
+		return err
 	}
-	if result == nil {
-		return nil, errors.Errorf("no release found for platform %q", platform)
-	}
-	return result, nil
+	return nil
 }

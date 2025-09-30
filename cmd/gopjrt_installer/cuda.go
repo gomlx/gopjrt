@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 )
 
 var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
@@ -39,7 +38,7 @@ func CudaInstall() error {
 		return err
 	}
 
-	fmt.Printf("- Installed %s PJRT version %s version %s and required Nvidia libraries\n", *flagPlugin, version)
+	fmt.Printf("\n✅ Installed %s PJRT version %s and the required Nvidia libraries\n\n", *flagPlugin, version)
 	return nil
 }
 
@@ -82,11 +81,12 @@ func CudaInstallPJRT(installPath string) (version string, err error) {
 		return "", errors.Errorf("release %s is not a \"binary wheel\" type", releaseInfo.Filename)
 	}
 
-	downloadedJaxPJRTWHL, err := DownloadURLToTemp(releaseInfo.URL, "gopjrt_jax_pjrt_cuda_*.whl")
+	sha256hash := releaseInfo.Digests["sha256"]
+	downloadedJaxPJRTWHL, fileCached, err := DownloadURLToTemp(releaseInfo.URL, fmt.Sprintf("gopjrt_%s_%s.whl", packageName, version), sha256hash)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to download cuda PJRT wheel")
 	}
-	if !klog.V(1).Enabled() {
+	if !fileCached {
 		defer func() { ReportError(os.Remove(downloadedJaxPJRTWHL)) }()
 	}
 	err = ExtractFileFromZip(downloadedJaxPJRTWHL, "xla_cuda_plugin.so", pjrtOutputPath)
@@ -185,7 +185,15 @@ func CudaInstallNvidiaLibraries(plugin, version, installPath string) error {
 	}
 
 	// Create symbolic link to ptxas.
-	ptxasPath := filepath.Join(nvidiaLibsDir, "cuda_nvcc/bin/ptxas")
+	var ptxasPath string
+	switch plugin {
+	case "cuda12":
+		ptxasPath = filepath.Join(nvidiaLibsDir, "cuda_nvcc/bin/ptxas")
+	case "cuda13":
+		ptxasPath = filepath.Join(nvidiaLibsDir, "cu13/bin/ptxas")
+	default:
+		return errors.Errorf("version validation not implemented for plugin %q in version %s", plugin, version)
+	}
 	ptxasLinkPath := filepath.Join(nvidiaBinPath, "ptxas")
 	if err := os.Symlink(ptxasPath, ptxasLinkPath); err != nil {
 		return errors.Wrapf(err, "failed to create symbolic link to ptxas in %s", ptxasLinkPath)
@@ -220,11 +228,12 @@ func cudaInstallNvidiaLibrary(nvidiaLibsDir string, dep PipDependency) error {
 	}
 
 	// Download the ".whl" file (zip file format) for the selected version of the nvidia library..
-	downloadedWHL, err := DownloadURLToTemp(selectedReleaseInfo.URL, fmt.Sprintf("gopjrt_%s_*.whl", dep.Package))
+	sha256hash := selectedReleaseInfo.Digests["sha256"]
+	downloadedWHL, whlIsCached, err := DownloadURLToTemp(selectedReleaseInfo.URL, fmt.Sprintf("gopjrt_%s_%s.whl", dep.Package, selectedVersion), sha256hash)
 	if err != nil {
 		return errors.Wrapf(err, "failed to download %s wheel", dep.Package)
 	}
-	if !klog.V(1).Enabled() {
+	if !whlIsCached {
 		defer func() { ReportError(os.Remove(downloadedWHL)) }()
 	}
 

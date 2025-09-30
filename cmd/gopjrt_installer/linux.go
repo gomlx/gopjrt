@@ -25,11 +25,41 @@ func LinuxValidateVersion() error {
 	return err
 }
 
-// LinuxGetDownloadURL returns the download URL for the given version and plugin.
-func LinuxGetDownloadURL(plugin, version string) (string, error) {
-	assets, err := LinuxDownloadReleaseAssets(version)
+func LinuxGetLatestVersion() (string, error) {
+	const latestURL = "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
+	// Make HTTP request
+	resp, err := http.Get(latestURL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
+	}
+
+	// Parse JSON response
+	var info struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.Unmarshal(body, &info); err != nil {
+		return "", fmt.Errorf("failed to parse JSON response: %v", err)
+	}
+	version := info.TagName
+	if version == "" {
+		return "", errors.Errorf("failed to get version from %q", latestURL)
+	}
+	return version, nil
+}
+
+// LinuxGetDownloadURL returns the download URL for the given version and plugin.
+func LinuxGetDownloadURL(plugin, version string) (url string, err error) {
+	var assets []string
+	assets, err = LinuxDownloadReleaseAssets(version)
+	if err != nil {
+		return
 	}
 
 	var wantAsset string
@@ -39,11 +69,12 @@ func LinuxGetDownloadURL(plugin, version string) (string, error) {
 	case AmazonLinux:
 		wantAsset = "gomlx_xlabuilder_linux_amd64_amazonlinux.tar.gz"
 	default:
-		return "", errors.Errorf("version validation not implemented for plugin %q in version %s", plugin, version)
+		err = errors.Errorf("version validation not implemented for plugin %q in version %s", plugin, version)
+		return
 	}
-	for _, asset := range assets {
-		if strings.HasSuffix(asset, wantAsset) {
-			return asset, nil
+	for _, assetURL := range assets {
+		if strings.HasSuffix(assetURL, wantAsset) {
+			return assetURL, nil
 		}
 	}
 	return "", errors.Errorf("Plugin %q version %q doesn't seem to have the required asset (%q) -- assets found: %v", plugin, version, wantAsset, assets)
@@ -51,11 +82,8 @@ func LinuxGetDownloadURL(plugin, version string) (string, error) {
 
 // LinuxDownloadReleaseAssets downloads the list of assets available for the given Gopjrt release version.
 func LinuxDownloadReleaseAssets(version string) ([]string, error) {
-	// Construct release URL based on version
-	releaseURL := "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
-	if version != "latest" {
-		releaseURL = fmt.Sprintf("https://api.github.com/repos/gomlx/gopjrt/releases/tags/%s", *flagVersion)
-	}
+	// Construct release URL based on the version -- "latest" is not supported at this point.
+	releaseURL := fmt.Sprintf("https://api.github.com/repos/gomlx/gopjrt/releases/tags/%s", version)
 
 	// Make HTTP request
 	resp, err := http.Get(releaseURL)
@@ -93,7 +121,11 @@ func LinuxDownloadReleaseAssets(version string) ([]string, error) {
 
 // LinuxInstall the assets on the target directory.
 func LinuxInstall() error {
-	assetURL, err := LinuxGetDownloadURL(*flagPlugin, *flagVersion)
+	version, err := LinuxGetLatestVersion()
+	if err != nil {
+		return err
+	}
+	assetURL, err := LinuxGetDownloadURL(*flagPlugin, version)
 	if err != nil {
 		return err
 	}
@@ -105,11 +137,12 @@ func LinuxInstall() error {
 	}
 
 	// Download the asset to a temporary file.
-	downloadedFile, err := DownloadURLToTemp(assetURL, "gopjrt_download.*")
+	sha256hash := "" // TODO: no hash for github releases. Is there a way to get them (or get a hardcoded table for all versions?)
+	downloadedFile, inCache, err := DownloadURLToTemp(assetURL, fmt.Sprintf("gopjrt_xlabuilder_%s.tar.gz", version), sha256hash)
 	if err != nil {
 		return err
 	}
-	if !klog.V(1).Enabled() {
+	if !inCache {
 		defer func() { ReportError(os.Remove(downloadedFile)) }()
 	}
 
@@ -143,6 +176,8 @@ func LinuxInstall() error {
 		return errors.Wrap(err, "failed to read list of extracted files")
 	}
 	fmt.Print(string(fileContents))
+
+	fmt.Printf("\n✅ Installed Gopjrt %s libraries and cpu (%s) PJRT to %s\n\n", version, *flagPlugin, installPath)
 
 	return nil
 }

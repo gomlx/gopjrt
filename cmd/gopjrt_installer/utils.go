@@ -2,6 +2,9 @@ package main
 
 import (
 	"archive/zip"
+	"crypto/sha256"
+	"encoding/hex"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +18,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
+
+var flagCache = flag.Bool("cache", true, "Use cache to store downloaded files. It defaults to ")
 
 // ReportError prints an error if it is not nil, but otherwise does nothing.
 func ReportError(err error) {
@@ -57,63 +62,139 @@ func ReplaceTildeInDir(dir string) string {
 }
 
 // DownloadURLToTemp downloads a file from a given URL to a temporary file.
-// It displays a spinner while downloading, and outputs some information about the download.
-func DownloadURLToTemp(url, tempFileNamePattern string) (filePath string, err error) {
+//
+// It displays a spinner while downloading and outputs some information about the download.
+//
+// If -cache is set (the default) it will save file in a cache directory, and try to reuse it if already downloaded.
+//
+// If wantSHA256 is not empty, it will verify the hash of the downloaded file.
+func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cached bool, err error) {
 	// Download the asset to a temporary file
-	var tmpFile *os.File
-	tmpFile, err = os.CreateTemp("", tempFileNamePattern)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create temporary file")
-	}
-	filePath = tmpFile.Name()
-	defer func() {
-		// If an error was returned, remove the temporary file.
-		if err != nil {
-			ReportError(os.Remove(filePath))
+	var (
+		downloadedFile *os.File
+		fileExists     bool
+	)
+
+	if *flagCache {
+		// Use XDG_CACHE_HOME if defined, otherwise ~/.cache
+		cacheDir := os.Getenv("XDG_CACHE_HOME")
+		if cacheDir == "" {
+			cacheDir = "~/.cache"
 		}
-	}()
+		cacheDir = ReplaceTildeInDir(cacheDir)
+		cacheDir = filepath.Join(cacheDir, "gopjrt")
 
-	var bytesDownloaded int64
-	spinnerErr := spinner.New().
-		Title(fmt.Sprintf("Downloading %s….", url)).
-		Action(func() {
-			var resp *http.Response
-			resp, err = http.Get(url)
+		// Create the cache directory if it doesn't exist.
+		if err = os.MkdirAll(cacheDir, 0755); err != nil {
+			return "", false, errors.Wrapf(err, "failed to create cache directory %s", cacheDir)
+		}
+
+		// Set the filePath, and checks if it already exists.
+		filePath = path.Join(cacheDir, fileName)
+		cached = true
+		if stat, err := os.Stat(filePath); err == nil {
+			fileExists = stat.Mode().IsRegular()
+		}
+
+		if !fileExists {
+			downloadedFile, err = os.Create(filePath)
 			if err != nil {
-				err = errors.Wrapf(err, "failed to download asset %s", url)
-				return
+				return "", false, errors.Wrapf(err, "failed to create cache file %s", filePath)
 			}
-			defer resp.Body.Close()
+		}
 
-			bytesDownloaded, err = io.Copy(tmpFile, resp.Body)
+	} else {
+		// Create a temporary file.
+		filePattern := fileName + ".*"
+		downloadedFile, err = os.CreateTemp("", filePattern)
+		if err != nil {
+			return "", false, errors.Wrap(err, "failed to create temporary file")
+		}
+		filePath = downloadedFile.Name()
+	}
+
+	var downloadedBytesStr string
+	if !fileExists {
+		// Actually download the file.
+		var bytesDownloaded int64
+		spinnerErr := spinner.New().
+			Title(fmt.Sprintf("Downloading %s….", url)).
+			Action(func() {
+				var resp *http.Response
+				resp, err = http.Get(url)
+				if err != nil {
+					err = errors.Wrapf(err, "failed to download asset %s", url)
+					return
+				}
+				defer resp.Body.Close()
+
+				bytesDownloaded, err = io.Copy(downloadedFile, resp.Body)
+				if err != nil {
+					err = errors.Wrapf(err, "failed to write asset %s to temporary file %s", url, downloadedFile.Name())
+					return
+				}
+				ReportError(downloadedFile.Close())
+			}).
+			Run()
+		if spinnerErr != nil {
+			err = errors.Wrapf(spinnerErr, "failed run spinner for download from %s", url)
+			return
+		}
+		if err != nil {
+			return "", false, err
+		}
+
+		// Print the downloaded size
+		switch {
+		case bytesDownloaded < 1024:
+			downloadedBytesStr = fmt.Sprintf("%d B", bytesDownloaded)
+		case bytesDownloaded < 1024*1024:
+			downloadedBytesStr = fmt.Sprintf("%.1f KB", float64(bytesDownloaded)/1024)
+		case bytesDownloaded < 1024*1024*1024:
+			downloadedBytesStr = fmt.Sprintf("%.1f MB", float64(bytesDownloaded)/(1024*1024))
+		default:
+			downloadedBytesStr = fmt.Sprintf("%.1f GB", float64(bytesDownloaded)/(1024*1024*1024))
+		}
+	}
+
+	// Verify SHA256 hash if provided
+	verifiedStatus := ""
+	if wantSHA256 != "" {
+		// Open the file for reading.
+		f, err := os.Open(filePath)
+		if err != nil {
+			return "", false, errors.Wrap(err, "failed to open file for hash verification")
+		}
+		defer func() { ReportError(f.Close()) }()
+
+		// Calculate SHA256 hash using 1MB buffer
+		hasher := sha256.New()
+		buffer := make([]byte, 1024*1024) // 1MB buffer
+		for {
+			n, err := f.Read(buffer)
+			if n > 0 {
+				hasher.Write(buffer[:n])
+			}
+			if err == io.EOF {
+				break
+			}
 			if err != nil {
-				err = errors.Wrapf(err, "failed to write asset %s to temporary file %s", url, tmpFile.Name())
-				return
+				return "", false, errors.Wrap(err, "failed to read file for hash verification")
 			}
-			ReportError(tmpFile.Close())
-		}).
-		Run()
-	if spinnerErr != nil {
-		err = errors.Wrapf(spinnerErr, "failed run spinner for download from %s", url)
-		return
-	}
-	if err != nil {
-		return "", err
+		}
+
+		actualHash := hex.EncodeToString(hasher.Sum(nil))
+		if actualHash != wantSHA256 {
+			return "", false, errors.Errorf("SHA256 hash mismatch for %s: expected %q, got %q", filePath, wantSHA256, actualHash)
+		}
+		verifiedStatus = " (hash checked)"
 	}
 
-	// Print the downloaded size
-	bytesStr := ""
-	switch {
-	case bytesDownloaded < 1024:
-		bytesStr = fmt.Sprintf("%d B", bytesDownloaded)
-	case bytesDownloaded < 1024*1024:
-		bytesStr = fmt.Sprintf("%.1f KB", float64(bytesDownloaded)/1024)
-	case bytesDownloaded < 1024*1024*1024:
-		bytesStr = fmt.Sprintf("%.1f MB", float64(bytesDownloaded)/(1024*1024))
-	default:
-		bytesStr = fmt.Sprintf("%.1f GB", float64(bytesDownloaded)/(1024*1024*1024))
+	if fileExists {
+		fmt.Printf("- Reusing %s from cache%s\n", filePath, verifiedStatus)
+	} else {
+		fmt.Printf("- Downloaded %s to %s%s\n", downloadedBytesStr, filePath, verifiedStatus)
 	}
-	fmt.Printf("- Downloaded %s to %s\n", bytesStr, filePath)
 	return
 }
 
@@ -197,6 +278,8 @@ func ExtractDirFromZip(zipFilePath, dirInZipFile, outputPath string) error {
 }
 
 // extractZipFile is a helper to perform the actual extraction
+//
+// It adds execution permissions to the file if it is in the bin directory.
 func extractZipFile(f *zip.File, outputPath string) error {
 	rc, err := f.Open()
 	if err != nil {
@@ -213,5 +296,15 @@ func extractZipFile(f *zip.File, outputPath string) error {
 
 	// Copy the contents
 	_, err = io.Copy(outFile, rc)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Make file executable if in bin directory
+	if strings.Contains(outputPath, "/bin/") {
+		if err := os.Chmod(outputPath, 0755); err != nil {
+			return err
+		}
+	}
+	return nil
 }

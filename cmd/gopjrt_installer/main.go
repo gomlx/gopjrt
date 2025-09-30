@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,33 +16,47 @@ import (
 const AmazonLinux = "amazonlinux"
 
 var (
-	pluginValues = []string{"linux", AmazonLinux, "cuda12", "cuda13"}
-	flagPlugin   = flag.String("plugin", "",
+	pluginValues       = []string{"linux", AmazonLinux, "cuda12", "cuda13"}
+	pluginDescriptions = []string{
+		"cpu  (Linux/amd64)",
+		"cpu  (AmazonLinux/amd64, older libc)",
+		"cuda (for Linux/amd64, using CUDA 12)",
+		"cuda (for Linux/amd64, using CUDA 13)",
+	}
+	flagPlugin = flag.String("plugin", "",
 		fmt.Sprintf("PJRT plugin to install, one of: %s. "+
 			"The CUDA plugins will download the PJRT and Nvidia drivers included in Jax distribution for "+
 			"pypi.org (but it doesn't use Python to install them)", strings.Join(pluginValues, ", ")))
 
-	pathSuggestions = []string{"/usr/local/", "~/.local"}
-	flagPath        = flag.String("path", "~/.local",
-		fmt.Sprintf("Path where the PJRT plugin will be installed. "+
-			"It will create a sub-directory gomlx/prjt for the PJRT plugin, and in case of CUDA plugins, gomlx/nvidia for "+
-			"Nvidia's matching drivers. Suggestions: %s. It will require the adequate privileges if installing in system directories.",
-			strings.Join(pathSuggestions, ", ")))
+	installPathSuggestions = []string{"/usr/local/", "~/.local"}
+	flagPath               = flag.String("path", "~/.local",
+		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
+			"It installs files under lib/ and include/ subdirectories. "+
+			"For the PJRT plugins it creates a sub-directory lib/gomlx/prjt, and in case of CUDA plugins, gomlx/nvidia for "+
+			"Nvidia's matching drivers. Suggestions: %s. "+
+			"It will require the adequate privileges (sudo) if installing in a system directories.",
+			strings.Join(installPathSuggestions, ", ")))
 
 	flagVersion = flag.String("version", "latest",
 		"The version of the PJRT plugin to install. It defaults to the latest version.")
 )
 
 func main() {
+	// Initialize and set default values for flags
 	klog.InitFlags(nil)
+	installPathSuggestions = DefaultInstallPaths()
+	*flagPath = installPathSuggestions[0]
+
+	// Parse flags.
 	flag.Parse()
 
 	if *flagPlugin == "" || *flagPath == "" || *flagVersion == "" {
 		questions := []Question{
-			{Name: "Plugin to install", Flag: flag.CommandLine.Lookup("plugin"), Values: pluginValues, CustomValues: false},
+			{Name: "Plugin to install", Flag: flag.CommandLine.Lookup("plugin"),
+				Values: pluginValues, ValuesDescriptions: pluginDescriptions, CustomValues: false},
 			{Name: "Plugin version", Flag: flag.CommandLine.Lookup("version"), Values: []string{"latest"}, CustomValues: true,
 				ValidateFn: ValidateVersion},
-			{Name: "Path where to install", Flag: flag.CommandLine.Lookup("path"), Values: pathSuggestions, CustomValues: true,
+			{Name: "Path where to install", Flag: flag.CommandLine.Lookup("path"), Values: installPathSuggestions, CustomValues: true,
 				ValidateFn: ValidatePathPermission},
 		}
 		err := Interact(os.Args[0], questions)
@@ -58,6 +74,8 @@ func main() {
 	switch pluginName {
 	case "linux", AmazonLinux:
 		err = LinuxInstall()
+	case "cuda12", "cuda13":
+		err = CudaInstall()
 	default:
 		err = errors.Errorf("plugin %q installation not implemented", pluginName)
 	}
@@ -66,11 +84,36 @@ func main() {
 	}
 }
 
-func ValidateVersion() error {
-	if *flagPlugin == "linux" || *flagPlugin == AmazonLinux {
-		return LinuxValidateVersion()
+// DefaultInstallPaths is called before parsing of the flags to set the available installation paths, as well as
+// setting the default one.
+func DefaultInstallPaths() []string {
+	currentUser, err := user.Current()
+	if err != nil {
+		klog.Errorf("Failed to get current user: %v", err)
+		return []string{"~/.local", "/usr/local"}
 	}
-	return errors.Errorf("version validation not implemented for plugin %q", *flagPlugin)
+
+	switch runtime.GOOS {
+	case "darwin":
+		return []string{
+			filepath.Join(currentUser.HomeDir, "Library/Application Support"),
+			"/usr/local",
+		}
+	default: // Assuming Linux
+		return []string{"~/.local", "/usr/local"}
+	}
+}
+
+// ValidateVersion is called to validate the version of the plugin chosen by the user during the interactive mode.
+func ValidateVersion() error {
+	switch *flagPlugin {
+	case "linux", AmazonLinux:
+		return LinuxValidateVersion()
+	case "cuda12", "cuda13":
+		return CudaValidateVersion()
+	default:
+		return errors.Errorf("version validation not implemented for plugin %q", *flagPlugin)
+	}
 }
 
 func ValidatePathPermission() error {

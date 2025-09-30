@@ -33,6 +33,9 @@ type Question struct {
 	// Valid values.
 	Values []string
 
+	// ValuesDescriptions is a list of descriptions for each value. Optional.
+	ValuesDescriptions []string
+
 	// CustomValues indicates whether this flag accepts arbitrary custom values
 	CustomValues bool
 
@@ -96,8 +99,12 @@ func Interact(command string, questions []Question) error {
 		displayCommandFn()
 		question := questions[questionIdx]
 		options := make([]huh.Option[string], 0, len(question.Values)+1)
-		for _, v := range question.Values {
-			options = append(options, huh.NewOption(v, v))
+		for i, value := range question.Values {
+			optionKey := value
+			if len(question.ValuesDescriptions) > i {
+				optionKey = question.ValuesDescriptions[i]
+			}
+			options = append(options, huh.NewOption(optionKey, value))
 		}
 		if question.CustomValues {
 			options = append(options, huh.NewOption(lipgloss.NewStyle().Italic(true).Render("…  other …"), ReservedCustomValue))

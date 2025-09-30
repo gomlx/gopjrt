@@ -10,12 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
-// LinuxValidateVersion checks whether the linux version selected in -version exists.
+// LinuxValidateVersion checks whether the linux version selected by "-version" exists.
 func LinuxValidateVersion() error {
 	// "latest" is always valid.
 	if *flagVersion == "latest" {
@@ -105,55 +104,14 @@ func LinuxInstall() error {
 		return errors.Wrap(err, "failed to create install directory")
 	}
 
-	// Download the asset to a temporary file
-	tmpFile, err := os.CreateTemp("", "gopjrt_*.tar.gz")
-	if err != nil {
-		return errors.Wrap(err, "failed to create temporary file")
-	}
-	if !klog.V(1).Enabled() {
-		defer os.Remove(tmpFile.Name())
-	}
-
-	var bytesDownloaded int64
-	spinnerErr := spinner.New().
-		Title(fmt.Sprintf("Downloading %s….", assetURL)).
-		Action(func() {
-			var resp *http.Response
-			resp, err = http.Get(assetURL)
-			if err != nil {
-				err = errors.Wrapf(err, "failed to download asset %s", assetURL)
-				return
-			}
-			defer resp.Body.Close()
-
-			bytesDownloaded, err = io.Copy(tmpFile, resp.Body)
-			if err != nil {
-				err = errors.Wrapf(err, "failed to write asset %s to temporary file %s", assetURL, tmpFile.Name())
-				return
-			}
-			tmpFile.Close()
-		}).
-		Run()
-	if spinnerErr != nil {
-		return errors.Wrapf(spinnerErr, "failed run asset download from %s", assetURL)
-	}
+	// Download the asset to a temporary file.
+	downloadedFile, err := DownloadURLToTemp(assetURL, "gopjrt_download.*")
 	if err != nil {
 		return err
 	}
-
-	// Print the downloaded size
-	bytesStr := ""
-	switch {
-	case bytesDownloaded < 1024:
-		bytesStr = fmt.Sprintf("%d B", bytesDownloaded)
-	case bytesDownloaded < 1024*1024:
-		bytesStr = fmt.Sprintf("%.1f KB", float64(bytesDownloaded)/1024)
-	case bytesDownloaded < 1024*1024*1024:
-		bytesStr = fmt.Sprintf("%.1f MB", float64(bytesDownloaded)/(1024*1024))
-	default:
-		bytesStr = fmt.Sprintf("%.1f GB", float64(bytesDownloaded)/(1024*1024*1024))
+	if !klog.V(1).Enabled() {
+		defer func() { ReportError(os.Remove(downloadedFile)) }()
 	}
-	fmt.Printf("- Downloaded %s to %s\n", bytesStr, tmpFile.Name())
 
 	// Create a temporary file to store the extracted files list.
 	listFile, err := os.CreateTemp("", "gopjrt_list_files.*")
@@ -161,12 +119,12 @@ func LinuxInstall() error {
 		return errors.Wrap(err, "failed to create list file")
 	}
 	if !klog.V(1).Enabled() {
-		defer os.Remove(listFile.Name())
+		defer func() { ReportError(os.Remove(listFile.Name())) }()
 	}
 
 	// Extract files
-	fmt.Printf("- Extracting files in %s to %s\n", tmpFile.Name(), installPath)
-	cmd := exec.Command("tar", "xvzf", tmpFile.Name(), "-C", installPath)
+	fmt.Printf("- Extracting files in %s to %s\n", downloadedFile, installPath)
+	cmd := exec.Command("tar", "xvzf", downloadedFile, "-C", installPath)
 	cmd.Stdout = listFile
 	klog.V(1).Infof("Running command: %v > %s", cmd.Args, listFile.Name())
 	if err := cmd.Run(); err != nil {

@@ -20,7 +20,7 @@ var (
 	pluginDescriptions = []string{
 		"cpu  (Linux/amd64)",
 		"cpu  (AmazonLinux/amd64, older libc)",
-		"cuda (for Linux/amd64, using CUDA 12)",
+		"cuda (for Linux/amd64, using CUDA 12, deprecated)",
 		"cuda (for Linux/amd64, using CUDA 13)",
 	}
 	flagPlugin = flag.String("plugin", "",

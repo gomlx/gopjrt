@@ -1,5 +1,16 @@
 # Gopjrt Changelog
 
+# Next
+
+* New `github.com/gomlx/gopjrt/cmd/gopjrt_installer` command-line tool to install Gopjrt plugins.
+  - Doesn't do sudo by itself.
+  - Doesn't depend on Python for CUDA plugins (automatic dependency traversing; sha256 checking).
+  - Interactive, self-explained mode.
+  - Optional version specification (both for Gopjrt and for CUDA PJRT).
+  - All versions in one tool.
+  - Faster
+  - Doesn't download unnecessary jax files.* 
+
 # v0.8.2 - 2025/09/29 Updated CUDA drivers
 
 * Updated PJRT's `pjrt_c_api.h` and protos from github.com/openxla/xla, and regenerated wrapper code.

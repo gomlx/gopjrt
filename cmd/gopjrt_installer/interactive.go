@@ -119,7 +119,7 @@ func Interact(command string, questions []Question) error {
 		value := question.Flag.Value.String()
 		selection := huh.NewSelect[string]().
 			Title(fmt.Sprintf("(%d of %d) - %s", questionIdx+1, len(questions), question.Name)).
-			Description(question.Flag.Usage).
+			Description(question.Flag.Usage + "\n").
 			Options(options...).
 			Value(&value)
 		form := huh.NewForm(huh.NewGroup(selection)).

@@ -22,6 +22,10 @@ func LinuxValidateVersion() error {
 	}
 
 	_, err := LinuxGetDownloadURL(*flagPlugin, *flagVersion)
+	if err != nil {
+		return errors.WithMessagef(err, "can't fetch PJRT plugin from Gopjrt version %q, see "+
+			"https://github.com/gomlx/gopjrt/releases for a list of release versions to choose from", *flagVersion)
+	}
 	return err
 }
 

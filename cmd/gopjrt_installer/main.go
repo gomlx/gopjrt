@@ -55,11 +55,11 @@ func main() {
 
 	if *flagPlugin == "" || *flagPath == "" || *flagVersion == "" {
 		questions := []Question{
-			{Name: "Plugin to install", Flag: flag.CommandLine.Lookup("plugin"),
+			{Title: "Plugin to install", Flag: flag.CommandLine.Lookup("plugin"),
 				Values: pluginValues, ValuesDescriptions: pluginDescriptions, CustomValues: false},
-			{Name: "Plugin version", Flag: flag.CommandLine.Lookup("version"), Values: []string{"latest"}, CustomValues: true,
+			{Title: "Plugin version", Flag: flag.CommandLine.Lookup("version"), Values: []string{"latest"}, CustomValues: true,
 				ValidateFn: ValidateVersion},
-			{Name: "Path where to install", Flag: flag.CommandLine.Lookup("path"), Values: installPathSuggestions, CustomValues: true,
+			{Title: "Path where to install", Flag: flag.CommandLine.Lookup("path"), Values: installPathSuggestions, CustomValues: true,
 				ValidateFn: ValidatePathPermission},
 		}
 		err := Interact(os.Args[0], questions)
@@ -152,7 +152,7 @@ func ValidatePathPermission() error {
 		if err != nil {
 			return errors.Wrapf(err, "no write permission in directory %q, do you need \"sudo\" ?", dir)
 		}
-		f.Close()
+		ReportError(f.Close())
 
 		// Clean up test file
 		if err = os.Remove(testFile); err != nil {

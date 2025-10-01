@@ -25,7 +25,7 @@ var (
 )
 
 type Question struct {
-	Name string
+	Title string
 
 	// Flag of type string with default value (if any) and usage description.
 	Flag *flag.Flag
@@ -118,7 +118,7 @@ func Interact(command string, questions []Question) error {
 		}
 		value := question.Flag.Value.String()
 		selection := huh.NewSelect[string]().
-			Title(fmt.Sprintf("(%d of %d) - %s", questionIdx+1, len(questions), question.Name)).
+			Title(fmt.Sprintf("(%d of %d) - %s", questionIdx+1, len(questions), question.Title)).
 			Description(question.Flag.Usage + "\n").
 			Options(options...).
 			Value(&value)
@@ -142,7 +142,7 @@ func Interact(command string, questions []Question) error {
 		if question.CustomValues && value == ReservedCustomValue {
 			value = ""
 			err = huh.NewInput().
-				Title(question.Name).
+				Title(question.Title).
 				Description(question.Flag.Usage).
 				Value(&value).
 				WithTheme(theme).
@@ -169,7 +169,7 @@ func Interact(command string, questions []Question) error {
 			}
 			if validationErr != nil {
 				err := huh.NewConfirm().
-					Title(question.Name).
+					Title(question.Title).
 					Description(validationErr.Error()).
 					Affirmative("Ok").
 					Negative("").Run()

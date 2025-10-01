@@ -177,7 +177,7 @@ func LinuxInstall() error {
 	}
 	fmt.Print(string(fileContents))
 
-	fmt.Printf("\n✅ Installed Gopjrt %s libraries and cpu (%s) PJRT to %s\n\n", version, *flagPlugin, installPath)
+	fmt.Printf("\n✅ Installed Gopjrt %s libraries and \"cpu\" PJRT to %s (%s platform)\n\n", version, installPath, *flagPlugin)
 
 	return nil
 }

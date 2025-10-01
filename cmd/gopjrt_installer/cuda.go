@@ -38,7 +38,11 @@ func CudaInstall() error {
 		return err
 	}
 
-	fmt.Printf("\n✅ Installed %s PJRT version %s and the required Nvidia libraries\n\n", *flagPlugin, version)
+	cudaVersion := "13"
+	if *flagPlugin == "cuda12" {
+		cudaVersion = "12"
+	}
+	fmt.Printf("\n✅ Installed \"cuda\" PJRT and Nvidia libraries based on Jax version %s and CUDA version %s\n\n", version, cudaVersion)
 	return nil
 }
 

@@ -16,17 +16,18 @@ import (
 const AmazonLinux = "amazonlinux"
 
 var (
-	pluginValues       = []string{"linux", AmazonLinux, "cuda12", "cuda13"}
+	pluginValues       = []string{"linux", AmazonLinux, "cuda13", "cuda12"}
 	pluginDescriptions = []string{
-		"cpu  (Linux/amd64)",
-		"cpu  (AmazonLinux/amd64, older libc)",
-		"cuda (for Linux/amd64, using CUDA 12, deprecated)",
-		"cuda (for Linux/amd64, using CUDA 13)",
+		"XlaBuilder + CPU PJRT (Linux/amd64)",
+		"XlaBuilder + CPU PJRT (AmazonLinux/amd64, older libc)",
+		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
+		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)",
 	}
 	flagPlugin = flag.String("plugin", "",
-		fmt.Sprintf("PJRT plugin to install, one of: %s. "+
-			"The CUDA plugins will download the PJRT and Nvidia drivers included in Jax distribution for "+
-			"pypi.org (but it doesn't use Python to install them)", strings.Join(pluginValues, ", ")))
+		fmt.Sprintf("PJRT plugin to install, one of: %s. ", strings.Join(pluginValues, ", "))+
+			"To use XLA one needs the XlaBuilder installed (\"linux\" or \""+AmazonLinux+"\"). Optionally, one can also "+
+			"install a CUDA PJRT. The CUDA PJRT will also download matching Nvidia libraries required for it to work -- "+
+			"it is based on the Jax distribution for pypi.org (but it doesn't use Python to install them).")
 
 	installPathSuggestions = []string{"/usr/local/", "~/.local"}
 	flagPath               = flag.String("path", "~/.local",
@@ -38,7 +39,9 @@ var (
 			strings.Join(installPathSuggestions, ", ")))
 
 	flagVersion = flag.String("version", "latest",
-		"The version of the PJRT plugin to install. It defaults to the latest version.")
+		"For \"linux\" or \""+AmazonLinux+"\" this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.2). "+
+			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), which is where it "+
+			"downloads the plugin and Nvidia libraries from.")
 )
 
 func main() {

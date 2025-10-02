@@ -105,29 +105,20 @@ it uses the one from the Jax distributed binaries, extracted from Jax and Nvidia
 ## Installing
 
 GoPJRT requires a C library installed for XlaBuilder and one or more "PJRT plugin" modules (the thing that actually does the JIT compilation
-of your computation graph).
-
-It provides a small friendly Go program to interactively do the installation for you:
+of your computation graph). To facilitate, it provides an interactive and self-explanatory installer (it comes with lots of help messages):
 
 ```bash
 go run github.com/gomlx/gopjrt/cmd/gopjt_installer
 ```
 
-You will need to install the CPU PJRT plugin ("linux" or "amazonlinux" depending mostly on the libc version of your Linux distribution).
-And then optionally, install the CUDA PJRT plugin and accompaining NVidia libraries ("cuda13" there, or "cuda12" for older installations).
-
-The `gopjrt_installer` program is self-explanatory (it comes with lots of help messages), and you can choose where to
-to install the files, as well as which version to install (the default is the latest release).
-
-Once you know how you want to install it, you can also provide directly the flags and it will directly install what you
-request (so it can be use in Dockerfiles).
+You can also provide directly the flags you want to avoid the interactive mode (so it can be used in Dockerfiles).
 
 > [!NOTE]
 > For now it only works for Linux/amd64 (or Windows+WSL) and NVidia CUDA. 
 > I managed to write for Darwin(macOS) before, but not having easy access to a Mac to maintain it, eventually I dropped it.
 > I would also love to support AMD ROCm, but again I don't have easy access to hardwre to test/maintain it.
 > If you feel like contributing, or donating hardware/cloud credits, please contact me.
-
+  
 There are also some older bash install scripts under [`github.com/gomlx/gopjrt/cmd`](https://github.com/gomlx/gopjrt/tree/main/cmd),
 but they are deprecated and eventually will be removed in a few versions. Let me know if you need them.
 

@@ -10,9 +10,9 @@ require (
 	github.com/janpfeifer/gonb v0.11.1
 	github.com/janpfeifer/must v0.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/x448/float16 v0.8.4
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/protobuf v1.36.10
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -21,6 +21,7 @@ require (
 	github.com/dmarkham/enumer v1.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/gomlx/stablehlo v0.0.6 // indirect
 	github.com/pascaldekloe/name v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/streadway/quantile v0.0.0-20220407130108-4246515d968d // indirect

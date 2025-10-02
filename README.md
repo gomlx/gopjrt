@@ -66,6 +66,31 @@ for TPUs (Google's accelerator),
 GPUs (Nvidia is well-supported; there are AMD and Intel's PJRT plugins, but not tested)
 and others are in development.
 
+## Example
+
+```go
+var flagPluginName = flag.String("plugin", "cuda", "PRJT plugin name or full path")
+...
+plugin, err := pjrt.GetPlugin(*flagPluginName)
+client, err := plugin.NewClient(nil)
+executor, err := client.Compile().WithStableHLO(stablehloCode).Done()
+for ii, value := range []float32{minX, minY, maxX, maxY} {
+   inputs[ii], err = pjrt.ScalarToBuffer(m.client, value)
+}
+outputs, err := m.exec.Execute(inputs...).Done()
+flat, err := pjrt.BufferToArray[float32](outputs[0])
+outputs[0].Destroy() // Don't wait for the GC, destroy the buffer immediately.
+...
+```
+
+See [mandelbrot.ipynb notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb) 
+with an example building the computation for a Mandelbrot image using `stablehlo`, 
+it includes a sample of the computation's StableHLO IR .
+
+<a href="https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb">
+<img src="https://github.com/gomlx/gopjrt/assets/7460115/d7100980-e731-438d-961e-711f04d4425e" style="width:400px; height:240px"/>
+</a>
+
 ## How to use it ?
 
 The main package is [`github.com/gomlx/gopjrt/pjrt`](https://pkg.go.dev/github.com/gomlx/gopjrt/pjrt), and we'll refer to it as simply `pjrt`.

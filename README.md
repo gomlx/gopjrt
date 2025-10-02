@@ -148,7 +148,7 @@ You can also directly provide the flags you want to avoid the interactive mode (
 There are also some older bash install scripts under [`github.com/gomlx/gopjrt/cmd`](https://github.com/gomlx/gopjrt/tree/main/cmd),
 but they are deprecated and eventually will be removed in a few versions. Let me know if you need them.
 
-### Building C/C++ dependencies
+## Building C/C++ dependencies
 
 If you want to build from scratch (both `xlabuilder` and `pjrt` dependencies), go to the `c/` subdirectory
 and run `basel.sh`.

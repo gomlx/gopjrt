@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.8.3 - 2025/10/02 New gopjrt_installer -- but not changes.
 
 * New `github.com/gomlx/gopjrt/cmd/gopjrt_installer` command-line tool to install Gopjrt plugins.
   - Doesn't do sudo by itself.
@@ -10,12 +10,14 @@
   - All versions in one tool.
   - Faster
   - Doesn't download unnecessary jax files.* 
+* Updated README.md, with links to `gopjrt_installer` for installation.
+  * Moved `xlabuilder` documentation under `xlabuilder/README.md`, and marked it as deprecated.
 
 # v0.8.2 - 2025/09/29 Updated CUDA drivers
 
 * Updated PJRT's `pjrt_c_api.h` and protos from github.com/openxla/xla, and regenerated wrapper code.
 * Added `cmd/install_cuda13.sh` script to install "jax\[cuda13\]" drivers.
-* Updated README.md to start adverstising of `xlabuilder` deprecation.  
+* Updated README.md to start advertising of `xlabuilder` deprecation.  
 * Moved `pjrt.SuppressAbseilLoggingHack` implementation to the "per-platform" files `pjrt/dynamiclib_posix.go` and 
   `pjrt/dynamiclib_darwin.go`: the first using `syscall.Dup3()` and the second using `syscall.Dup2()`.
 

@@ -46,14 +46,14 @@ It must be provided in an IR (intermediate representation) that is understood by
 A few ways to create the computation graph IR:
 
 1. [github.com/gomlx/stablehlo](https://github.com/gomlx/stablehlo?tab=readme-ov-file): [StableHLO](https://openxla.org/stablehlo)
-is the current preferred IR language for XLA PJRT. This library (co-developed with **Gopjrt**) is a Go API for building
-computation graphs in StableHLO, that can be directly fed to *Gopjrt*. See examples below.
+is the current preferred IR language for XLA PJRT. This library (co-developed with **GoPJRT**) is a Go API for building
+computation graphs in StableHLO, that can be directly fed to *GoPJRT*. See examples below.
 2. [github.com/gomlx/gopjtr/xlabuilder](https://github.com/gomlx/gopjrt/tree/main/xlabuilder):
 This is a wrapper Go library to an XLA C++ library that generates the previous IR (called MHLO).
-It is still supported by XLA and by **Gopjrt**, but it is being deprecated.
+It is still supported by XLA and by **GoPJRT**, but it is being deprecated.
 3. Using Jax, Tensorflow, PyTorchXLA: Jax/Tensorflow/PyTorchXLA can output the StableHLO of JIT compiled functions, 
 that can be fed directly to PJRT (as text). We don't detail this here, but the authors did this a lot during
-development of **Gopjrt**, [github.com/gomlx/stablehlo](https://github.com/gomlx/stablehlo?tab=readme-ov-file) and 
+development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx/stablehlo?tab=readme-ov-file) and 
 [github.com/gomlx/gopjtr/xlabuilder](https://github.com/gomlx/gopjrt/tree/main/xlabuilder) for testing.
 
 > [!NOTE]

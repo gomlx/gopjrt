@@ -10,8 +10,8 @@
 ## Why use GoPJRT ?
 
 GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize and **accelerate numeric 
-computations** (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
-It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
+computations** (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (Nvidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
+It can be used to power Machine Learning frameworks (e.g. [GoMLX](https://github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
 And because [Jax](https://docs.jax.dev/en/latest/), [TensorFlow](https://www.tensorflow.org/) and 
@@ -28,15 +28,15 @@ GoPJRT is not very ergonomic (error handling everywhere), but it's expected to b
 other projects to create a friendlier API on top. The same way [Jax](https://jax.readthedocs.io/en/latest/) is a Python friendlier API
 on top of XLA/PJRT.
 
-One such friendlier API co-developed with GoPJRT is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx).
+One such friendlier API co-developed with GoPJRT is [GoMLX, a Go machine learning framework](https://github.com/gomlx/gomlx).
 But GoPJRT may be used as a standalone, for lower level access to XLA and other accelerator use cases—like running
-Jax functions in Go, maybe an accelerated image processing or scientific simulation pipeline.
+Jax functions in Go, maybe an "accelerated" image processing or scientific simulation pipeline.
 
 ## What is what?
 
-"**PJRT**" stands for "Pretty much Just another RunTime".
+"**PJRT**" stands for "Pretty much Just another RunTime."
 
-It is the heart of the OpenXLA project: it takes an IR (intermediate representation) of a "computation graph," JIT (Just-In-Time) compiles it
+It is the heart of the OpenXLA project: it takes an IR (intermediate representation) of the "computation graph," JIT (Just-In-Time) compiles it
 (once) and executes it fast (many times). 
 See the [Google's "PJRT: Simplifying ML Hardware and Framework Integration"](https://opensource.googleblog.com/2023/05/pjrt-simplifying-ml-hardware-and-framework-integration.html) blog post.
 
@@ -47,11 +47,11 @@ A few ways to create the computation graph IR:
 
 1. [github.com/gomlx/stablehlo](https://github.com/gomlx/stablehlo?tab=readme-ov-file): [StableHLO](https://openxla.org/stablehlo)
 is the current preferred IR language for XLA PJRT. This library (co-developed with **GoPJRT**) is a Go API for building
-computation graphs in StableHLO, that can be directly fed to *GoPJRT*. See examples below.
+computation graphs in StableHLO that can be directly fed to *GoPJRT*. See examples below.
 2. [github.com/gomlx/gopjtr/xlabuilder](https://github.com/gomlx/gopjrt/tree/main/xlabuilder):
 This is a wrapper Go library to an XLA C++ library that generates the previous IR (called MHLO).
 It is still supported by XLA and by **GoPJRT**, but it is being deprecated.
-3. Using Jax, Tensorflow, PyTorchXLA: Jax/Tensorflow/PyTorchXLA can output the StableHLO of JIT compiled functions, 
+3. Using Jax, Tensorflow, PyTorchXLA: Jax/Tensorflow/PyTorchXLA can output the StableHLO of JIT compiled functions  
 that can be fed directly to PJRT (as text). We don't detail this here, but the authors did this a lot during
 development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx/stablehlo?tab=readme-ov-file) and 
 [github.com/gomlx/gopjtr/xlabuilder](https://github.com/gomlx/gopjrt/tree/main/xlabuilder) for testing.
@@ -61,11 +61,11 @@ development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx
 > Small ones are debuggable, or can be used to probe which operations are being used behind the scenes,
 > but definitely not friendly.
 
-A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux or `.dylib` in Darwin) that is able to JIT-compile
-an IR of your computation graph and executes it for a particular hardware. So there are PJRT plugins 
-for CPU (Linux/amd64 for now, and but likely it could be compiled for other CPUs -- SIMD/AVX is well-supported), 
+A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux or `.dylib` in Darwin). 
+Typically, there is one plugin per hardware you are supporting. E.g.: there are PJRT plugins 
+for CPU (Linux/amd64 for now, but likely it could be compiled for other CPUs -- SIMD/AVX are well-supported), 
 for TPUs (Google's accelerator), 
-GPUs (Nvidia is well-supported; there are AMD and Intel's PJRT plugins, but not tested)
+GPUs (Nvidia is well-supported; there are AMD and Intel's PJRT plugins, but they were not tested), 
 and others are in development.
 
 ## Example
@@ -89,10 +89,10 @@ outputs[0].Destroy() // Don't wait for the GC, destroy the buffer immediately.
 
 2. See [mandelbrot.ipynb notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb) 
 with an example building the computation for a Mandelbrot image using `stablehlo`, 
-it includes a sample of the computation's StableHLO IR .
+it includes a sample of the computation's StableHLO IR.
 
 <a href="https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb">
-<img src="https://github.com/gomlx/gopjrt/assets/7460115/d7100980-e731-438d-961e-711f04d4425e" style="width:400px; height:240px"/>
+<img alt="Mandelbrot fractal figure" src="https://github.com/gomlx/gopjrt/assets/7460115/d7100980-e731-438d-961e-711f04d4425e" style="width:400px; height:240px"/>
 </a>
 
 ## How to use it?
@@ -105,14 +105,14 @@ The `pjrt` package includes the following main concepts:
   It is the main entry point to the PJRT plugin.
 * `Client`: first thing created after loading a plugin. It seems one can create a singleton `Client` per plugin,
   it's not very clear to me why one would create more than one `Client`.
-* `LoadedExecutable`: Created when one calls `Client.Compile` a StableHLO program. It's the compiled/optimized/accelerated
-  code ready to run.
+* `LoadedExecutable`: Created when one calls `Client.Compile` a StableHLO program. The program is compiled and optimized
+  to the PJRT target hardware and made ready to run.
 * `Buffer`: Represents a buffer with the input/output data for the computations in the accelerators. There are 
   methods to transfer it to/from the host memory. They are the inputs and outputs of `LoadedExecutable.Execute`.
 
-PJRT plugins by default are loaded after the program is started  (using `dlopen`). 
+PJRT plugins by default are loaded after the program is started (using `dlopen`). 
 But there is also the option to pre-link the CPU PJRT plugin in your program. 
-For that, just import (as `_`) one of the following packages:
+For that, import (as `_`) one of the following packages:
 
 - `github.com/gomlx/gopjrt/pjrt/cpu/static`: pre-link the CPU PJRT statically, so you don't need to distribute
   a CPU PJRT with your program. But it's slower to build, potentially taking a few extra (annoying) seconds
@@ -125,10 +125,7 @@ While it uses CGO to dynamically load the plugin and call its C API, `pjrt` does
 to be installed.
 
 The project release includes pre-built CPU released for Linux/amd64 only now.
-It's been compiled for Macs before—I don't have easy access to a Apple Mac to maintain it.
-
-It also includes a install program (see section **Installing** bellow) for Linux/CUDA PJRT and for Nvidia GPU support (
-it uses the one from the Jax distributed binaries, extracted from Jax and Nvidia pip packages).
+It's been compiled for Macs before—I don't have easy access to an Apple Mac to maintain it.
 
 
 ## Installing
@@ -143,17 +140,17 @@ go run github.com/gomlx/gopjrt/cmd/gopjt_installer
 You can also directly provide the flags you want to avoid the interactive mode (so it can be used in scripts like Dockerfiles).
 
 > [!NOTE]
-> For now it only works for Linux/amd64 (or Windows+WSL) and NVidia CUDA. 
-> I managed to write for Darwin(macOS) before, but not having easy access to a Mac to maintain it, eventually I dropped it.
-> I would also love to support AMD ROCm, but again I don't have easy access to hardwre to test/maintain it.
-> If you feel like contributing, or donating hardware/cloud credits, please contact me.
+> For now it only works for Linux/amd64 (or Windows+WSL) and Nvidia CUDA. 
+> I managed to write for Darwin (macOS) before, but not having easy access to a Mac to maintain it, eventually I dropped it.
+> I would also love to support AMD ROCm, but again, I don't have easy access to hardwre to test/maintain it.
+> If you feel like contributing or donating hardware/cloud credits, please contact me.
   
 There are also some older bash install scripts under [`github.com/gomlx/gopjrt/cmd`](https://github.com/gomlx/gopjrt/tree/main/cmd),
 but they are deprecated and eventually will be removed in a few versions. Let me know if you need them.
 
 ### Building C/C++ dependencies
 
-If you want to build from scratch (both `xlabuilder` and `pjrt` dependencies), simply go to the `c/` subdirectory
+If you want to build from scratch (both `xlabuilder` and `pjrt` dependencies), go to the `c/` subdirectory
 and run `basel.sh`.
 It uses [Bazel](https://bazel.build/) due to its dependencies to OpenXLA/XLA.
 If not in one of the supported platforms, you will need to create a `xla_configure.OS_ARCH.bazelrc`
@@ -171,16 +168,16 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
 * **When is feature X from PJRT or XlaBuilder going to be supported ?**
   Yes, GoPJRT doesn't wrap everything—although it does cover the most common operations. 
   The simple ops and structs are auto-generated. But many require hand-writing.
-  Please if it is useful to your project, create an issue, I'm happy to add it. I focused on the needs of GoMLX, 
+  Please, if it is useful to your project, create an issue; I'm happy to add it. I focused on the needs of GoMLX, 
   but the idea is that it can serve other purposes, and I'm happy to support it.
-* **Why does PJRT spits out so much logging ? Can we disable it ?**
+* **Why does PJRT spit out so many logs? Can we disable it?**
   This is a great question ... imagine if every library we use decided they also want to clutter our stderr?
   I have [an open question in Abseil about it](https://github.com/abseil/abseil-cpp/discussions/1700).
   It may be some issue with [Abseil Logging](https://abseil.io/docs/python/guides/logging) which also has this other issue
   of not allowing two different linked programs/libraries to call its initialization (see [Issue #1656](https://github.com/abseil/abseil-cpp/issues/1656)).
   A hacky workaround is duplicating fd 2 and assign to Go's `os.Stderr`, and then close fd 2, so PJRT plugins
-  won't have where to log. This hack is encoded in the function `pjrt.SuppressAbseilLoggingHack()`: just call it
-  before calling `pjrt.GetPlugin`. But it may have unintended consequences, if some other library is depending
+  won't have where to log. This hack is encoded in the function `pjrt.SuppressAbseilLoggingHack()`: call it
+  before calling `pjrt.GetPlugin`. But it may have unintended consequences if some other library depends
   on the fd 2 to work, or if a real exceptional situation needs to be reported and is not.
 
 ## 🤝 Collaborating or asking for help
@@ -191,27 +188,27 @@ Discussion in the [Slack channel #gomlx](https://app.slack.com/client/T029RQSE6/
 
 ## Environment Variables
 
-That help control or debug how GoPJRT work:
+Environment variables that help control or debug how GoPJRT works:
 
 * `PJRT_PLUGIN_LIBRARY_PATH`: Path to search for PJRT plugins. 
   GoPJRT also searches in `/usr/local/lib/gomlx/pjrt`, `${HOME}/.local/lib/gomlx/pjrt`, in
   the standard library paths for the system, and in the paths defined in `$LD_LIBRARY_PATH`.
 * `XLA_FLAGS`: Used by the C++ PJRT plugins. Documentation is linked by the [Jax XLA_FLAGS page](https://docs.jax.dev/en/latest/xla_flags.html),
-  but I found easier to just set this to "--help" and it prints out the flags.
+  but I found it easier to just set this to "--help" and it prints out the flags.
 * `XLA_DEBUG_OPTIONS`: If set, it is parsed as a `DebugOptions` proto that
   is passed during the JIT-compilation (`Client.Compile()`) of a computation graph.
-  It is not documented how it works in PJRT (e.g. I observed a great slow down when this is set,
+  It is not documented how it works in PJRT (e.g., I observed a great slow down when this is set,
   even if set to the default values), but [the proto has some documentation](https://github.com/gomlx/gopjrt/blob/main/protos/xla.proto#L40).
-* `GOPJRT_INSTALL_DIR` and `GOPJRT_NOSUDO`: used by the install scripts, see "Installing" section above.
+* `GOPJRT_INSTALL_DIR` and `GOPJRT_NOSUDO`: used by the installation scripts, see "Installing" section above.
 
 ## Links to documentation
 
-* [Google Drive Directory with Design Docs](https://drive.google.com/drive/folders/18M944-QQPk1E34qRyIjkqDRDnpMa3miN): Some links are outdated or redirected, but very valuable information.
+* [Google Drive Directory with Design Docs](https://drive.google.com/drive/folders/18M944-QQPk1E34qRyIjkqDRDnpMa3miN): Some links are outdated or redirected, but invaluable information.
 * [How to use the PJRT C API? #openxla/xla/issues/7038](https://github.com/openxla/xla/issues/7038): discussion of folks trying to use PJRT in their projects. Some examples leveraging some of the XLA C++ library.
 * [How to use PJRT C API v.2 #openxla/xla/issues/7038](https://github.com/openxla/xla/issues/13733).
 * [PJRT C API README.md](https://github.com/openxla/xla/blob/main/xla/pjrt/c/README.md): a collection of links to other documents.
 * [Public Design Document](https://docs.google.com/document/d/1Qdptisz1tUPGn1qFAVgCV2omnfjN01zoQPwKLdlizas/edit).
-* [Gemini](https://gemini.google.com) helped quite a bit parsing/understanding things -- despite the hallucinations -- other AIs may help as well.
+* [Gemini](https://gemini.google.com) helped quite a bit in parsing and understanding things—despite the hallucinations—other AIs may help as well.
 
 ## Running Tests
 
@@ -222,10 +219,10 @@ All tests support the following build tags to pre-link the CPU plugin (as oppose
 * `--tags pjrt_cpu_dynamic`: link (preload) the CPU PJRT plugin from the dynamic library (`.so`) version. 
   Faster to build, but deployments require deploying the `libpjrt_c_api_cpu_dynamic.so` file along.
 
-For Darwin (MacOS), for the time being it's hardcoded with static linking, so avoid using these tags. 
+For Darwin (macOS), for the time being it is hardcoded with static linking, so avoid using these tags. 
 
 ## Acknowledgements
-This project utilizes the following components from the [OpenXLA project](https://openxla.org/):
+This project uses the following components from the [OpenXLA project](https://openxla.org/):
 
 * This project includes a (slightly modified) copy of the OpenXLA's [`pjrt_c_api.h`](https://github.com/openxla/xla/blob/main/xla/pjrt/c/pjrt_c_api.h) file. 
 * OpenXLA PJRT CPU Plugin: This plugin enables execution of XLA computations on the CPU.
@@ -239,6 +236,6 @@ GoPJRT is [licensed under the Apache 2.0 license](https://github.com/gomlx/gopjr
 
 The [OpenXLA project](https://openxla.org/), including `pjrt_c_api.h` file, the CPU and CUDA plugins, is [licensed under the Apache 2.0 license](https://github.com/openxla/xla/blob/main/LICENSE).
 
-The CUDA plugin also utilizes the NVIDIA CUDA Toolkit, which is subject to NVIDIA's licensing terms and must be installed by the user.
+The CUDA plugin also uses the Nvidia CUDA Toolkit, which is subject to Nvidia's licensing terms and must be installed by the user.
 
-For more information about OpenXLA, please visit their website at [openxla.org](https://openxla.org/), or the github page at [github.com/openxla/xla](https://github.com/openxla/xla)
+For more information about OpenXLA, please visit their website at [openxla.org](https://openxla.org/), or the GitHub page at [github.com/openxla/xla](https://github.com/openxla/xla)

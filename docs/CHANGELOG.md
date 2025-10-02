@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# v0.8.3 - 2025/10/02 New gopjrt_installer -- but not changes.
+# v0.8.3 - 2025/10/02 New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
 
 * New `github.com/gomlx/gopjrt/cmd/gopjrt_installer` command-line tool to install Gopjrt plugins.
   - Doesn't do sudo by itself.
@@ -12,6 +12,7 @@
   - Doesn't download unnecessary jax files.* 
 * Updated README.md, with links to `gopjrt_installer` for installation.
   * Moved `xlabuilder` documentation under `xlabuilder/README.md`, and marked it as deprecated.
+  * Changed Mandelbrot example to use `github.com/gomlx/stablehlo` instead.
 
 # v0.8.2 - 2025/09/29 Updated CUDA drivers
 

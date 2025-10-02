@@ -95,7 +95,7 @@ it includes a sample of the computation's StableHLO IR .
 <img src="https://github.com/gomlx/gopjrt/assets/7460115/d7100980-e731-438d-961e-711f04d4425e" style="width:400px; height:240px"/>
 </a>
 
-## How to use it ?
+## How to use it?
 
 The main package is [`github.com/gomlx/gopjrt/pjrt`](https://pkg.go.dev/github.com/gomlx/gopjrt/pjrt), and we'll refer to it as simply `pjrt`.
 
@@ -125,7 +125,7 @@ While it uses CGO to dynamically load the plugin and call its C API, `pjrt` does
 to be installed.
 
 The project release includes pre-built CPU released for Linux/amd64 only now.
-It's been compiled for Macs before -- I don't have easy access to a Apple Mac to maintain it.
+It's been compiled for Macs before—I don't have easy access to a Apple Mac to maintain it.
 
 It also includes a install program (see section **Installing** bellow) for Linux/CUDA PJRT and for Nvidia GPU support (
 it uses the one from the Jax distributed binaries, extracted from Jax and Nvidia pip packages).
@@ -140,7 +140,7 @@ of your computation graph). To facilitate, it provides an interactive and self-e
 go run github.com/gomlx/gopjrt/cmd/gopjt_installer
 ```
 
-You can also provide directly the flags you want to avoid the interactive mode (so it can be used in Dockerfiles).
+You can also directly provide the flags you want to avoid the interactive mode (so it can be used in scripts like Dockerfiles).
 
 > [!NOTE]
 > For now it only works for Linux/amd64 (or Windows+WSL) and NVidia CUDA. 

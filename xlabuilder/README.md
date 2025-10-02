@@ -134,12 +134,3 @@ Then download the `hlo.pb` file and do:
     fmt.Printf("\tf(x=%g) = %g\n", input, output)
   }
 ```
-
-### Example 3: [Mandelbrot Set Notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb)
-
-The notebook includes both the "regular" Go implementation and the corresponding implementation using `XlaBuilder`
-and execution with `PJRT` for comparison, with some benchmarks.
-
-<a href="https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb">
-<img src="https://github.com/gomlx/gopjrt/assets/7460115/d7100980-e731-438d-961e-711f04d4425e" style="width:400px; height:240px"/>
-</a>

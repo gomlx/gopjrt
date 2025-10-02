@@ -70,6 +70,8 @@ and others are in development.
 
 ## Example
 
+1. Minimalistic example, that assumes you have your StableHLO code in a variable (`[]byte`) called `stablehloCode`:
+
 ```go
 var flagPluginName = flag.String("plugin", "cuda", "PRJT plugin name or full path")
 ...
@@ -85,7 +87,7 @@ outputs[0].Destroy() // Don't wait for the GC, destroy the buffer immediately.
 ...
 ```
 
-See [mandelbrot.ipynb notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb) 
+2. See [mandelbrot.ipynb notebook](https://github.com/gomlx/gopjrt/blob/main/examples/mandelbrot.ipynb) 
 with an example building the computation for a Mandelbrot image using `stablehlo`, 
 it includes a sample of the computation's StableHLO IR .
 

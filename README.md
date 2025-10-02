@@ -9,14 +9,15 @@
 
 ## Why use GoPJRT ?
 
-GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize and accelerate numeric 
-computations (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
+GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize and **accelerate numeric 
+computations** (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (NVidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
-And because Jax, TensorFlow and [optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA,
-it is possible to run Jax functions in Go with GoPJRT, and probably TensorFlow and PyTorch as well.
-See example 2 below.
+And because [Jax](https://docs.jax.dev/en/latest/), [TensorFlow](https://www.tensorflow.org/) and 
+[optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA, it is possible to run Jax functions in Go with GoPJRT, 
+and probably TensorFlow and PyTorch as well.
+See [example 2 in xlabuilder/README.md](https://github.com/gomlx/gopjrt/blob/main/xlabuilder/README.md#example-2).
 
 (*) Not tested or partially supported by the hardware vendor.
 
@@ -27,10 +28,11 @@ GoPJRT is not very ergonomic (error handling everywhere), but it's expected to b
 other projects to create a friendlier API on top. The same way [Jax](https://jax.readthedocs.io/en/latest/) is a Python friendlier API
 on top of XLA/PJRT.
 
-One such friendlier API co-developed with GoPJRT is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx), but GoPJRT may be used as a standalone, 
-for lower level access to XLA and other accelerator use cases—like running Jax functions in Go.
+One such friendlier API co-developed with GoPJRT is [GoMLX, a Go machine learning framework](github.com/gomlx/gomlx).
+But GoPJRT may be used as a standalone, for lower level access to XLA and other accelerator use cases—like running
+Jax functions in Go, maybe an accelerated image processing or scientific simulation pipeline.
 
-## What is what ?
+## What is what?
 
 "**PJRT**" stands for "Pretty much Just another RunTime".
 

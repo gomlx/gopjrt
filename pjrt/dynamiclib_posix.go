@@ -207,17 +207,18 @@ func (l *linuxDLLHandle) Close() error {
 	return nil
 }
 
-// SuppressAbseilLoggingHack prevents some irrelevant logging from PJRT plugins, by duplicating the file descriptor (fd) 2,
+// SuppressAbseilLoggingHack prevents some irrelevant logging from PJRT plugins by duplicating the file descriptor (fd) 2,
 // reassigning the new fd to Go's os.Stderr, and then closing fd 2, so PJRT plugins won't be able to write anything.
 //
-// Usually this is only needed during creation of the Client of the CPU plugin. So you can just wrap that part.
+// Usually, this is only needed during the creation of the Client of the CPU plugin. The suggestion it to just
+// wrap that part.
 //
 // Now since many things rely on fd 2 being stderr, it only does that, executes fn given and reverts the change.
 //
 // The issue of doing this permanently is that Go's default panic handler outputs the stack tracke the the fd 2,
 // and this would suppress that as well.
 //
-// It's an overkill, because this may prevent valid logging, in some truly exceptional situation, but it's the only
+// It's an overkill, because this may prevent valid logging in some truly exceptional situations, but it's the only
 // solution I can think of for now. See discussion in https://github.com/abseil/abseil-cpp/discussions/1700
 //
 // Since file descriptors are a global resource, this function is not reentrant, and you should

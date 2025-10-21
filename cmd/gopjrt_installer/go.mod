@@ -15,8 +15,6 @@ require (
 	k8s.io/klog/v2 v2.130.1
 )
 
-replace github.com/gomlx/gopjrt => ../../
-
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect

@@ -24,7 +24,7 @@ func init() {
 	klog.InitFlags(nil)
 }
 
-// TestEndToEnd builds, compiles and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
+// TestEndToEnd builds, compiles, and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
 // and pjrt to compile and execute it.
 func TestEndToEnd(t *testing.T) {
 	// f(x) = x^2+1

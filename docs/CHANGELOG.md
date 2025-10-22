@@ -1,5 +1,10 @@
 # Gopjrt Changelog
 
+# v0.8.4 - Adding Mac support for CPU PJRT plugin
+
+- Added default "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in MacOS.
+- 
+
 # v0.8.3 - 2025/10/02 New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
 
 * New `github.com/gomlx/gopjrt/cmd/gopjrt_installer` command-line tool to install Gopjrt plugins.

@@ -1,3 +1,5 @@
+//go:build !linux
+
 package pjrt
 
 // isCuda tries to guess that the plugin named is associated with Nvidia Cuda, to apply the corresponding hacks.

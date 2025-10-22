@@ -26,11 +26,11 @@ package pjrt
 import "C"
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"unsafe"
 
 	"github.com/pkg/errors"
@@ -77,9 +77,6 @@ func loadPlugin(pluginPath string) (handleWrapper dllHandleWrapper, err error) {
 		err = errors.Errorf("plugin path %q is a directory!?", pluginPath)
 		return
 	}
-
-	fmt.Printf("*** Attempting to dynamically load plugin %q: this is currently broken in Mac -- JIT compilation hangs or crashes! "+
-		"Please use static linking of the CPU plugin for now (the default) ***", pluginPath)
 
 	nameC := C.CString(pluginPath)
 	klog.V(2).Infof("trying to load library %s\n", pluginPath)

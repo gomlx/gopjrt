@@ -17,8 +17,10 @@ import (
 const AmazonLinux = "amazonlinux"
 
 func init() {
-	pluginInstallers[AmazonLinux] = LinuxInstall
-	pluginInstallers["linux"] = LinuxInstall
+	for _, plugin := range []string{"linux", AmazonLinux} {
+		pluginInstallers[plugin] = LinuxInstall
+		pluginValidators[plugin] = LinuxValidateVersion
+	}
 	pluginValues = append(pluginValues, "linux", AmazonLinux)
 	pluginDescriptions = append(pluginDescriptions,
 		"XlaBuilder + CPU PJRT (Linux/amd64)",
@@ -28,16 +30,16 @@ func init() {
 }
 
 // LinuxValidateVersion checks whether the linux version selected by "-version" exists.
-func LinuxValidateVersion() error {
+func LinuxValidateVersion(plugin, version string) error {
 	// "latest" is always valid.
-	if *flagVersion == "latest" {
+	if version == "latest" {
 		return nil
 	}
 
-	_, err := LinuxGetDownloadURL(*flagPlugin, *flagVersion)
+	_, err := LinuxGetDownloadURL(plugin, version)
 	if err != nil {
 		return errors.WithMessagef(err, "can't fetch PJRT plugin from Gopjrt version %q, see "+
-			"https://github.com/gomlx/gopjrt/releases for a list of release versions to choose from", *flagVersion)
+			"https://github.com/gomlx/gopjrt/releases for a list of release versions to choose from", version)
 	}
 	return err
 }
@@ -137,18 +139,21 @@ func LinuxDownloadReleaseAssets(version string) ([]string, error) {
 }
 
 // LinuxInstall the assets on the target directory.
-func LinuxInstall() error {
-	version, err := LinuxGetLatestVersion()
-	if err != nil {
-		return err
+func LinuxInstall(plugin, version, installPath string) error {
+	var err error
+	if version == "latest" || version == "" {
+		version, err = LinuxGetLatestVersion()
+		if err != nil {
+			return err
+		}
 	}
-	assetURL, err := LinuxGetDownloadURL(*flagPlugin, version)
+	assetURL, err := LinuxGetDownloadURL(plugin, version)
 	if err != nil {
 		return err
 	}
 
 	// Create the target directory.
-	installPath := ReplaceTildeInDir(*flagPath)
+	installPath = ReplaceTildeInDir(installPath)
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return errors.Wrap(err, "failed to create install directory")
 	}
@@ -194,7 +199,7 @@ func LinuxInstall() error {
 	}
 	fmt.Print(string(fileContents))
 
-	fmt.Printf("\n✅ Installed Gopjrt %s libraries and \"cpu\" PJRT to %s (%s platform)\n\n", version, installPath, *flagPlugin)
+	fmt.Printf("\n✅ Installed Gopjrt %s libraries and \"cpu\" PJRT to %s (%s platform)\n\n", version, installPath, plugin)
 
 	return nil
 }

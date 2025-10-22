@@ -4,9 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -17,7 +15,8 @@ var (
 	pluginValues           []string
 	pluginDescriptions     []string
 	pluginPriorities       []int // Order to display the plugins: smaller values are displayed first.
-	pluginInstallers       = make(map[string]func() error)
+	pluginInstallers       = make(map[string]func(plugin, version, installPath string) error)
+	pluginValidators       = make(map[string]func(plugin, version string) error)
 	installPathSuggestions []string
 
 	flagPlugin, flagPath *string
@@ -30,10 +29,20 @@ var (
 func main() {
 	// Initialize and set default values for flags
 	klog.InitFlags(nil)
-	installPathSuggestions = DefaultInstallPaths()
-	*flagPath = installPathSuggestions[0]
 
-	flagPlugin = flag.String("plugin", "", "Plugin to install. Possible values: linux, cuda12, cuda13")
+	// Sort plugins by priority
+	for i := 0; i < len(pluginPriorities); i++ {
+		for j := i + 1; j < len(pluginPriorities); j++ {
+			if pluginPriorities[i] > pluginPriorities[j] {
+				pluginPriorities[i], pluginPriorities[j] = pluginPriorities[j], pluginPriorities[i]
+				pluginValues[i], pluginValues[j] = pluginValues[j], pluginValues[i]
+				pluginDescriptions[i], pluginDescriptions[j] = pluginDescriptions[j], pluginDescriptions[i]
+			}
+		}
+	}
+
+	// Define flags with plugins configured for GOOS/GOARCH used to build this binary:
+	flagPlugin = flag.String("plugin", "", "Plugin to install. Possible values: "+strings.Join(pluginValues, ", "))
 	flagPath = flag.String("path", "~/.local",
 		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
 			"It installs files under lib/ and include/ subdirectories. "+
@@ -41,6 +50,7 @@ func main() {
 			"Nvidia's matching drivers. Suggestions: %s. "+
 			"It will require the adequate privileges (sudo) if installing in a system directories.",
 			strings.Join(installPathSuggestions, ", ")))
+	*flagPath = installPathSuggestions[0]
 
 	// Parse flags.
 	flag.Parse()
@@ -65,50 +75,22 @@ func main() {
 	installPath := ReplaceTildeInDir(*flagPath)
 	fmt.Printf("Installing PJRT plugin %s@%s to %s:\n", pluginName, version, installPath)
 
-	var err error
-	switch pluginName {
-	case "linux", AmazonLinux:
-		err = LinuxInstall()
-	case "cuda12", "cuda13":
-		err = CudaInstall()
-	default:
-		err = errors.Errorf("plugin %q installation not implemented", pluginName)
+	pluginInstaller, ok := pluginInstallers[pluginName]
+	if !ok {
+		klog.Fatalf("Installer for plugin %q not found", pluginName)
 	}
-	if err != nil {
+	if err := pluginInstaller(pluginName, version, installPath); err != nil {
 		klog.Fatal(err)
-	}
-}
-
-// DefaultInstallPaths is called before parsing of the flags to set the available installation paths, as well as
-// setting the default one.
-func DefaultInstallPaths() []string {
-	currentUser, err := user.Current()
-	if err != nil {
-		klog.Errorf("Failed to get current user: %v", err)
-		return []string{"~/.local", "/usr/local"}
-	}
-
-	switch runtime.GOOS {
-	case "darwin":
-		return []string{
-			filepath.Join(currentUser.HomeDir, "Library/Application Support"),
-			"/usr/local",
-		}
-	default: // Assuming Linux
-		return []string{"~/.local", "/usr/local"}
 	}
 }
 
 // ValidateVersion is called to validate the version of the plugin chosen by the user during the interactive mode.
 func ValidateVersion() error {
-	switch *flagPlugin {
-	case "linux", AmazonLinux:
-		return LinuxValidateVersion()
-	case "cuda12", "cuda13":
-		return CudaValidateVersion()
-	default:
+	validator, ok := pluginValidators[*flagPlugin]
+	if !ok {
 		return errors.Errorf("version validation not implemented for plugin %q", *flagPlugin)
 	}
+	return validator(*flagPlugin, *flagVersion)
 }
 
 func ValidatePathPermission() error {

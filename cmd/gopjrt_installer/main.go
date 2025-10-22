@@ -13,33 +13,16 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const AmazonLinux = "amazonlinux"
-
 var (
-	pluginValues       = []string{"linux", AmazonLinux, "cuda13", "cuda12"}
-	pluginDescriptions = []string{
-		"XlaBuilder + CPU PJRT (Linux/amd64)",
-		"XlaBuilder + CPU PJRT (AmazonLinux/amd64, older libc)",
-		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
-		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)",
-	}
-	flagPlugin = flag.String("plugin", "",
-		fmt.Sprintf("PJRT plugin to install, one of: %s. ", strings.Join(pluginValues, ", "))+
-			"To use XLA one needs the XlaBuilder installed (\"linux\" or \""+AmazonLinux+"\"). Optionally, one can also "+
-			"install a CUDA PJRT. The CUDA PJRT will also download matching Nvidia libraries required for it to work -- "+
-			"it is based on the Jax distribution for pypi.org (but it doesn't use Python to install them).")
+	pluginValues           []string
+	pluginDescriptions     []string
+	pluginPriorities       []int // Order to display the plugins: smaller values are displayed first.
+	pluginInstallers       = make(map[string]func() error)
+	installPathSuggestions []string
 
-	installPathSuggestions = []string{"/usr/local/", "~/.local"}
-	flagPath               = flag.String("path", "~/.local",
-		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
-			"It installs files under lib/ and include/ subdirectories. "+
-			"For the PJRT plugins it creates a sub-directory lib/gomlx/prjt, and in case of CUDA plugins, gomlx/nvidia for "+
-			"Nvidia's matching drivers. Suggestions: %s. "+
-			"It will require the adequate privileges (sudo) if installing in a system directories.",
-			strings.Join(installPathSuggestions, ", ")))
-
-	flagVersion = flag.String("version", "latest",
-		"For \"linux\" or \""+AmazonLinux+"\" this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.2). "+
+	flagPlugin, flagPath *string
+	flagVersion          = flag.String("version", "latest",
+		"In most PJRT this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.4) from where to download the plugin. "+
 			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), which is where it "+
 			"downloads the plugin and Nvidia libraries from.")
 )
@@ -49,6 +32,15 @@ func main() {
 	klog.InitFlags(nil)
 	installPathSuggestions = DefaultInstallPaths()
 	*flagPath = installPathSuggestions[0]
+
+	flagPlugin = flag.String("plugin", "", "Plugin to install. Possible values: linux, cuda12, cuda13")
+	flagPath = flag.String("path", "~/.local",
+		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
+			"It installs files under lib/ and include/ subdirectories. "+
+			"For the PJRT plugins it creates a sub-directory lib/gomlx/prjt, and in case of CUDA plugins, gomlx/nvidia for "+
+			"Nvidia's matching drivers. Suggestions: %s. "+
+			"It will require the adequate privileges (sudo) if installing in a system directories.",
+			strings.Join(installPathSuggestions, ", ")))
 
 	// Parse flags.
 	flag.Parse()

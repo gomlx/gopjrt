@@ -14,6 +14,19 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const AmazonLinux = "amazonlinux"
+
+func init() {
+	pluginInstallers[AmazonLinux] = LinuxInstall
+	pluginInstallers["linux"] = LinuxInstall
+	pluginValues = append(pluginValues, "linux", AmazonLinux)
+	pluginDescriptions = append(pluginDescriptions,
+		"XlaBuilder + CPU PJRT (Linux/amd64)",
+		"XlaBuilder + CPU PJRT (AmazonLinux/amd64, older libc)")
+	pluginPriorities = append(pluginPriorities, 0, 1)
+	installPathSuggestions = append(installPathSuggestions, "/usr/local/", "~/.local")
+}
+
 // LinuxValidateVersion checks whether the linux version selected by "-version" exists.
 func LinuxValidateVersion() error {
 	// "latest" is always valid.

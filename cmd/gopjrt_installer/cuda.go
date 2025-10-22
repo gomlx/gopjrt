@@ -1,3 +1,5 @@
+//go:build linux && amd64
+
 package main
 
 import (
@@ -12,6 +14,16 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+func init() {
+	pluginInstallers["cuda12"] = CudaInstall
+	pluginInstallers["cuda13"] = CudaInstall
+	pluginValues = append(pluginValues, "cuda13", "cuda12")
+	pluginDescriptions = append(pluginDescriptions,
+		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
+		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)")
+	pluginPriorities = append(pluginPriorities, 10, 11)
+}
 
 var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
 

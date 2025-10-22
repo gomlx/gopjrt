@@ -4,7 +4,7 @@
 
 - Added default "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in MacOS.
 - Fixed cuda.go to be linux-only for now, with a safe default for other platforms.
-- Removed requirement for static linking of CUDA PJRT plugin for Darwin.
+  - Removed requirement for static linking of CUDA PJRT plugin for Darwin.
 
 # v0.8.3 - 2025/10/02 New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
 

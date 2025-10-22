@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"unsafe"
 
@@ -37,10 +38,20 @@ import (
 )
 
 // osDefaultLibraryPaths is called during initialization to set the default search paths.
-// It always includes the default "/usr/local/lib/gomlx/pjrt" for linux and darwin, plus
-// for Darwin, the contents of teh LD_LIBRARY_PATH and DYLD_LIBRARY_PATH.
+// It always includes the local user default "${HOME}/Library/Application Support/GoMLX/PJRT" and
+// the system default "/usr/local/lib/gomlx/pjrt", plus the contents of the LD_LIBRARY_PATH and DYLD_LIBRARY_PATH.
 func osDefaultLibraryPaths() []string {
-	paths := []string{"/usr/local/lib/gomlx/pjrt"}
+	var paths []string
+
+	// Local default path.
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		paths = append(paths, filepath.Join(homeDir, "Library", "Application Support", "GoMLX", "PJRT"))
+	} else {
+		klog.Errorf("Couldn't get user's home directory -- it won't be searched for PJRT plugins: %v", err)
+	}
+
+	// System default path.
+	paths = append(paths, "/usr/local/lib/gomlx/pjrt")
 
 	// Standard environment variables.
 	for _, varName := range []string{"DYLD_LIBRARY_PATH", "LD_LIBRARY_PATH"} {

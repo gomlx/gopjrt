@@ -1,10 +1,12 @@
 # Gopjrt Changelog
 
-# v0.8.4 - Adding Mac support for CPU PJRT plugin
+# v0.8.4 - Adding Darwin (Mac) support for CPU PJRT plugin
 
 - Added default "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in MacOS.
 - Fixed cuda.go to be linux-only for now, with a safe default for other platforms.
-  - Removed requirement for static linking of CUDA PJRT plugin for Darwin.
+  - Removed the requirement for static linking of CUDA PJRT plugin for Darwin.
+- `gopjrt_installer`: now also supports darwin/arm64.
+  - Use -tags=all when building to include all installers (linux/darwin) if cross-platform installing.
 
 # v0.8.3 - 2025/10/02 New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
 

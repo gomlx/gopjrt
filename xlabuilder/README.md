@@ -134,3 +134,12 @@ Then download the `hlo.pb` file and do:
     fmt.Printf("\tf(x=%g) = %g\n", input, output)
   }
 ```
+
+## Building C/C++ dependencies
+
+If you want to build from scratch (both `xlabuilder` and `pjrt` dependencies), go to the `c/` subdirectory
+and run `basel.sh`.
+It uses [Bazel](https://bazel.build/) due to its dependencies to OpenXLA/XLA.
+If not in one of the supported platforms, you will need to create a `xla_configure.OS_ARCH.bazelrc`
+file.
+

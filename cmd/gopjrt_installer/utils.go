@@ -325,7 +325,7 @@ func extractZipFile(f *zip.File, outputPath string) error {
 func GitHubGetLatestVersion() (string, error) {
 	const latestURL = "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
 	retries := 0
-	const maxRetries = 3
+	const maxRetries = 2
 retry:
 	for {
 		// Make HTTP request

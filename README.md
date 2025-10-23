@@ -59,7 +59,7 @@ development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx
 > Small ones are debuggable, or can be used to probe which operations are being used behind the scenes,
 > but definitely not friendly.
 
-A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux or `.dylib` in Darwin). 
+A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux, or optionally `.dylib` in Darwin, or `.dll` in Windows). 
 Typically, there is one plugin per hardware you are supporting. E.g.: there are PJRT plugins 
 for CPU (Linux/amd64 for now, but likely it could be compiled for other CPUs -- SIMD/AVX are well-supported), 
 for TPUs (Google's accelerator), 

@@ -483,6 +483,7 @@ func Untar(tarballPath, outputDirPath string) ([]string, error) {
 			extractedFiles = append(extractedFiles, targetPath)
 
 		case tar.TypeSymlink:
+
 			// Sanitize the symlink's target path to ensure it stays within the output directory
 			linkTarget := filepath.Clean(header.Linkname)
 			if filepath.IsAbs(linkTarget) {
@@ -496,6 +497,10 @@ func Untar(tarballPath, outputDirPath string) ([]string, error) {
 			}
 			if cleanAbsTarget != "" && !strings.HasPrefix(cleanAbsTarget, outputDirPath) {
 				return nil, errors.Errorf("symlink target path escapes output directory: %s", linkTarget)
+			}
+			// Remove the target file if it exists.
+			if err := os.Remove(targetPath); err != nil && !os.IsNotExist(err) {
+				return nil, errors.Wrapf(err, "failed to remove existing file at symlink target %s", targetPath)
 			}
 			// Create the symlink
 			if err := os.Symlink(linkTarget, targetPath); err != nil {

@@ -1,4 +1,4 @@
-//go:build darwin && arm64
+//go:build (darwin && arm64) || all
 
 package main
 
@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -20,7 +19,7 @@ func init() {
 	}
 	pluginValues = append(pluginValues, "darwin")
 	pluginDescriptions = append(pluginDescriptions, "CPU PJRT (darwin/arm64)")
-	pluginPriorities = append(pluginPriorities, 0)
+	pluginPriorities = append(pluginPriorities, 3)
 	installPathSuggestions = append(installPathSuggestions, "/usr/local/", "~/Library/Application Support/GoMLX")
 }
 
@@ -99,15 +98,6 @@ func DarwinInstall(plugin, version, installPath string) error {
 	}
 	if !inCache {
 		defer func() { ReportError(os.Remove(downloadedFile)) }()
-	}
-
-	// Create a temporary file to store the extracted files list.
-	listFile, err := os.CreateTemp("", "gopjrt_list_files.*")
-	if err != nil {
-		return errors.Wrap(err, "failed to create list file")
-	}
-	if !klog.V(1).Enabled() {
-		defer func() { ReportError(os.Remove(listFile.Name())) }()
 	}
 
 	// Extract files

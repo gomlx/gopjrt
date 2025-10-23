@@ -1,16 +1,14 @@
-//go:build linux && amd64
+//go:build (linux && amd64) || all
 
 package main
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 )
 
 const AmazonLinux = "amazonlinux"
@@ -100,36 +98,25 @@ func LinuxInstall(plugin, version, installPath string) error {
 		defer func() { ReportError(os.Remove(downloadedFile)) }()
 	}
 
-	// Create a temporary file to store the extracted files list.
-	listFile, err := os.CreateTemp("", "gopjrt_list_files.*")
-	if err != nil {
-		return errors.Wrap(err, "failed to create list file")
-	}
-	if !klog.V(1).Enabled() {
-		defer func() { ReportError(os.Remove(listFile.Name())) }()
-	}
-
 	// Extract files
 	fmt.Printf("- Extracting files in %s to %s\n", downloadedFile, installPath)
-	cmd := exec.Command("tar", "xvzf", downloadedFile, "-C", installPath)
-	cmd.Stdout = listFile
-	klog.V(1).Infof("Running command: %v > %s", cmd.Args, listFile.Name())
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to extract files")
+	extractedFiles, err := Untar(downloadedFile, installPath)
+	if err != nil {
+		return err
 	}
-	_ = listFile.Close()
+	if len(extractedFiles) == 0 {
+		return errors.Errorf("failed to extract files from %s", downloadedFile)
+	}
+	fmt.Printf("- Extracted %d file(s):\n", len(extractedFiles))
+	for _, file := range extractedFiles {
+		fmt.Printf("  - %s\n", file)
+	}
 
 	// Remove older version using dynamically linked library
 	oldLib := filepath.Join(installPath, "lib/libgomlx_xlabuilder.so")
-	os.Remove(oldLib)
-
-	// Read and print the list of extracted files
-	fmt.Println("- Extracted files:")
-	fileContents, err := os.ReadFile(listFile.Name())
-	if err != nil {
-		return errors.Wrap(err, "failed to read list of extracted files")
+	if err := os.Remove(oldLib); err != nil && !os.IsNotExist(err) {
+		ReportError(err)
 	}
-	fmt.Print(string(fileContents))
 
 	fmt.Printf("\n✅ Installed Gopjrt %s libraries and \"cpu\" PJRT to %s (%s platform)\n\n", version, installPath, plugin)
 

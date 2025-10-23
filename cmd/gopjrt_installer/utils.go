@@ -334,9 +334,13 @@ retry:
 			return "", errors.Wrapf(err, "failed to create request for %q", latestURL)
 		}
 		req.Header.Add("Accept", "application/vnd.github+json")
-		if token := os.Getenv("GH_TOKEN"); token != "" {
-			req.Header.Add("Authorization", "Bearer "+token)
-			klog.Infof("Using GitHub token for authentication")
+		if token, found := os.LookupEnv("GH_TOKEN"); found {
+			if token == "" {
+				klog.Infof("GH_TOKEN is empty, skipping authentication")
+			} else {
+				req.Header.Add("Authorization", "Bearer "+token)
+				klog.Infof("Using GitHub token for authentication")
+			}
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {

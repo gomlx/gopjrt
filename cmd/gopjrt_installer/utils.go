@@ -328,8 +328,16 @@ func GitHubGetLatestVersion() (string, error) {
 	const maxRetries = 2
 retry:
 	for {
-		// Make HTTP request
-		resp, err := http.Get(latestURL)
+		// Make HTTP request with optional authorization header
+		req, err := http.NewRequest("GET", latestURL, nil)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create request for %q", latestURL)
+		}
+		req.Header.Add("Accept", "application/vnd.github+json")
+		if token := os.Getenv("GH_TOKEN"); token != "" {
+			req.Header.Add("Authorization", "Bearer "+token)
+		}
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
 		}
@@ -339,6 +347,9 @@ retry:
 		ReportError(resp.Body.Close())
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return "", errors.Errorf("failed to get version from %q, got status code %d", latestURL, resp.StatusCode)
 		}
 
 		// Parse JSON response

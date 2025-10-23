@@ -393,7 +393,7 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 	req.Header.Add("Accept", "application/vnd.github+json")
 	if token := os.Getenv("GH_TOKEN"); token != "" {
 		req.Header.Add("Authorization", "Bearer "+token)
-		klog.Infof("Using GitHub token for authentication")
+		klog.V(1).Infof("Using GitHub token for authentication")
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

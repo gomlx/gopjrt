@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
+  macos-tests:
     runs-on: macos-latest
 
     steps:

@@ -355,6 +355,7 @@ retry:
 			}
 			retries++
 			klog.Warningf("failed to get version from %q, it is missing the field `tag_name`, retrying...", latestURL)
+			continue retry
 		}
 		return version, nil
 	}

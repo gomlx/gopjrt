@@ -85,7 +85,7 @@ func main() {
 		klog.Fatalf("Installer for plugin %q not found", pluginName)
 	}
 	if err := pluginInstaller(pluginName, version, installPath); err != nil {
-		klog.Fatal("%+v", err)
+		klog.Fatalf("%+v", err)
 	}
 }
 

@@ -341,6 +341,8 @@ retry:
 				req.Header.Add("Authorization", "Bearer "+token)
 				klog.Infof("Using GitHub token for authentication")
 			}
+		} else {
+			klog.Infof("GH_TOKEN is not set, skipping authentication")
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {

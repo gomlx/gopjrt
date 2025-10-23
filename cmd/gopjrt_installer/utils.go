@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -61,42 +62,48 @@ func ReplaceTildeInDir(dir string) string {
 	return path.Join(homeDir, dir[1+len(userName):])
 }
 
+// GetCachePath finds and prepares the cache directory for gopjrt.
+//
+// It uses os.UserCacheDir() for portability:
+//
+// - Linux: $XDG_CACHE_HOME or $HOME/.cache
+// - Darwin: $HOME/Library/Caches
+// - Windows: %LocalAppData% (e.g., C:\Users\user\AppData\Local)
+func GetCachePath(fileName string) (filePath string, cached bool, err error) {
+	baseCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return "", false, errors.Wrap(err, "failed to find user cache directory")
+	}
+	cacheDir := filepath.Join(baseCacheDir, "gopjrt")
+	if err = os.MkdirAll(cacheDir, 0755); err != nil {
+		return "", false, errors.Wrapf(err, "failed to create cache directory %s", cacheDir)
+	}
+	filePath = filepath.Join(cacheDir, fileName)
+	if stat, err := os.Stat(filePath); err == nil {
+		cached = stat.Mode().IsRegular()
+	}
+	return
+}
+
 // DownloadURLToTemp downloads a file from a given URL to a temporary file.
 //
 // It displays a spinner while downloading and outputs some information about the download.
 //
-// If -cache is set (the default) it will save file in a cache directory, and try to reuse it if already downloaded.
+// If -cache is set (the default) it will save the file in a cache directory and try to reuse it if already downloaded.
 //
 // If wantSHA256 is not empty, it will verify the hash of the downloaded file.
+//
+// It returns the path where the file was downloaded, and if the downloaded file is in a cache (so it shouldn't be removed after use).
 func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cached bool, err error) {
 	// Download the asset to a temporary file
-	var (
-		downloadedFile *os.File
-		fileExists     bool
-	)
+	var downloadedFile *os.File
 
 	if *flagCache {
-		// Use XDG_CACHE_HOME if defined, otherwise ~/.cache
-		cacheDir := os.Getenv("XDG_CACHE_HOME")
-		if cacheDir == "" {
-			cacheDir = "~/.cache"
+		filePath, cached, err = GetCachePath(fileName)
+		if err != nil {
+			return "", false, err
 		}
-		cacheDir = ReplaceTildeInDir(cacheDir)
-		cacheDir = filepath.Join(cacheDir, "gopjrt")
-
-		// Create the cache directory if it doesn't exist.
-		if err = os.MkdirAll(cacheDir, 0755); err != nil {
-			return "", false, errors.Wrapf(err, "failed to create cache directory %s", cacheDir)
-		}
-
-		// Set the filePath, and checks if it already exists.
-		filePath = path.Join(cacheDir, fileName)
-		cached = true
-		if stat, err := os.Stat(filePath); err == nil {
-			fileExists = stat.Mode().IsRegular()
-		}
-
-		if !fileExists {
+		if !cached {
 			downloadedFile, err = os.Create(filePath)
 			if err != nil {
 				return "", false, errors.Wrapf(err, "failed to create cache file %s", filePath)
@@ -114,7 +121,7 @@ func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cache
 	}
 
 	var downloadedBytesStr string
-	if !fileExists {
+	if !cached {
 		// Actually download the file.
 		var bytesDownloaded int64
 		spinnerErr := spinner.New().
@@ -126,7 +133,7 @@ func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cache
 					err = errors.Wrapf(err, "failed to download asset %s", url)
 					return
 				}
-				defer resp.Body.Close()
+				defer func() { ReportError(resp.Body.Close()) }()
 
 				bytesDownloaded, err = io.Copy(downloadedFile, resp.Body)
 				if err != nil {
@@ -157,7 +164,7 @@ func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cache
 		}
 	}
 
-	// Verify SHA256 hash if provided
+	// Verify SHA256 hash if provided -- also for cached files.
 	verifiedStatus := ""
 	if wantSHA256 != "" {
 		// Open the file for reading.
@@ -190,10 +197,14 @@ func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cache
 		verifiedStatus = " (hash checked)"
 	}
 
-	if fileExists {
+	if cached {
 		fmt.Printf("- Reusing %s from cache%s\n", filePath, verifiedStatus)
 	} else {
 		fmt.Printf("- Downloaded %s to %s%s\n", downloadedBytesStr, filePath, verifiedStatus)
+		if *flagCache {
+			// Now the file is cached.
+			cached = true
+		}
 	}
 	return
 }
@@ -223,7 +234,7 @@ func ExtractFileFromZip(zipFilePath, targetFileName, outputPath string) error {
 	return os.ErrNotExist // File was not found in the archive.
 }
 
-// ExtractDirFromZip extracts from zipFilePath all files and directories under dirInZipFile, and saves them with the
+// ExtractDirFromZip extracts from zipFilePath all files and directories under dirInZipFile and saves them with the
 // same directory structure under outputPath.
 //
 // Notice dirInZipFile is not repeated in outputPath.
@@ -285,14 +296,14 @@ func extractZipFile(f *zip.File, outputPath string) error {
 	if err != nil {
 		return err
 	}
-	defer rc.Close()
+	defer func() { ReportError(rc.Close()) }()
 
 	// Create the output file
 	outFile, err := os.Create(outputPath)
 	if err != nil {
 		return err
 	}
-	defer outFile.Close()
+	defer func() { ReportError(outFile.Close()) }()
 
 	// Copy the contents
 	_, err = io.Copy(outFile, rc)
@@ -300,11 +311,79 @@ func extractZipFile(f *zip.File, outputPath string) error {
 		return err
 	}
 
-	// Make file executable if in bin directory
+	// Make file executable if in a bin directory
 	if strings.Contains(outputPath, "/bin/") {
 		if err := os.Chmod(outputPath, 0755); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func GitHubGetLatestVersion() (string, error) {
+	const latestURL = "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
+	// Make HTTP request
+	resp, err := http.Get(latestURL)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
+	}
+
+	// Parse JSON response
+	var info struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.Unmarshal(body, &info); err != nil {
+		return "", fmt.Errorf("failed to parse JSON response: %v", err)
+	}
+	version := info.TagName
+	if version == "" {
+		return "", errors.Errorf("failed to get version from %q", latestURL)
+	}
+	return version, nil
+}
+
+// GitHubDownloadReleaseAssets downloads the list of assets available for the given Gopjrt release version.
+func GitHubDownloadReleaseAssets(version string) ([]string, error) {
+	// Construct release URL based on the version -- "latest" is not supported at this point.
+	releaseURL := fmt.Sprintf("https://api.github.com/repos/gomlx/gopjrt/releases/tags/%s", version)
+
+	// Make HTTP request
+	resp, err := http.Get(releaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch release data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Parse JSON response
+	var release struct {
+		Assets []struct {
+			BrowserDownloadURL string `json:"browser_download_url"`
+		} `json:"assets"`
+	}
+	if err := json.Unmarshal(body, &release); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON response: %v", err)
+	}
+
+	// Extract .tar.gz download URLs
+	var urls []string
+	for _, asset := range release.Assets {
+		if strings.HasSuffix(asset.BrowserDownloadURL, ".tar.gz") {
+			urls = append(urls, asset.BrowserDownloadURL)
+		}
+	}
+
+	return urls, nil
 }

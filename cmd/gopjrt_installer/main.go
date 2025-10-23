@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -27,6 +28,10 @@ var (
 )
 
 func main() {
+	if len(pluginValues) == 0 {
+		klog.Fatalf("no installable plugins registered for platform %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
 	// Initialize and set default values for flags
 	klog.InitFlags(nil)
 
@@ -95,44 +100,33 @@ func ValidateVersion() error {
 
 func ValidatePathPermission() error {
 	installPath := ReplaceTildeInDir(*flagPath)
-
-	// Check permissions in lib/ and include/ subdirectories
-	dirsToCheck := []string{
-		filepath.Join(installPath, "lib/"),
-		filepath.Join(installPath, "include/gomlx"),
-	}
-
-	for _, dir := range dirsToCheck {
-		// Check if the directory exists: if it doesn't exist, try to create it in the parent directories
-		_, err := os.Stat(dir)
-		if err != nil {
-			// If the directory doesn't exist, try parent directories
-			parent := dir
-			for {
-				parent = filepath.Dir(parent)
-				if parent == "/" || parent == "." {
-					return errors.New("could not find an existing parent directory")
-				}
-				if _, err := os.Stat(parent); err == nil {
-					dir = parent
-					break
-				}
+	dir := installPath
+	_, err := os.Stat(dir)
+	if err != nil {
+		// If the directory doesn't exist, try parent directories
+		parent := installPath
+		for {
+			parent = filepath.Dir(parent)
+			if parent == "/" || parent == "." {
+				return errors.New("could not find an existing parent directory")
+			}
+			if _, err := os.Stat(parent); err == nil {
+				dir = parent
+				break
 			}
 		}
-
-		// Try to create a temporary file to verify write permissions
-		testFile := filepath.Join(dir, ".gopjrt_write_test")
-		f, err := os.Create(testFile)
-		if err != nil {
-			return errors.Wrapf(err, "no write permission in directory %q, do you need \"sudo\" ?", dir)
-		}
-		ReportError(f.Close())
-
-		// Clean up test file
-		if err = os.Remove(testFile); err != nil {
-			return errors.Wrapf(err, "failed to remove test file %q", testFile)
-		}
 	}
+
+	// Try to create a temporary file to verify write permissions
+	testFile := filepath.Join(dir, ".gopjrt_write_test")
+	f, err := os.Create(testFile)
+	if err != nil {
+		return errors.Wrapf(err, "no write permission in directory %q, do you need \"sudo\" ?", dir)
+	}
+	ReportError(f.Close())
+
+	// Clean up test file
+	ReportError(os.Remove(testFile))
 
 	return nil
 }

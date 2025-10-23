@@ -1,41 +1,33 @@
-//go:build linux && amd64
+//go:build darwin && arm64
 
 package main
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"runtime"
 )
 
-const AmazonLinux = "amazonlinux"
-
 func init() {
-	for _, plugin := range []string{"linux", AmazonLinux} {
-		pluginInstallers[plugin] = LinuxInstall
-		pluginValidators[plugin] = LinuxValidateVersion
+	for _, plugin := range []string{"darwin"} {
+		pluginInstallers[plugin] = DarwinInstall
+		pluginValidators[plugin] = DarwinValidateVersion
 	}
-	pluginValues = append(pluginValues, "linux", AmazonLinux)
-	pluginDescriptions = append(pluginDescriptions,
-		"CPU PJRT (Linux/amd64)",
-		"CPU PJRT (AmazonLinux/amd64, older libc)")
-	pluginPriorities = append(pluginPriorities, 0, 1)
-	installPathSuggestions = append(installPathSuggestions, "/usr/local/", "~/.local")
+	pluginValues = append(pluginValues, "darwin")
+	pluginDescriptions = append(pluginDescriptions, "CPU PJRT (darwin/arm64)")
+	pluginPriorities = append(pluginPriorities, 0)
+	installPathSuggestions = append(installPathSuggestions, "/usr/local/", "~/Library/Application Support/GoMLX")
 }
 
 // LinuxValidateVersion checks whether the linux version selected by "-version" exists.
-func LinuxValidateVersion(plugin, version string) error {
+func DarwinValidateVersion(plugin, version string) error {
 	// "latest" is always valid.
 	if version == "latest" {
 		return nil
 	}
 
-	_, err := LinuxGetDownloadURL(plugin, version)
+	_, err := DarwinGetDownloadURL(plugin, version)
 	if err != nil {
 		return errors.WithMessagef(err, "can't fetch PJRT plugin from Gopjrt version %q, see "+
 			"https://github.com/gomlx/gopjrt/releases for a list of release versions to choose from", version)
@@ -43,8 +35,8 @@ func LinuxValidateVersion(plugin, version string) error {
 	return err
 }
 
-// LinuxGetDownloadURL returns the download URL for the given version and plugin.
-func LinuxGetDownloadURL(plugin, version string) (url string, err error) {
+// DarwinGetDownloadURL returns the download URL for the given version and plugin.
+func DarwinGetDownloadURL(plugin, version string) (url string, err error) {
 	var assets []string
 	assets, err = GitHubDownloadReleaseAssets(version)
 	if err != nil {
@@ -53,10 +45,8 @@ func LinuxGetDownloadURL(plugin, version string) (url string, err error) {
 
 	var wantAsset string
 	switch plugin {
-	case "linux":
-		wantAsset = "gomlx_xlabuilder_linux_amd64.tar.gz"
-	case AmazonLinux:
-		wantAsset = "gomlx_xlabuilder_linux_amd64_amazonlinux.tar.gz"
+	case "darwin":
+		wantAsset = "gopjrt_cpu_darwin_arm64.tar.gz"
 	default:
 		err = errors.Errorf("version validation not implemented for plugin %q in version %s", plugin, version)
 		return
@@ -69,8 +59,8 @@ func LinuxGetDownloadURL(plugin, version string) (url string, err error) {
 	return "", errors.Errorf("Plugin %q version %q doesn't seem to have the required asset (%q) -- assets found: %v", plugin, version, wantAsset, assets)
 }
 
-// LinuxInstall the assets on the target directory.
-func LinuxInstall(plugin, version, installPath string) error {
+// DarwinInstall the assets on the target directory.
+func DarwinInstall(plugin, version, installPath string) error {
 	var err error
 	if version == "latest" || version == "" {
 		version, err = GitHubGetLatestVersion()
@@ -78,7 +68,7 @@ func LinuxInstall(plugin, version, installPath string) error {
 			return err
 		}
 	}
-	assetURL, err := LinuxGetDownloadURL(plugin, version)
+	assetURL, err := DarwinGetDownloadURL(plugin, version)
 	if err != nil {
 		return err
 	}
@@ -86,13 +76,14 @@ func LinuxInstall(plugin, version, installPath string) error {
 
 	// Create the target directory.
 	installPath = ReplaceTildeInDir(installPath)
+	intsallPath = filepath.Join(installPath, "PJRT")
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return errors.Wrap(err, "failed to create install directory")
 	}
 
 	// Download the asset to a temporary file.
 	sha256hash := "" // TODO: no hash for github releases. Is there a way to get them (or get a hardcoded table for all versions?)
-	downloadedFile, inCache, err := DownloadURLToTemp(assetURL, fmt.Sprintf("%s_%s", version, assetName), sha256hash)
+	downloadedFile, inCache, err := DownloadURLToTemp(assetURL, fmt.Sprintf("gopjrt_%s_%s.tar.gz", plugin, version), sha256hash)
 	if err != nil {
 		return err
 	}
@@ -119,10 +110,6 @@ func LinuxInstall(plugin, version, installPath string) error {
 	}
 	_ = listFile.Close()
 
-	// Remove older version using dynamically linked library
-	oldLib := filepath.Join(installPath, "lib/libgomlx_xlabuilder.so")
-	os.Remove(oldLib)
-
 	// Read and print the list of extracted files
 	fmt.Println("- Extracted files:")
 	fileContents, err := os.ReadFile(listFile.Name())
@@ -131,7 +118,6 @@ func LinuxInstall(plugin, version, installPath string) error {
 	}
 	fmt.Print(string(fileContents))
 
-	fmt.Printf("\n✅ Installed Gopjrt %s libraries and \"cpu\" PJRT to %s (%s platform)\n\n", version, installPath, plugin)
-
+	fmt.Printf("\n✅ Installed Gopjrt %s \"cpu\" PJRT to %s (%s/%s)\n\n", version, installPath, runtime.GOOS, runtime.GOARCH)
 	return nil
 }

@@ -128,14 +128,12 @@ It's been compiled for Macs before—I don't have easy access to an Apple Mac to
 
 ## Installing
 
-GoPJRT requires a C library installed for XlaBuilder and one or more "PJRT plugin" modules (the thing that actually does the JIT compilation
-of your computation graph). To facilitate, it provides an interactive and self-explanatory installer:
+GoPJRT requires one or more "PJRT plugin" modules to JIT-compile and execute your computation graphs.
+To facilitate installing them, it provides an interactive and self-explanatory installer:
 
 ```bash
 go run github.com/gomlx/gopjrt/cmd/gopjrt_installer@latest
 ```
-
-You can also directly provide the flags you want to avoid the interactive mode (so it can be used in scripts like Dockerfiles).
 
 > [!NOTE]
 > For now it works for (1) CPU PJRT on linux/amd64 (or Windows+WSL); (2) Nvidia CUDA PJRT on Linux/amd64; (3) CPU PJRT on Darwin (macOS).

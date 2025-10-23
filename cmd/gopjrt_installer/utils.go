@@ -378,15 +378,23 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 	// Construct release URL based on the version -- "latest" is not supported at this point.
 	releaseURL := fmt.Sprintf("https://api.github.com/repos/gomlx/gopjrt/releases/tags/%s", version)
 
-	// Make HTTP request
-	resp, err := http.Get(releaseURL)
+	// Make HTTP request with optional authorization header
+	req, err := http.NewRequest("GET", releaseURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch release data")
+		return nil, errors.Wrapf(err, "failed to create request for %q", releaseURL)
 	}
-	defer func() { ReportError(resp.Body.Close()) }()
+	req.Header.Add("Accept", "application/vnd.github+json")
+	if token := os.Getenv("GH_TOKEN"); token != "" {
+		req.Header.Add("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch release data from %q", releaseURL)
+	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
+	ReportError(resp.Body.Close())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read response body")
 	}

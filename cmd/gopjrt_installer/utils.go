@@ -336,13 +336,13 @@ retry:
 		req.Header.Add("Accept", "application/vnd.github+json")
 		if token, found := os.LookupEnv("GH_TOKEN"); found {
 			if token == "" {
-				klog.Infof("GH_TOKEN is empty, skipping authentication")
+				klog.V(1).Infof("GH_TOKEN is empty, skipping authentication")
 			} else {
 				req.Header.Add("Authorization", "Bearer "+token)
-				klog.Infof("Using GitHub token for authentication")
+				klog.V(1).Infof("Using GitHub token for authentication")
 			}
 		} else {
-			klog.Infof("GH_TOKEN is not set, skipping authentication")
+			klog.V(1).Infof("GH_TOKEN is not set, skipping authentication")
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {

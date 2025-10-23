@@ -9,7 +9,7 @@
 
 ## Why use GoPJRT ?
 
-GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize and **accelerate numeric 
+GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize, and **accelerate numeric 
 computations** (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (Nvidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](https://github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
@@ -18,8 +18,6 @@ And because [Jax](https://docs.jax.dev/en/latest/), [TensorFlow](https://www.ten
 [optionally PyTorch](https://pytorch.org/xla/release/2.3/index.html) run on XLA, it is possible to run Jax functions in Go with GoPJRT, 
 and probably TensorFlow and PyTorch as well.
 See [example 2 in xlabuilder/README.md](https://github.com/gomlx/gopjrt/blob/main/xlabuilder/README.md#example-2).
-
-(*) Not tested or partially supported by the hardware vendor.
 
 GoPJRT aims to be minimalist and robust: it provides well-maintained, extensible Go wrappers for
 [OpenXLA PJRT](https://openxla.org/#pjrt). 
@@ -61,7 +59,7 @@ development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx
 > Small ones are debuggable, or can be used to probe which operations are being used behind the scenes,
 > but definitely not friendly.
 
-A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux or `.dylib` in Darwin). 
+A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux, or optionally `.dylib` in Darwin, or `.dll` in Windows). 
 Typically, there is one plugin per hardware you are supporting. E.g.: there are PJRT plugins 
 for CPU (Linux/amd64 for now, but likely it could be compiled for other CPUs -- SIMD/AVX are well-supported), 
 for TPUs (Google's accelerator), 
@@ -111,7 +109,7 @@ The `pjrt` package includes the following main concepts:
   methods to transfer it to/from the host memory. They are the inputs and outputs of `LoadedExecutable.Execute`.
 
 PJRT plugins by default are loaded after the program is started (using `dlopen`). 
-But there is also the option to pre-link the CPU PJRT plugin in your program. 
+But there is also the option to pre-link the CPU PJRT plugin in your program -- option only works for Linux/amd64 for now. 
 For that, import (as `_`) one of the following packages:
 
 - `github.com/gomlx/gopjrt/pjrt/cpu/static`: pre-link the CPU PJRT statically, so you don't need to distribute
@@ -131,30 +129,21 @@ It's been compiled for Macs before—I don't have easy access to an Apple Mac to
 ## Installing
 
 GoPJRT requires a C library installed for XlaBuilder and one or more "PJRT plugin" modules (the thing that actually does the JIT compilation
-of your computation graph). To facilitate, it provides an interactive and self-explanatory installer (it comes with lots of help messages):
+of your computation graph). To facilitate, it provides an interactive and self-explanatory installer:
 
 ```bash
-go run github.com/gomlx/gopjrt/cmd/gopjt_installer
+go run github.com/gomlx/gopjrt/cmd/gopjrt_installer@latest
 ```
 
 You can also directly provide the flags you want to avoid the interactive mode (so it can be used in scripts like Dockerfiles).
 
 > [!NOTE]
-> For now it only works for Linux/amd64 (or Windows+WSL) and Nvidia CUDA. 
-> I managed to write for Darwin (macOS) before, but not having easy access to a Mac to maintain it, eventually I dropped it.
-> I would also love to support AMD ROCm, but again, I don't have easy access to hardwre to test/maintain it.
+> For now it works for (1) CPU PJRT on linux/amd64 (or Windows+WSL); (2) Nvidia CUDA PJRT on Linux/amd64; (3) CPU PJRT on Darwin (macOS).
+> I would love to support for AMD ROCm, Apple Metal (GPU), Intel, and others, but I don't have easy access to hardwre to test/maintain them.
 > If you feel like contributing or donating hardware/cloud credits, please contact me.
   
 There are also some older bash install scripts under [`github.com/gomlx/gopjrt/cmd`](https://github.com/gomlx/gopjrt/tree/main/cmd),
 but they are deprecated and eventually will be removed in a few versions. Let me know if you need them.
-
-## Building C/C++ dependencies
-
-If you want to build from scratch (both `xlabuilder` and `pjrt` dependencies), go to the `c/` subdirectory
-and run `basel.sh`.
-It uses [Bazel](https://bazel.build/) due to its dependencies to OpenXLA/XLA.
-If not in one of the supported platforms, you will need to create a `xla_configure.OS_ARCH.bazelrc`
-file.
 
 ## PJRT Plugins for other devices or platforms.
 
@@ -165,8 +154,8 @@ Also, see [this blog post](https://opensource.googleblog.com/2024/03/pjrt-plugin
 
 ## FAQ
 
-* **When is feature X from PJRT or XlaBuilder going to be supported ?**
-  Yes, GoPJRT doesn't wrap everything—although it does cover the most common operations. 
+* **When is feature X from PJRT going to be supported ?**
+  GoPJRT doesn't wrap everything—although it does cover the most common operations. 
   The simple ops and structs are auto-generated. But many require hand-writing.
   Please, if it is useful to your project, create an issue; I'm happy to add it. I focused on the needs of GoMLX, 
   but the idea is that it can serve other purposes, and I'm happy to support it.
@@ -212,14 +201,12 @@ Environment variables that help control or debug how GoPJRT works:
 
 ## Running Tests
 
-All tests support the following build tags to pre-link the CPU plugin (as opposed to `dlopen` the plugin) -- select at most one of them:  
+All tests support (in linux) the following build tags to pre-link the CPU plugin (as opposed to `dlopen` the plugin) -- select at most one of them:  
 
 * `--tags pjrt_cpu_static`: link (preload) the CPU PJRT plugin from the static library (`.a`) version. 
   Slowest to build (but executes the same speed).
 * `--tags pjrt_cpu_dynamic`: link (preload) the CPU PJRT plugin from the dynamic library (`.so`) version. 
   Faster to build, but deployments require deploying the `libpjrt_c_api_cpu_dynamic.so` file along.
-
-For Darwin (macOS), for the time being it is hardcoded with static linking, so avoid using these tags. 
 
 ## Acknowledgements
 This project uses the following components from the [OpenXLA project](https://openxla.org/):

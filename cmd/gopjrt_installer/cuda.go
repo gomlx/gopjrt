@@ -1,3 +1,5 @@
+//go:build (linux && amd64) || all
+
 package main
 
 import (
@@ -13,6 +15,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+func init() {
+	for _, plugin := range []string{"cuda13", "cuda12"} {
+		pluginInstallers[plugin] = CudaInstall
+		pluginValidators[plugin] = CudaValidateVersion
+	}
+	pluginValues = append(pluginValues, "cuda13", "cuda12")
+	pluginDescriptions = append(pluginDescriptions,
+		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
+		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)")
+	pluginPriorities = append(pluginPriorities, 10, 11)
+}
+
 var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
 
 // CudaInstall installs the cuda PJRT from the Jax PIP packages, using pypi.org distributed files.
@@ -21,32 +35,41 @@ var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
 // - Version exists
 // - Author email is from the Jax team
 // - Downloaded files sha256 match the ones on pypi.org
-func CudaInstall() error {
+func CudaInstall(plugin, version, installPath string) error {
 	// Create the target directory.
-	installPath := ReplaceTildeInDir(*flagPath)
+	installPath = ReplaceTildeInDir(installPath)
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return errors.Wrapf(err, "failed to create install directory in %s", installPath)
 	}
 
-	version, err := CudaInstallPJRT(installPath)
+	var err error
+	version, err = CudaInstallPJRT(plugin, version, installPath)
 	if err != nil {
 		return err
 	}
 
-	err = CudaInstallNvidiaLibraries(*flagPlugin, version, installPath)
-	if err != nil {
+	if err := CudaInstallNvidiaLibraries(plugin, version, installPath); err != nil {
 		return err
 	}
 
 	cudaVersion := "13"
-	if *flagPlugin == "cuda12" {
+	if plugin == "cuda12" {
 		cudaVersion = "12"
 	}
 	fmt.Printf("\n✅ Installed \"cuda\" PJRT and Nvidia libraries based on Jax version %s and CUDA version %s\n\n", version, cudaVersion)
 	return nil
 }
 
-func CudaInstallPJRT(installPath string) (version string, err error) {
+// CudaInstallPJRT installs the cuda PJRT from the Jax PIP packages, using pypi.org distributed files.
+//
+// Checks performed:
+// - Version exists
+// - Author email is from the Jax team
+// - Downloaded files sha256 match the ones on pypi.org
+//
+// Returns the version that was installed -- it can be different if the requested version was "latest", in which case it
+// is translated to the actual version.
+func CudaInstallPJRT(plugin, version, installPath string) (string, error) {
 	// Make the directory that will hold the PJRT files.
 	pjrtDir := filepath.Join(installPath, "/lib/gomlx/pjrt")
 	pjrtOutputPath := path.Join(pjrtDir, "pjrt_c_api_cuda_plugin.so")
@@ -55,16 +78,15 @@ func CudaInstallPJRT(installPath string) (version string, err error) {
 	}
 
 	// Get CUDA PJRT wheel from pypi.org
-	info, packageName, err := CudaGetPJRTPipInfo(*flagPlugin)
+	info, packageName, err := CudaGetPJRTPipInfo(plugin)
 	if err != nil {
-		return "", errors.WithMessagef(err, "can't fetch pypi.org information for %s", *flagPlugin)
+		return "", errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
 	}
 	if info.Info.AuthorEmail != "jax-dev@google.com" {
 		return "", errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
 	}
 
 	// Translate "latest" to the actual version if needed.
-	version = *flagVersion
 	if version == "latest" {
 		version = info.Info.Version
 	}
@@ -74,12 +96,12 @@ func CudaInstallPJRT(installPath string) (version string, err error) {
 		versions := slices.Collect(maps.Keys(info.Releases))
 		slices.Sort(versions)
 		return "", errors.Errorf("version %q not found for %q (from pip package %q) -- lastest is %q and existing versions are: %s",
-			*flagVersion, *flagPlugin, packageName, info.Info.Version, strings.Join(versions, ", "))
+			version, plugin, packageName, info.Info.Version, strings.Join(versions, ", "))
 	}
 
 	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find release for %s, version %s", *flagPlugin, *flagVersion)
+		return "", errors.Wrapf(err, "failed to find release for %s, version %s", plugin, version)
 	}
 	if releaseInfo.PackageType != "bdist_wheel" {
 		return "", errors.Errorf("release %s is not a \"binary wheel\" type", releaseInfo.Filename)
@@ -97,30 +119,30 @@ func CudaInstallPJRT(installPath string) (version string, err error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to extract CUDA PJRT file from %q wheel", packageName)
 	}
-	fmt.Printf("- Installed %s %s to %s\n", *flagPlugin, version, pjrtOutputPath)
+	fmt.Printf("- Installed %s %s to %s\n", plugin, version, pjrtOutputPath)
 	return version, nil
 }
 
 // CudaValidateVersion checks whether the cuda version selected by "-version" exists.
-func CudaValidateVersion() error {
+func CudaValidateVersion(plugin, version string) error {
 	// "latest" is always valid.
-	if *flagVersion == "latest" {
+	if version == "latest" {
 		return nil
 	}
 
-	info, packageName, err := CudaGetPJRTPipInfo(*flagPlugin)
+	info, packageName, err := CudaGetPJRTPipInfo(plugin)
 	if err != nil {
-		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", *flagPlugin)
+		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
 	}
 	if info.Info.AuthorEmail != "jax-dev@google.com" {
 		return errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
 	}
 
-	if _, ok := info.Releases[*flagVersion]; !ok {
+	if _, ok := info.Releases[version]; !ok {
 		versions := slices.Collect(maps.Keys(info.Releases))
 		slices.Sort(versions)
 		return errors.Errorf("version %s not found for %s (from pip package %q) -- existing versions: %s",
-			*flagVersion, *flagPlugin, packageName, strings.Join(versions, ", "))
+			version, plugin, packageName, strings.Join(versions, ", "))
 	}
 
 	// Version found.
@@ -130,7 +152,7 @@ func CudaValidateVersion() error {
 // CudaGetPJRTPipInfo returns the JSON info for the PIP package that corresponds to the plugin.
 func CudaGetPJRTPipInfo(plugin string) (*PipPackageInfo, string, error) {
 	var packageName string
-	switch *flagPlugin {
+	switch plugin {
 	case "cuda12":
 		packageName = "jax-cuda12-pjrt"
 	case "cuda13":

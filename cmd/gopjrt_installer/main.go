@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -13,41 +12,49 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const AmazonLinux = "amazonlinux"
-
 var (
-	pluginValues       = []string{"linux", AmazonLinux, "cuda13", "cuda12"}
-	pluginDescriptions = []string{
-		"XlaBuilder + CPU PJRT (Linux/amd64)",
-		"XlaBuilder + CPU PJRT (AmazonLinux/amd64, older libc)",
-		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
-		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)",
-	}
-	flagPlugin = flag.String("plugin", "",
-		fmt.Sprintf("PJRT plugin to install, one of: %s. ", strings.Join(pluginValues, ", "))+
-			"To use XLA one needs the XlaBuilder installed (\"linux\" or \""+AmazonLinux+"\"). Optionally, one can also "+
-			"install a CUDA PJRT. The CUDA PJRT will also download matching Nvidia libraries required for it to work -- "+
-			"it is based on the Jax distribution for pypi.org (but it doesn't use Python to install them).")
+	pluginValues           []string
+	pluginDescriptions     []string
+	pluginPriorities       []int // Order to display the plugins: smaller values are displayed first.
+	pluginInstallers       = make(map[string]func(plugin, version, installPath string) error)
+	pluginValidators       = make(map[string]func(plugin, version string) error)
+	installPathSuggestions []string
 
-	installPathSuggestions = []string{"/usr/local/", "~/.local"}
-	flagPath               = flag.String("path", "~/.local",
+	flagPlugin, flagPath *string
+	flagVersion          = flag.String("version", "latest",
+		"In most PJRT this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.4) from where to download the plugin. "+
+			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), which is where it "+
+			"downloads the plugin and Nvidia libraries from.")
+)
+
+func main() {
+	if len(pluginValues) == 0 {
+		klog.Fatalf("no installable plugins registered for platform %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	// Initialize and set default values for flags
+	klog.InitFlags(nil)
+
+	// Sort plugins by priority
+	for i := 0; i < len(pluginPriorities); i++ {
+		for j := i + 1; j < len(pluginPriorities); j++ {
+			if pluginPriorities[i] > pluginPriorities[j] {
+				pluginPriorities[i], pluginPriorities[j] = pluginPriorities[j], pluginPriorities[i]
+				pluginValues[i], pluginValues[j] = pluginValues[j], pluginValues[i]
+				pluginDescriptions[i], pluginDescriptions[j] = pluginDescriptions[j], pluginDescriptions[i]
+			}
+		}
+	}
+
+	// Define flags with plugins configured for GOOS/GOARCH used to build this binary:
+	flagPlugin = flag.String("plugin", "", "Plugin to install. Possible values: "+strings.Join(pluginValues, ", "))
+	flagPath = flag.String("path", "~/.local",
 		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
 			"It installs files under lib/ and include/ subdirectories. "+
 			"For the PJRT plugins it creates a sub-directory lib/gomlx/prjt, and in case of CUDA plugins, gomlx/nvidia for "+
 			"Nvidia's matching drivers. Suggestions: %s. "+
 			"It will require the adequate privileges (sudo) if installing in a system directories.",
 			strings.Join(installPathSuggestions, ", ")))
-
-	flagVersion = flag.String("version", "latest",
-		"For \"linux\" or \""+AmazonLinux+"\" this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.2). "+
-			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), which is where it "+
-			"downloads the plugin and Nvidia libraries from.")
-)
-
-func main() {
-	// Initialize and set default values for flags
-	klog.InitFlags(nil)
-	installPathSuggestions = DefaultInstallPaths()
 	*flagPath = installPathSuggestions[0]
 
 	// Parse flags.
@@ -73,92 +80,53 @@ func main() {
 	installPath := ReplaceTildeInDir(*flagPath)
 	fmt.Printf("Installing PJRT plugin %s@%s to %s:\n", pluginName, version, installPath)
 
-	var err error
-	switch pluginName {
-	case "linux", AmazonLinux:
-		err = LinuxInstall()
-	case "cuda12", "cuda13":
-		err = CudaInstall()
-	default:
-		err = errors.Errorf("plugin %q installation not implemented", pluginName)
+	pluginInstaller, ok := pluginInstallers[pluginName]
+	if !ok {
+		klog.Fatalf("Installer for plugin %q not found", pluginName)
 	}
-	if err != nil {
+	if err := pluginInstaller(pluginName, version, installPath); err != nil {
 		klog.Fatal(err)
-	}
-}
-
-// DefaultInstallPaths is called before parsing of the flags to set the available installation paths, as well as
-// setting the default one.
-func DefaultInstallPaths() []string {
-	currentUser, err := user.Current()
-	if err != nil {
-		klog.Errorf("Failed to get current user: %v", err)
-		return []string{"~/.local", "/usr/local"}
-	}
-
-	switch runtime.GOOS {
-	case "darwin":
-		return []string{
-			filepath.Join(currentUser.HomeDir, "Library/Application Support"),
-			"/usr/local",
-		}
-	default: // Assuming Linux
-		return []string{"~/.local", "/usr/local"}
 	}
 }
 
 // ValidateVersion is called to validate the version of the plugin chosen by the user during the interactive mode.
 func ValidateVersion() error {
-	switch *flagPlugin {
-	case "linux", AmazonLinux:
-		return LinuxValidateVersion()
-	case "cuda12", "cuda13":
-		return CudaValidateVersion()
-	default:
+	validator, ok := pluginValidators[*flagPlugin]
+	if !ok {
 		return errors.Errorf("version validation not implemented for plugin %q", *flagPlugin)
 	}
+	return validator(*flagPlugin, *flagVersion)
 }
 
 func ValidatePathPermission() error {
 	installPath := ReplaceTildeInDir(*flagPath)
-
-	// Check permissions in lib/ and include/ subdirectories
-	dirsToCheck := []string{
-		filepath.Join(installPath, "lib/"),
-		filepath.Join(installPath, "include/gomlx"),
-	}
-
-	for _, dir := range dirsToCheck {
-		// Check if the directory exists: if it doesn't exist, try to create it in the parent directories
-		_, err := os.Stat(dir)
-		if err != nil {
-			// If the directory doesn't exist, try parent directories
-			parent := dir
-			for {
-				parent = filepath.Dir(parent)
-				if parent == "/" || parent == "." {
-					return errors.New("could not find an existing parent directory")
-				}
-				if _, err := os.Stat(parent); err == nil {
-					dir = parent
-					break
-				}
+	dir := installPath
+	_, err := os.Stat(dir)
+	if err != nil {
+		// If the directory doesn't exist, try parent directories
+		parent := installPath
+		for {
+			parent = filepath.Dir(parent)
+			if parent == "/" || parent == "." {
+				return errors.New("could not find an existing parent directory")
+			}
+			if _, err := os.Stat(parent); err == nil {
+				dir = parent
+				break
 			}
 		}
-
-		// Try to create a temporary file to verify write permissions
-		testFile := filepath.Join(dir, ".gopjrt_write_test")
-		f, err := os.Create(testFile)
-		if err != nil {
-			return errors.Wrapf(err, "no write permission in directory %q, do you need \"sudo\" ?", dir)
-		}
-		ReportError(f.Close())
-
-		// Clean up test file
-		if err = os.Remove(testFile); err != nil {
-			return errors.Wrapf(err, "failed to remove test file %q", testFile)
-		}
 	}
+
+	// Try to create a temporary file to verify write permissions
+	testFile := filepath.Join(dir, ".gopjrt_write_test")
+	f, err := os.Create(testFile)
+	if err != nil {
+		return errors.Wrapf(err, "no write permission in directory %q, do you need \"sudo\" ?", dir)
+	}
+	ReportError(f.Close())
+
+	// Clean up test file
+	ReportError(os.Remove(testFile))
 
 	return nil
 }

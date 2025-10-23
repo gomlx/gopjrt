@@ -56,8 +56,9 @@ func Interact(command string, questions []Question) error {
 	// Header:
 	fmt.Println(theme.Focused.Title.Render("Welcome to the Gopjrt installer!"))
 	fmt.Println(theme.Focused.Description.Render("This tool will guide you through the installation choices " +
-		"for Gopjrt, and will display you the flags you need to use. In the end you can choose to run the command " +
-		"according to your selection, or just exit -- you can copy&paste your flags selection to execute later."))
+		"for Gopjrt and will display you the flags you need to use.\n" +
+		"In the end you can choose to run the command according to your selection or simply exit -- " +
+		"you can copy&paste your flags selection to execute later."))
 	fmt.Println()
 
 	// Key map: use arrow keys to navigate, enter to confirm, escape to go back.

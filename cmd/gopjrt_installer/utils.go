@@ -349,7 +349,7 @@ retry:
 			return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
 		}
 		if resp.StatusCode != http.StatusOK {
-			return "", errors.Errorf("failed to get version from %q, got status code %d", latestURL, resp.StatusCode)
+			return "", errors.Errorf("failed to get version from %q, got status code %d -- message %q", latestURL, resp.StatusCode, body)
 		}
 
 		// Parse JSON response

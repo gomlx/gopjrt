@@ -46,10 +46,10 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
-          echo "TERM=$TERM"
-          (cd ./cmd/gopjrt_installer && go build -o /tmp/gopjrt_installer . && sudo /tmp/gopjrt_installer -plugin=linux -version=latest -path=/usr/local)
-          sudo ln -sf /usr/local/lib/libpjrt* /usr/lib/x86_64-linux-gnu/
-          sudo ln -sf /usr/local/include/gomlx /usr/include/
+        (cd ./cmd/gopjrt_installer && go install .)
+        sudo env GH_TOKEN=$GH_TOKEN $(go env GOPATH)/bin/gopjrt_installer -plugin linux -version latest -path /usr/local
+        sudo ln -sf /usr/local/lib/libpjrt* /usr/lib/x86_64-linux-gnu/
+        sudo ln -sf /usr/local/include/gomlx /usr/include/
 
     - name: PreTest
       run: |

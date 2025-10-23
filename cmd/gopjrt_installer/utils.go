@@ -355,6 +355,7 @@ retry:
 			}
 			retries++
 			klog.Warningf("failed to get version from %q, it is missing the field `tag_name`, retrying...", latestURL)
+			fmt.Printf("Body: %s\n", string(body))
 			continue retry
 		}
 		return version, nil

@@ -4,9 +4,13 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -76,14 +80,20 @@ func DarwinInstall(plugin, version, installPath string) error {
 
 	// Create the target directory.
 	installPath = ReplaceTildeInDir(installPath)
-	intsallPath = filepath.Join(installPath, "PJRT")
+	if strings.Contains(installPath, "Application Support/GoMLX") {
+		// Subdirectory in users Application Support directory is uppercased.
+		installPath = filepath.Join(installPath, "PJRT")
+	} else {
+		// E.g.: installPath = "/usr/local" -> installPath = "/usr/local/lib/gomlx/pjrt"
+		installPath = filepath.Join(installPath, "lib", "gomlx", "pjrt")
+	}
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return errors.Wrap(err, "failed to create install directory")
 	}
 
 	// Download the asset to a temporary file.
 	sha256hash := "" // TODO: no hash for github releases. Is there a way to get them (or get a hardcoded table for all versions?)
-	downloadedFile, inCache, err := DownloadURLToTemp(assetURL, fmt.Sprintf("gopjrt_%s_%s.tar.gz", plugin, version), sha256hash)
+	downloadedFile, inCache, err := DownloadURLToTemp(assetURL, fmt.Sprintf("%s_%s", version, assetName), sha256hash)
 	if err != nil {
 		return err
 	}
@@ -102,21 +112,17 @@ func DarwinInstall(plugin, version, installPath string) error {
 
 	// Extract files
 	fmt.Printf("- Extracting files in %s to %s\n", downloadedFile, installPath)
-	cmd := exec.Command("tar", "xvzf", downloadedFile, "-C", installPath)
-	cmd.Stdout = listFile
-	klog.V(1).Infof("Running command: %v > %s", cmd.Args, listFile.Name())
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to extract files")
-	}
-	_ = listFile.Close()
-
-	// Read and print the list of extracted files
-	fmt.Println("- Extracted files:")
-	fileContents, err := os.ReadFile(listFile.Name())
+	extractedFiles, err := Untar(downloadedFile, installPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read list of extracted files")
+		return err
 	}
-	fmt.Print(string(fileContents))
+	if len(extractedFiles) == 0 {
+		return errors.Errorf("failed to extract files from %s", downloadedFile)
+	}
+	fmt.Printf("- Extracted %d file(s):\n", len(extractedFiles))
+	for _, file := range extractedFiles {
+		fmt.Printf("  - %s\n", file)
+	}
 
 	fmt.Printf("\n✅ Installed Gopjrt %s \"cpu\" PJRT to %s (%s/%s)\n\n", version, installPath, runtime.GOOS, runtime.GOARCH)
 	return nil

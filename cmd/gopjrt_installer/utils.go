@@ -1,7 +1,9 @@
 package main
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -340,7 +342,7 @@ func GitHubGetLatestVersion() (string, error) {
 		TagName string `json:"tag_name"`
 	}
 	if err := json.Unmarshal(body, &info); err != nil {
-		return "", fmt.Errorf("failed to parse JSON response: %v", err)
+		return "", errors.Wrapf(err, "failed to parse JSON response")
 	}
 	version := info.TagName
 	if version == "" {
@@ -357,14 +359,14 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 	// Make HTTP request
 	resp, err := http.Get(releaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch release data: %v", err)
+		return nil, errors.Wrapf(err, "failed to fetch release data")
 	}
-	defer resp.Body.Close()
+	defer func() { ReportError(resp.Body.Close()) }()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
+		return nil, errors.Wrapf(err, "failed to read response body")
 	}
 
 	// Parse JSON response
@@ -374,7 +376,7 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 		} `json:"assets"`
 	}
 	if err := json.Unmarshal(body, &release); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON response: %v", err)
+		return nil, errors.Wrapf(err, "failed to parse JSON response")
 	}
 
 	// Extract .tar.gz download URLs
@@ -386,4 +388,124 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 	}
 
 	return urls, nil
+}
+
+// Untar takes a path to a tar/gzip file and an output directory.
+// It returns a list of extracted files and any error encountered.
+func Untar(tarballPath, outputDirPath string) ([]string, error) {
+	// Make sure the output directory is absolute.
+	if !filepath.IsAbs(outputDirPath) {
+		var err error
+		outputDirPath, err = filepath.Abs(outputDirPath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Untar failed to get absolute path for output directory %q", outputDirPath)
+		}
+	}
+
+	// 1. Open the tarball file
+	file, err := os.Open(tarballPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to open tarball in %s for reading", tarballPath)
+	}
+	defer func() { ReportError(file.Close()) }()
+
+	// 2. Setup the Gzip reader (assuming it's a .tar.gz)
+	// If it's just a .tar file, you would skip this step and use 'file' directly below.
+	var fileReader io.Reader = file
+	if filepath.Ext(tarballPath) == ".gz" || filepath.Ext(tarballPath) == ".tgz" {
+		gzReader, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create gzip reader")
+		}
+		defer func() { ReportError(gzReader.Close()) }()
+		fileReader = gzReader
+	}
+
+	// 3. Setup the Tar reader
+	tarReader := tar.NewReader(fileReader)
+
+	// Track extracted files
+	var extractedFiles []string
+
+	// 4. Iterate through the archive entries
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "tar reading error")
+		}
+
+		// Clean the targetPath and make sure it falls within outputDirPath.
+		targetPath := filepath.Join(outputDirPath, header.Name)
+		targetPath = filepath.Clean(targetPath)
+		if !strings.HasPrefix(targetPath, outputDirPath) {
+			return nil, errors.Errorf("tar entry path is unsafe: %s", header.Name)
+		}
+
+		// Create parent directories if they don't exist
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			return nil, errors.Wrapf(err, "failed to create directory %s", filepath.Dir(targetPath))
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// Handle directories
+			if err := os.MkdirAll(targetPath, os.FileMode(header.Mode)); err != nil {
+				return nil, errors.Wrapf(err, "failed to create directory %s", targetPath)
+			}
+			extractedFiles = append(extractedFiles, targetPath)
+
+		case tar.TypeReg:
+			// Handle regular files and links
+			outFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				// If file exists and is read-only, remove it and try again.
+				if os.IsPermission(err) {
+					if err = os.Remove(targetPath); err != nil {
+						return nil, errors.Wrapf(err, "failed to remove read-only file %s", targetPath)
+					}
+					outFile, err = os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to create file %s after removing read-only version", targetPath)
+					}
+				} else {
+					return nil, errors.Wrapf(err, "failed to create file %s", targetPath)
+				}
+			}
+			// Copy file contents
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				ReportError(outFile.Close())
+				return nil, errors.Wrapf(err, "failed to copy file contents to %s", targetPath)
+			}
+			ReportError(outFile.Close())
+			extractedFiles = append(extractedFiles, targetPath)
+
+		case tar.TypeSymlink:
+			// Sanitize the symlink's target path to ensure it stays within the output directory
+			linkTarget := filepath.Clean(header.Linkname)
+			if filepath.IsAbs(linkTarget) {
+				return nil, errors.Errorf("absolute symlink target path unsafe and not allowed: %s", linkTarget)
+			}
+			// Calculate the absolute path of the link target relative to the symlink's location
+			absLinkTarget := filepath.Join(filepath.Dir(targetPath), linkTarget)
+			cleanAbsTarget, err := filepath.EvalSymlinks(absLinkTarget)
+			if err != nil && !os.IsNotExist(err) {
+				return nil, errors.Wrapf(err, "failed to evaluate symlink target for %s", targetPath)
+			}
+			if cleanAbsTarget != "" && !strings.HasPrefix(cleanAbsTarget, outputDirPath) {
+				return nil, errors.Errorf("symlink target path escapes output directory: %s", linkTarget)
+			}
+			// Create the symlink
+			if err := os.Symlink(linkTarget, targetPath); err != nil {
+				return nil, errors.Wrapf(err, "failed to create symlink %s -> %s", targetPath, linkTarget)
+			}
+			extractedFiles = append(extractedFiles, targetPath)
+
+		default:
+			klog.Errorf("Skipping unsupported type: %c for file %s\n", header.Typeflag, header.Name)
+		}
+	}
+	return extractedFiles, nil
 }

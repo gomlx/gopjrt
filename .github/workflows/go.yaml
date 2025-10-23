@@ -1,6 +1,3 @@
-# Tests only run with --short, since the full tests involve downloading datasets
-# and would be too costly for a GitHub actions.
-# Locally in the development box it works because the datasets are cached.
 name: "Tests" # The name of the workflow that will appear on GitHub
 permissions:
   # read|write|none

@@ -324,31 +324,40 @@ func extractZipFile(f *zip.File, outputPath string) error {
 
 func GitHubGetLatestVersion() (string, error) {
 	const latestURL = "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
-	// Make HTTP request
-	resp, err := http.Get(latestURL)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
-	}
-	defer resp.Body.Close()
+	retries := 0
+	const maxRetries = 3
+retry:
+	for {
+		// Make HTTP request
+		resp, err := http.Get(latestURL)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
+		}
 
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
-	}
+		// Read response body
+		body, err := io.ReadAll(resp.Body)
+		ReportError(resp.Body.Close())
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
+		}
 
-	// Parse JSON response
-	var info struct {
-		TagName string `json:"tag_name"`
+		// Parse JSON response
+		var info struct {
+			TagName string `json:"tag_name"`
+		}
+		if err := json.Unmarshal(body, &info); err != nil {
+			return "", errors.Wrapf(err, "failed to parse JSON response")
+		}
+		version := info.TagName
+		if version == "" {
+			if retries == maxRetries {
+				return "", errors.Errorf("failed to get version from %q, it is missing the field `tag_name`", latestURL)
+			}
+			retries++
+			klog.Warningf("failed to get version from %q, it is missing the field `tag_name`, retrying...", latestURL)
+		}
+		return version, nil
 	}
-	if err := json.Unmarshal(body, &info); err != nil {
-		return "", errors.Wrapf(err, "failed to parse JSON response")
-	}
-	version := info.TagName
-	if version == "" {
-		return "", errors.Errorf("failed to get version from %q", latestURL)
-	}
-	return version, nil
 }
 
 // GitHubDownloadReleaseAssets downloads the list of assets available for the given Gopjrt release version.

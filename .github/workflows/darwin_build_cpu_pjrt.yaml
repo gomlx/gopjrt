@@ -28,6 +28,10 @@ jobs:
           # Install packages *into* the venv
           pip install six numpy
 
+      - name: 'Install latest LLVM (Clang)'
+        run: |
+          brew install llvm
+
       - name: 'Setup Bazelisk (for Bazel)'
         # This action installs and caches the correct Bazel version
         # specified by the .bazelversion file in the XLA repo.
@@ -47,19 +51,22 @@ jobs:
       - name: 'Build PJRT C API CPU plugin'
         run: |
           source venv/bin/activate
+          # Point Bazel to the Homebrew-installed LLVM/Clang
+          # This is the standard path for Homebrew on Apple Silicon runners
+          export LLVM_PATH="/opt/homebrew/opt/llvm"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export CC="$LLVM_PATH/bin/clang"
+          export CXX="$LL_PATH/bin/clang++"
           cd xla
-          bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+          bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 
       - name: 'Package the binary'
         run: |
-          # Define the path where Bazel places the output binary
-          # This is the stable symlink path
-          BINARY_DIR="xla/bazel-bin/xla/pjrt/c"
-          BINARY_NAME="pjrt_c_api_cpu_plugin.so"
-          
           # Create the tarball.
           # The -C flag tells tar to change to BINARY_DIR first,
           # so that BINARY_NAME is added to the archive at its root.
+          BINARY_DIR="xla/bazel-bin/xla/pjrt/c"
+          BINARY_NAME="pjrt_c_api_cpu_plugin.so"
           tar -czvf gopjrt_cpu_darwin_arm64.tar.gz -C ${BINARY_DIR} ${BINARY_NAME}
 
       - name: 'Upload plugin artifact'
@@ -67,7 +74,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # This is the name of the artifact bundle in the GitHub UI
-          name: pjrt-cpu-darwin-arm64
+          name: gopjrt_cpu_darwin_arm64
           # This is the file to upload
           path: gopjrt_cpu_darwin_arm64.tar.gz
           # Set a reasonable retention period for the artifact

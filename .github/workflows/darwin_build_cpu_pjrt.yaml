@@ -13,10 +13,20 @@ jobs:
     runs-on: macos-14
 
     steps:
-      - name: 'Install Python dependencies'
+      - name: 'Set up Python 3.11'
+        # Using a specific Python version is good practice
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 'Install Python dependencies into a venv'
         run: |
-          # XLA build requires some common Python packages
-          pip3 install six numpy
+          # Create a virtual environment
+          python3 -m venv venv
+          # Activate the virtual environment
+          source venv/bin/activate
+          # Install packages *into* the venv
+          pip install six numpy
 
       - name: 'Setup Bazelisk (for Bazel)'
         # This action installs and caches the correct Bazel version
@@ -36,6 +46,7 @@ jobs:
 
       - name: 'Build PJRT C API CPU plugin'
         run: |
+          source venv/bin/activate
           cd xla
           # We use --config=opt for an optimized build and
           # --config=macos_arm64 to target the Apple Silicon architecture

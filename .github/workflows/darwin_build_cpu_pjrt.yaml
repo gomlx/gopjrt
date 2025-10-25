@@ -60,13 +60,15 @@ jobs:
           export PATH="$LLVM_PATH/bin:$PATH"
           export CC="$LLVM_PATH/bin/clang"
           export CXX="$LL_PATH/bin/clang++"
+          export HERMETIC_PYTHON_VERSION=3.11
+          
           cd xla
           printf "\nConfiguring XLA build:\n"
           ./configure.py --backend CPU --os DARWIN --host_compiler CLANG --clang_path "$LLVM_PATH/bin/clang"
           
           printf "\nStarting XLA bazel build:\n"
-          bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
-
+          bazel build -c opt //xla/service/cpu:runtime_matmul
+          # bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
       - name: 'Package the binary'
         run: |
           # Create the tarball.

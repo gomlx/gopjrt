@@ -10,7 +10,7 @@ jobs:
     name: 'Build macOS (arm64) Plugin'
 
     # We use macos-14, which is the GitHub-hosted runner for Apple Silicon (arm64)
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: 'Set up Python 3.11'
@@ -68,7 +68,7 @@ jobs:
           
           printf "\nStarting XLA bazel build:\n"
           bazel build -c opt //xla/service/cpu:runtime_matmul
-          # bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+          bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
       - name: 'Package the binary'
         run: |
           # Create the tarball.

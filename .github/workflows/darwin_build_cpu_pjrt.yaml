@@ -10,13 +10,27 @@ jobs:
     name: 'Build macOS (arm64) Plugin'
 
     # We use macos-14, which is the GitHub-hosted runner for Apple Silicon (arm64)
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
-      - name: 'Install Python dependencies'
+      - name: 'Set up Python 3.11'
+        # Using a specific Python version is good practice
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 'Install Python dependencies into a venv'
         run: |
-          # XLA build requires some common Python packages
-          pip3 install six numpy
+          # Create a virtual environment
+          python3 -m venv venv
+          # Activate the virtual environment
+          source venv/bin/activate
+          # Install packages *into* the venv
+          pip install six numpy
+
+      - name: 'Install latest LLVM (Clang)'
+        run: |
+          brew install llvm
 
       - name: 'Setup Bazelisk (for Bazel)'
         # This action installs and caches the correct Bazel version
@@ -36,24 +50,32 @@ jobs:
 
       - name: 'Build PJRT C API CPU plugin'
         run: |
+          source venv/bin/activate
+          # Point Bazel to the Homebrew-installed LLVM/Clang
+          # This is the standard path for Homebrew on Apple Silicon runners
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+          export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+          export LLVM_PATH="/opt/homebrew/opt/llvm"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export CC="$LLVM_PATH/bin/clang"
+          export CXX="$LL_PATH/bin/clang++"
+          export HERMETIC_PYTHON_VERSION=3.11
+          
           cd xla
-          # We use --config=opt for an optimized build and
-          # --config=macos_arm64 to target the Apple Silicon architecture
-          bazel build \
-            --config=opt \
-            --config=macos_arm64 \
-            //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
-
+          printf "\nConfiguring XLA build:\n"
+          ./configure.py --backend CPU --os DARWIN --host_compiler CLANG --clang_path "$LLVM_PATH/bin/clang"
+          
+          printf "\nStarting XLA bazel build:\n"
+          bazel build -c opt //xla/service/cpu:runtime_matmul
+          bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
       - name: 'Package the binary'
         run: |
-          # Define the path where Bazel places the output binary
-          # This is the stable symlink path
-          BINARY_DIR="xla/bazel-bin/xla/pjrt/c"
-          BINARY_NAME="pjrt_c_api_cpu_plugin.so"
-          
           # Create the tarball.
           # The -C flag tells tar to change to BINARY_DIR first,
           # so that BINARY_NAME is added to the archive at its root.
+          BINARY_DIR="xla/bazel-bin/xla/pjrt/c"
+          BINARY_NAME="pjrt_c_api_cpu_plugin.so"
           tar -czvf gopjrt_cpu_darwin_arm64.tar.gz -C ${BINARY_DIR} ${BINARY_NAME}
 
       - name: 'Upload plugin artifact'
@@ -61,7 +83,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # This is the name of the artifact bundle in the GitHub UI
-          name: pjrt-cpu-darwin-arm64
+          name: gopjrt_cpu_darwin_arm64
           # This is the file to upload
           path: gopjrt_cpu_darwin_arm64.tar.gz
           # Set a reasonable retention period for the artifact

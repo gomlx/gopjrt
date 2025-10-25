@@ -61,6 +61,7 @@ jobs:
           export CC="$LLVM_PATH/bin/clang"
           export CXX="$LL_PATH/bin/clang++"
           cd xla
+          ./configure.py --backend=CPU --os=DARWIN --host_compiler=CLANG --clang_path="$LLVM_PATH/bin/clang"
           bazel build -c opt //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 
       - name: 'Package the binary'

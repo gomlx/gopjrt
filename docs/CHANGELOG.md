@@ -4,6 +4,7 @@
 
 - GitHub workflows:
   - Renamed to more meaningful names.
+  - Added `darwin_build_cpu_pjrt.yaml`: workflow to automatically build the Darwin CPU PJRT plugin.
 
 # v0.8.4 - 2025/10/23 Adding Darwin (Mac) support for CPU PJRT plugin
 

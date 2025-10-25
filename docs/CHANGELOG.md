@@ -1,5 +1,10 @@
 # Gopjrt Changelog
 
+# Next
+
+- GitHub workflows:
+  - Renamed to more meaningful names.
+
 # v0.8.4 - 2025/10/23 Adding Darwin (Mac) support for CPU PJRT plugin
 
 - Added default "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in MacOS.

@@ -1,6 +1,3 @@
-# Tests only run with --short, since the full tests involve downloading datasets
-# and would be too costly for a GitHub actions.
-# Locally in the development box it works because the datasets are cached.
 name: "Tests" # The name of the workflow that will appear on GitHub
 permissions:
   # read|write|none
@@ -45,9 +42,12 @@ jobs:
         go-version: "1.25.x"
 
     - name: Install Gopjrt C library gomlx_xlabuilder and PJRT plugin
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
-        (cd ./cmd/gopjrt_installer && go build -o /tmp/gopjrt_installer . && sudo /tmp/gopjrt_installer -plugin=linux -version=latest -path=/usr/local)
+        (cd ./cmd/gopjrt_installer && go install .)
+        sudo env GH_TOKEN=$GH_TOKEN $(go env GOPATH)/bin/gopjrt_installer -plugin linux -version latest -path /usr/local
         sudo ln -sf /usr/local/lib/libpjrt* /usr/lib/x86_64-linux-gnu/
         sudo ln -sf /usr/local/include/gomlx /usr/include/
 

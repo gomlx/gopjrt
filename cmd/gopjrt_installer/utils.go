@@ -324,31 +324,60 @@ func extractZipFile(f *zip.File, outputPath string) error {
 
 func GitHubGetLatestVersion() (string, error) {
 	const latestURL = "https://api.github.com/repos/gomlx/gopjrt/releases/latest"
-	// Make HTTP request
-	resp, err := http.Get(latestURL)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
-	}
-	defer resp.Body.Close()
+	retries := 0
+	const maxRetries = 2
+retry:
+	for {
+		// Make HTTP request with optional authorization header
+		req, err := http.NewRequest("GET", latestURL, nil)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create request for %q", latestURL)
+		}
+		req.Header.Add("Accept", "application/vnd.github+json")
+		if token, found := os.LookupEnv("GH_TOKEN"); found {
+			if token == "" {
+				klog.V(1).Infof("GH_TOKEN is empty, skipping authentication")
+			} else {
+				req.Header.Add("Authorization", "Bearer "+token)
+				klog.V(1).Infof("Using GitHub token for authentication")
+			}
+		} else {
+			klog.V(1).Infof("GH_TOKEN is not set, skipping authentication")
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to fetch release data from %q", latestURL)
+		}
 
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
-	}
+		// Read response body
+		body, err := io.ReadAll(resp.Body)
+		ReportError(resp.Body.Close())
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to read data from %q", latestURL)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return "", errors.Errorf("failed to get version from %q, got status code %d -- message %q", latestURL, resp.StatusCode, body)
+		}
 
-	// Parse JSON response
-	var info struct {
-		TagName string `json:"tag_name"`
+		// Parse JSON response
+		var info struct {
+			TagName string `json:"tag_name"`
+		}
+		if err := json.Unmarshal(body, &info); err != nil {
+			return "", errors.Wrapf(err, "failed to parse JSON response")
+		}
+		version := info.TagName
+		if version == "" {
+			if retries == maxRetries {
+				return "", errors.Errorf("failed to get version from %q, it is missing the field `tag_name`", latestURL)
+			}
+			retries++
+			klog.Warningf("failed to get version from %q, it is missing the field `tag_name`, retrying...", latestURL)
+			fmt.Printf("Body: %s\n", string(body))
+			continue retry
+		}
+		return version, nil
 	}
-	if err := json.Unmarshal(body, &info); err != nil {
-		return "", errors.Wrapf(err, "failed to parse JSON response")
-	}
-	version := info.TagName
-	if version == "" {
-		return "", errors.Errorf("failed to get version from %q", latestURL)
-	}
-	return version, nil
 }
 
 // GitHubDownloadReleaseAssets downloads the list of assets available for the given Gopjrt release version.
@@ -356,15 +385,24 @@ func GitHubDownloadReleaseAssets(version string) ([]string, error) {
 	// Construct release URL based on the version -- "latest" is not supported at this point.
 	releaseURL := fmt.Sprintf("https://api.github.com/repos/gomlx/gopjrt/releases/tags/%s", version)
 
-	// Make HTTP request
-	resp, err := http.Get(releaseURL)
+	// Make HTTP request with optional authorization header
+	req, err := http.NewRequest("GET", releaseURL, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch release data")
+		return nil, errors.Wrapf(err, "failed to create request for %q", releaseURL)
 	}
-	defer func() { ReportError(resp.Body.Close()) }()
+	req.Header.Add("Accept", "application/vnd.github+json")
+	if token := os.Getenv("GH_TOKEN"); token != "" {
+		req.Header.Add("Authorization", "Bearer "+token)
+		klog.V(1).Infof("Using GitHub token for authentication")
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch release data from %q", releaseURL)
+	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
+	ReportError(resp.Body.Close())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read response body")
 	}

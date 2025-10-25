@@ -1,4 +1,5 @@
-name: "Tests" # The name of the workflow that will appear on GitHub
+name: "Tests(linux)"
+
 permissions:
   # read|write|none
   actions: read

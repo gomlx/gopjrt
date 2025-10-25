@@ -1,0 +1,68 @@
+name: 'Build darwin/arm64 XLA PJRT CPU Plugin'
+
+# This allows the workflow to be triggered manually from the
+# GitHub UI (Actions tab > "Build XLA PJRT CPU Plugin" > Run workflow)
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-package-macos-arm64:
+    name: 'Build macOS (arm64) Plugin'
+
+    # We use macos-14, which is the GitHub-hosted runner for Apple Silicon (arm64)
+    runs-on: macos-14
+
+    steps:
+      - name: 'Install Python dependencies'
+        run: |
+          # XLA build requires some common Python packages
+          pip3 install six numpy
+
+      - name: 'Setup Bazelisk (for Bazel)'
+        # This action installs and caches the correct Bazel version
+        # specified by the .bazelversion file in the XLA repo.
+        uses: bazelbuild/setup-bazelisk@v3
+
+      - name: 'Check out openxla/xla repository'
+        # This checks out the external XLA repo, not the repo this
+        # workflow lives in.
+        uses: actions/checkout@v4
+        with:
+          repository: 'openxla/xla'
+          # Check out to a specific 'xla' directory
+          path: 'xla'
+          # Ensure submodules (like LLVM) are also checked out
+          submodules: 'recursive'
+
+      - name: 'Build PJRT C API CPU plugin'
+        run: |
+          cd xla
+          # We use --config=opt for an optimized build and
+          # --config=macos_arm64 to target the Apple Silicon architecture
+          bazel build \
+            --config=opt \
+            --config=macos_arm64 \
+            //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+
+      - name: 'Package the binary'
+        run: |
+          # Define the path where Bazel places the output binary
+          # This is the stable symlink path
+          BINARY_DIR="xla/bazel-bin/xla/pjrt/c"
+          BINARY_NAME="pjrt_c_api_cpu_plugin.so"
+          
+          # Create the tarball.
+          # The -C flag tells tar to change to BINARY_DIR first,
+          # so that BINARY_NAME is added to the archive at its root.
+          tar -czvf gopjrt_cpu_darwin_arm64.tar.gz -C ${BINARY_DIR} ${BINARY_NAME}
+
+      - name: 'Upload plugin artifact'
+        # This action uploads the generated file as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # This is the name of the artifact bundle in the GitHub UI
+          name: pjrt-cpu-darwin-arm64
+          # This is the file to upload
+          path: gopjrt_cpu_darwin_arm64.tar.gz
+          # Set a reasonable retention period for the artifact
+          retention-days: 3

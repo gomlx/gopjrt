@@ -53,6 +53,9 @@ jobs:
           source venv/bin/activate
           # Point Bazel to the Homebrew-installed LLVM/Clang
           # This is the standard path for Homebrew on Apple Silicon runners
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+          export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
           export LLVM_PATH="/opt/homebrew/opt/llvm"
           export PATH="$LLVM_PATH/bin:$PATH"
           export CC="$LLVM_PATH/bin/clang"

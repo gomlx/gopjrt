@@ -1,6 +1,5 @@
-name: Tests(macOS)
+name: Tests(darwin)
 
-# Triggers the workflow on push or pull request events but only for the "main" branch
 on:
   push:
     branches: [ "main" ]

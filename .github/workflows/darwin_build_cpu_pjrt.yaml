@@ -48,12 +48,7 @@ jobs:
         run: |
           source venv/bin/activate
           cd xla
-          # We use --config=opt for an optimized build and
-          # --config=macos_arm64 to target the Apple Silicon architecture
-          bazel build \
-            --config=opt \
-            --config=macos_arm64 \
-            //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
+          bazel build //xla/pjrt/c:pjrt_c_api_cpu_plugin.so
 
       - name: 'Package the binary'
         run: |

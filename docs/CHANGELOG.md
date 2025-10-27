@@ -1,10 +1,13 @@
 # Gopjrt Changelog
 
-# Next
+# v0.8.5 - 2025/10/27 Fixed `xlabuilder` for newer C compilers.
 
 - GitHub workflows:
   - Renamed to more meaningful names.
   - Added `darwin_build_cpu_pjrt.yaml`: workflow to automatically build the Darwin CPU PJRT plugin.
+- Package `xlabuilder`:
+  - Added `-std=gnu11` to `CFLAGS` to avoid incompatibility introduced in `c23`. 
+  - Temporary fix, as `xlabuilder` is deprecated and will be removed in the future.
 
 # v0.8.4 - 2025/10/23 Adding Darwin (Mac) support for CPU PJRT plugin
 

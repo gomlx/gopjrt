@@ -4,6 +4,7 @@
 [![GitHub](https://img.shields.io/github/license/gomlx/gopjrt)](https://github.com/Kwynto/gosession/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gomlx/gopjrt)](https://goreportcard.com/report/github.com/gomlx/gopjrt)
 [![TestStatus](https://github.com/gomlx/gopjrt/actions/workflows/linux_tests.yaml/badge.svg)](https://github.com/gomlx/gopjrt/actions/workflows/linux_tests.yaml)
+[![TestStatus](https://github.com/gomlx/gopjrt/actions/workflows/darwin_tests.yaml/badge.svg)](https://github.com/gomlx/gopjrt/actions/workflows/darwin_tests.yaml)
 ![Coverage](https://img.shields.io/badge/Coverage-70.1%25-yellow)
 [![Slack](https://img.shields.io/badge/Slack-GoMLX-purple.svg?logo=slack)](https://app.slack.com/client/T029RQSE6/C08TX33BX6U)
 

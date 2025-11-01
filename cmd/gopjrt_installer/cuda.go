@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -22,12 +21,10 @@ func init() {
 	}
 	pluginValues = append(pluginValues, "cuda13", "cuda12")
 	pluginDescriptions = append(pluginDescriptions,
-		"CUDA PJRT (for Linux/amd64, using CUDA 13)",
-		"CUDA PJRT (for Linux/amd64, using CUDA 12, deprecated)")
+		"CUDA PJRT for Linux/amd64, using CUDA 13",
+		"CUDA PJRT for Linux/amd64, using CUDA 12, deprecated")
 	pluginPriorities = append(pluginPriorities, 10, 11)
 }
-
-var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
 
 // CudaInstall installs the cuda PJRT from the Jax PIP packages, using pypi.org distributed files.
 //
@@ -83,7 +80,8 @@ func CudaInstallPJRT(plugin, version, installPath string) (string, error) {
 		return "", errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
 	}
 	if info.Info.AuthorEmail != "jax-dev@google.com" {
-		return "", errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
+		return "", errors.Errorf("package %s is not from Jax team, but it's signed by %q: something is suspicious!?",
+			packageName, info.Info.AuthorEmail)
 	}
 
 	// Translate "latest" to the actual version if needed.
@@ -99,7 +97,7 @@ func CudaInstallPJRT(plugin, version, installPath string) (string, error) {
 			version, plugin, packageName, info.Info.Version, strings.Join(versions, ", "))
 	}
 
-	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64)
+	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64, false)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find release for %s, version %s", plugin, version)
 	}
@@ -135,7 +133,8 @@ func CudaValidateVersion(plugin, version string) error {
 		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
 	}
 	if info.Info.AuthorEmail != "jax-dev@google.com" {
-		return errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
+		return errors.Errorf("package %s is not from Jax team, but it's signed by %q: something is suspicious!?",
+			packageName, info.Info.AuthorEmail)
 	}
 
 	if _, ok := info.Releases[version]; !ok {
@@ -240,7 +239,7 @@ func cudaInstallNvidiaLibrary(nvidiaLibsDir string, dep PipDependency) error {
 		if !dep.IsValid(version) {
 			continue
 		}
-		releaseInfo, err := PipSelectRelease(releases, pipPackageLinuxAMD64)
+		releaseInfo, err := PipSelectRelease(releases, pipPackageLinuxAMD64, false)
 		if err != nil {
 			continue
 		}

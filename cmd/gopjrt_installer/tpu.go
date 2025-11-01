@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -22,17 +21,14 @@ func init() {
 	}
 	pluginValues = append(pluginValues, "tpu")
 	pluginDescriptions = append(pluginDescriptions,
-		"TPU PJRT (for Linux/amd64 host machines, using PyPI's libtpu package)")
+		"TPU PJRT for Linux/amd64 host machines (glibc >= 2.31)")
 	pluginPriorities = append(pluginPriorities, 20)
 }
-
-var pipPackageLinuxAMD64 = regexp.MustCompile(`-manylinux.*x86_64`)
 
 // TPUInstall installs the cuda PJRT from the "libtpu" PIP packages, using pypi.org distributed files.
 //
 // Checks performed:
 // - Version exists
-// - Author email is from the Jax team
 // - Downloaded files sha256 match the ones on pypi.org
 func TPUInstall(plugin, version, installPath string) error {
 	// Create the target directory.
@@ -42,7 +38,7 @@ func TPUInstall(plugin, version, installPath string) error {
 	}
 
 	pjrtDir := filepath.Join(installPath, "/lib/gomlx/pjrt")
-	pjrtOutputPath := path.Join(pjrtDir, "pjrt_c_api_cuda_plugin.so")
+	pjrtOutputPath := path.Join(pjrtDir, "pjrt_c_api_tpu_plugin.so")
 	if err := os.MkdirAll(pjrtDir, 0755); err != nil {
 		return errors.Wrapf(err, "failed to create PJRT install directory in %s", pjrtDir)
 	}
@@ -51,9 +47,6 @@ func TPUInstall(plugin, version, installPath string) error {
 	info, packageName, err := TPUGetPJRTPipInfo(plugin)
 	if err != nil {
 		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
-	}
-	if info.Info.AuthorEmail != "jax-dev@google.com" {
-		return errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
 	}
 
 	// Translate "latest" to the actual version if needed.
@@ -69,7 +62,7 @@ func TPUInstall(plugin, version, installPath string) error {
 			version, plugin, packageName, info.Info.Version, strings.Join(versions, ", "))
 	}
 
-	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64)
+	releaseInfo, err := PipSelectRelease(releaseInfos, pipPackageLinuxAMD64Glibc231, true)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find release for %s, version %s", plugin, version)
 	}
@@ -85,12 +78,11 @@ func TPUInstall(plugin, version, installPath string) error {
 	if !fileCached {
 		defer func() { ReportError(os.Remove(downloadedJaxPJRTWHL)) }()
 	}
-	err = ExtractFileFromZip(downloadedJaxPJRTWHL, "xla_cuda_plugin.so", pjrtOutputPath)
+	err = ExtractFileFromZip(downloadedJaxPJRTWHL, "libtpu.so", pjrtOutputPath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to extract CUDA PJRT file from %q wheel", packageName)
+		return errors.Wrapf(err, "failed to extract TPU PJRT file from %q wheel", packageName)
 	}
 	fmt.Printf("- Installed %s %s to %s\n", plugin, version, pjrtOutputPath)
-	return nil
 
 	fmt.Printf("\n✅ Installed \"tpu\" PJRT based on PyPI version %s\n\n", version)
 	return nil
@@ -105,10 +97,7 @@ func TPUValidateVersion(plugin, version string) error {
 
 	info, packageName, err := TPUGetPJRTPipInfo(plugin)
 	if err != nil {
-		return errors.WithMessagef(err, "can't fetch pypi.org information for %s", plugin)
-	}
-	if info.Info.AuthorEmail != "jax-dev@google.com" {
-		return errors.Errorf("package %s is not from Jax team, something is very suspicious!?", packageName)
+		return errors.WithMessagef(err, "can't fetch pypi.org information for %q", plugin)
 	}
 
 	if _, ok := info.Releases[version]; !ok {
@@ -126,10 +115,8 @@ func TPUValidateVersion(plugin, version string) error {
 func TPUGetPJRTPipInfo(plugin string) (*PipPackageInfo, string, error) {
 	var packageName string
 	switch plugin {
-	case "cuda12":
-		packageName = "jax-cuda12-pjrt"
-	case "cuda13":
-		packageName = "jax-cuda13-pjrt"
+	case "tpu":
+		packageName = "libtpu"
 	default:
 		return nil, "", errors.Errorf("unknown plugin %q selected", plugin)
 	}
@@ -138,108 +125,4 @@ func TPUGetPJRTPipInfo(plugin string) (*PipPackageInfo, string, error) {
 		return nil, "", errors.Wrapf(err, "failed to get package info for %s", packageName)
 	}
 	return info, packageName, nil
-}
-
-func TPUInstallNvidiaLibraries(plugin, version, installPath string) error {
-	// Remove any previous version of the nvidia libraries and recreate it.
-	nvidiaLibsDir := filepath.Join(installPath, "/lib/gomlx/nvidia")
-	if err := os.RemoveAll(nvidiaLibsDir); err != nil {
-		return errors.Wrapf(err, "failed to remove existing nvidia libraries directory %s", nvidiaLibsDir)
-	}
-	if err := os.MkdirAll(nvidiaLibsDir, 0755); err != nil {
-		return errors.Wrapf(err, "failed to create nvidia libraries directory in %s", nvidiaLibsDir)
-	}
-
-	// Find required nvidia packages:
-	packageName := "jax-" + plugin + "-plugin"
-	jaxTPUPluginInfo, err := GetPipInfo(packageName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to fetch the package info for %s", packageName)
-	}
-	fmt.Println("Dependencies:")
-	deps, err := jaxTPUPluginInfo.ParseDependencies()
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse the dependencies for %s", packageName)
-	}
-	nvidiaDependencies := slices.DeleteFunc(deps, func(dep PipDependency) bool {
-		// This is a simplification that works for now: in the future we many need to check "sys_platform" conditions.
-		if !strings.HasPrefix(dep.Package, "nvidia") {
-			return true
-		}
-		return false
-	})
-
-	// Install the nvidia libraries found in the dependencies.
-	for _, dep := range nvidiaDependencies {
-		err = cudaInstallNvidiaLibrary(nvidiaLibsDir, dep)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Create a link to the binary ptxas, required by the nvidia libraries.
-	nvidiaBinPath := filepath.Join(nvidiaLibsDir, "bin")
-	if err := os.MkdirAll(nvidiaBinPath, 0755); err != nil {
-		return errors.Wrapf(err, "failed to create nvidia bin directory in %s", nvidiaBinPath)
-	}
-
-	// Create symbolic link to ptxas.
-	var ptxasPath string
-	switch plugin {
-	case "cuda12":
-		ptxasPath = filepath.Join(nvidiaLibsDir, "cuda_nvcc/bin/ptxas")
-	case "cuda13":
-		ptxasPath = filepath.Join(nvidiaLibsDir, "cu13/bin/ptxas")
-	default:
-		return errors.Errorf("version validation not implemented for plugin %q in version %s", plugin, version)
-	}
-	ptxasLinkPath := filepath.Join(nvidiaBinPath, "ptxas")
-	if err := os.Symlink(ptxasPath, ptxasLinkPath); err != nil {
-		return errors.Wrapf(err, "failed to create symbolic link to ptxas in %s", ptxasLinkPath)
-	}
-	return nil
-}
-
-func cudaInstallNvidiaLibrary(nvidiaLibsDir string, dep PipDependency) error {
-	info, err := GetPipInfo(dep.Package)
-	if err != nil {
-		return errors.Wrapf(err, "failed to fetch the package info for %s", dep.Package)
-	}
-
-	// Find the highest version that meets constraints.
-	var selectedVersion string
-	var selectedReleaseInfo *PipReleaseInfo
-	for version, releases := range info.Releases {
-		if !dep.IsValid(version) {
-			continue
-		}
-		releaseInfo, err := PipSelectRelease(releases, pipPackageLinuxAMD64)
-		if err != nil {
-			continue
-		}
-		if selectedVersion == "" || PipCompareVersion(version, selectedVersion) > 0 {
-			selectedVersion = version
-			selectedReleaseInfo = releaseInfo
-		}
-	}
-	if selectedVersion == "" {
-		return errors.Errorf("no matching version found for package %s with constraints %+v", dep.Package, dep)
-	}
-
-	// Download the ".whl" file (zip file format) for the selected version of the nvidia library..
-	sha256hash := selectedReleaseInfo.Digests["sha256"]
-	downloadedWHL, whlIsCached, err := DownloadURLToTemp(selectedReleaseInfo.URL, fmt.Sprintf("gopjrt_%s_%s.whl", dep.Package, selectedVersion), sha256hash)
-	if err != nil {
-		return errors.Wrapf(err, "failed to download %s wheel", dep.Package)
-	}
-	if !whlIsCached {
-		defer func() { ReportError(os.Remove(downloadedWHL)) }()
-	}
-
-	// Extract all files under "nvidia/" for this package.
-	if err := ExtractDirFromZip(downloadedWHL, "nvidia", nvidiaLibsDir); err != nil {
-		return errors.Wrapf(err, "failed to extract nvidia libraries from %s", downloadedWHL)
-	}
-	fmt.Printf("- Installed %s@%s\n", dep.Package, selectedVersion)
-	return nil
 }

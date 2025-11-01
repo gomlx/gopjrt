@@ -20,8 +20,8 @@ func init() {
 	}
 	pluginValues = append(pluginValues, "linux", AmazonLinux)
 	pluginDescriptions = append(pluginDescriptions,
-		"CPU PJRT (Linux/amd64)",
-		"CPU PJRT for AmazonLinux/amd64, Ubuntu 22 (GCP host systems for TPUs), and older libc")
+		"CPU PJRT for Linux/amd64 (glibc >= 2.41",
+		"CPU PJRT for AmazonLinux/amd64 and Ubuntu 22 (GCP host systems for TPUs) (glibc >= 2.35)")
 	pluginPriorities = append(pluginPriorities, 0, 1)
 	installPathSuggestions = append(installPathSuggestions, "/usr/local/", "~/.local")
 }

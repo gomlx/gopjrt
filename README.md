@@ -10,8 +10,8 @@
 
 ## Why use GoPJRT ?
 
-GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize, and **accelerate numeric 
-computations** (with large data) from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (Nvidia, AMD ROCm*, Intel*, Apple Metal*) and TPU*. 
+GoPJRT leverages [OpenXLA](https://openxla.org/) to compile, optimize, and **accelerate numeric computations** (with large data) 
+from Go using various [backends supported by OpenXLA](https://opensource.googleblog.com/2024/03/pjrt-plugin-to-accelerate-machine-learning.html): CPU, GPUs (Nvidia, AMD ROCm*, Intel*, Apple Metal*) and TPU. 
 It can be used to power Machine Learning frameworks (e.g. [GoMLX](https://github.com/gomlx/gomlx)), image processing, scientific 
 computation, game AIs, etc. 
 
@@ -62,7 +62,7 @@ development of **GoPJRT**, [github.com/gomlx/stablehlo](https://github.com/gomlx
 
 A "PJRT Plugin" is a dynamically linked library (`.so` file in Linux, or optionally `.dylib` in Darwin, or `.dll` in Windows). 
 Typically, there is one plugin per hardware you are supporting. E.g.: there are PJRT plugins 
-for CPU (Linux/amd64 for now, but likely it could be compiled for other CPUs -- SIMD/AVX are well-supported), 
+for CPU (Linux/amd64 and macOS for now, but likely it could be compiled for other CPUs -- SIMD/AVX are well-supported), 
 for TPUs (Google's accelerator), 
 GPUs (Nvidia is well-supported; there are AMD and Intel's PJRT plugins, but they were not tested), 
 and others are in development.
@@ -137,8 +137,10 @@ go run github.com/gomlx/gopjrt/cmd/gopjrt_installer@latest
 ```
 
 > [!NOTE]
-> For now it works for (1) CPU PJRT on linux/amd64 (or Windows+WSL); (2) Nvidia CUDA PJRT on Linux/amd64; (3) CPU PJRT on Darwin (macOS).
-> I would love to support for AMD ROCm, Apple Metal (GPU), Intel, and others, but I don't have easy access to hardwre to test/maintain them.
+> For now it works for (1) CPU PJRT on linux/amd64 (or Windows+WSL); (2) Nvidia CUDA PJRT on Linux/amd64; 
+> (3) CPU PJRT on Darwin (macOS); (4) TPU PJRT in GCP (Linux/amd64 host).
+> I would love to support for AMD ROCm, Apple Metal (GPU), Intel, and others, but I don't have easy access to
+> hardwre to test/maintain them. 
 > If you feel like contributing or donating hardware/cloud credits, please contact me.
   
 There are also some older bash install scripts under [`github.com/gomlx/gopjrt/cmd`](https://github.com/gomlx/gopjrt/tree/main/cmd),

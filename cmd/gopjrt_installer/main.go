@@ -22,9 +22,12 @@ var (
 
 	flagPlugin, flagPath *string
 	flagVersion          = flag.String("version", "latest",
-		"In most PJRT this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.4) from where to download the plugin. "+
-			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), which is where it "+
-			"downloads the plugin and Nvidia libraries from.")
+		"In most PJRT this is the Gopjrt release version in https://github.com/gomlx/gopjrt (e.g.: v0.8.4) from"+
+			" where to download the plugin. "+
+			"For the CUDA PJRT this is based on the Jax version in https://pypi.org/project/jax/ (e.g.: 0.7.2), "+
+			"which is where it downloads the plugin and Nvidia libraries from. "+
+			"For the TPU PJRT this is the version of the \"libtpu\" version in https://pypi.org/project/libtpu/ "+
+			"(e.g.: 0.0.27). ")
 )
 
 func main() {
@@ -47,7 +50,7 @@ func main() {
 	}
 
 	// Define flags with plugins configured for GOOS/GOARCH used to build this binary:
-	flagPlugin = flag.String("plugin", "", "Plugin to install. Possible values: "+strings.Join(pluginValues, ", "))
+	flagPlugin = flag.String("plugin", "", "Plugin to install. Valid values: "+strings.Join(pluginValues, ", "))
 	flagPath = flag.String("path", "~/.local",
 		fmt.Sprintf("Installation base path, under which the required libraries and include files are installed. "+
 			"It installs files under lib/ and include/ subdirectories. "+

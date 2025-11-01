@@ -1,3 +1,5 @@
+//go:build (linux && amd64) || all
+
 package main
 
 import (
@@ -9,6 +11,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+)
+
+var (
+	pipPackageLinuxAMD64         = regexp.MustCompile(`-manylinux.*x86_64`)
+	pipPackageLinuxAMD64Glibc231 = regexp.MustCompile(`-manylinux_2_31_x86_64`)
 )
 
 func GetPipInfo(packageName string) (*PipPackageInfo, error) {
@@ -149,20 +156,28 @@ type PipReleaseInfo struct {
 	Digests     map[string]string `json:"digests"`
 }
 
-func PipSelectRelease(releaseInfos []PipReleaseInfo, platform *regexp.Regexp) (*PipReleaseInfo, error) {
-	var result *PipReleaseInfo
+// PipSelectRelease selects the release for the given platform (regexp).
+//
+// If anyMatchingVersion is true, it will return the first release that matches the platform.
+// Otherwise, it will return an error if there are multiple matches.
+func PipSelectRelease(releaseInfos []PipReleaseInfo, platform *regexp.Regexp, anyMatchingVersion bool) (*PipReleaseInfo, error) {
+	var results []*PipReleaseInfo
 	for i, release := range releaseInfos {
 		if platform.MatchString(release.Filename) {
-			if result != nil {
-				return nil, errors.Errorf("multiple releases found for platform %q: %q and %q", platform, result.Filename, release.Filename)
-			}
-			result = &releaseInfos[i]
+			results = append(results, &releaseInfos[i])
 		}
 	}
-	if result == nil {
+	if len(results) == 0 {
 		return nil, errors.Errorf("no release found for platform %q", platform)
 	}
-	return result, nil
+	if !anyMatchingVersion && len(results) > 1 {
+		names := make([]string, len(results))
+		for i, result := range results {
+			names[i] = result.Filename
+		}
+		return nil, errors.Errorf("multiple releases found for platform %q: %s", platform, strings.Join(names, ", "))
+	}
+	return results[0], nil
 }
 
 // PipCompareVersion compares two PIP version strings (they include only numbers separated by dots).

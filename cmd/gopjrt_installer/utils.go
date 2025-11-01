@@ -211,9 +211,12 @@ func DownloadURLToTemp(url, fileName, wantSHA256 string) (filePath string, cache
 	return
 }
 
-// ExtractFileFromZip searches for a file named targetFileName within the zipFilePath
+// ExtractFileFromZip searches for a file named fileName within the zipFilePath
 // and extracts the first one found to the outputPath.
-func ExtractFileFromZip(zipFilePath, targetFileName, outputPath string) error {
+//
+// The fileName is matched to the full path of the files in the zip archive as well as
+// to the base name: so a base name can be given, and it will find it anywhere in the zip archive.
+func ExtractFileFromZip(zipFilePath, fileName, outputPath string) error {
 	r, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		return err
@@ -221,15 +224,18 @@ func ExtractFileFromZip(zipFilePath, targetFileName, outputPath string) error {
 	defer func() { ReportError(r.Close()) }()
 
 	// Normalize the target file name for comparison
-	normalizedTarget := filepath.Clean(targetFileName)
+	normalizedTarget := filepath.Clean(fileName)
 
 	// Iterate through the files in the archive
 	for _, f := range r.File {
-		// Get the base name (the file name without any directory path)
-		_, name := filepath.Split(f.Name)
+		// Identical match:
+		if f.Name == normalizedTarget {
+			return extractZipFile(f, outputPath)
+		}
 
-		// Check if the base name matches the target file name
-		if name == normalizedTarget {
+		// Base name match:
+		_, baseName := filepath.Split(f.Name)
+		if baseName == normalizedTarget {
 			return extractZipFile(f, outputPath)
 		}
 	}

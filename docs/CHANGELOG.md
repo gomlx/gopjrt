@@ -1,6 +1,10 @@
 # Gopjrt Changelog
 
-# v0.8.5 - 2025/10/27 Fixed `xlabuilder` for newer C compilers.
+# Next
+
+- Added TPU installation.
+
+# v0.8.5 2025/10/27: Fixed `xlabuilder` for newer C compilers.
 
 - GitHub workflows:
   - Renamed to more meaningful names.
@@ -10,15 +14,15 @@
   - Added `-std=gnu11` to `CFLAGS` to avoid incompatibility introduced in `c23`. 
   - Temporary fix, as `xlabuilder` is deprecated and will be removed in the future.
 
-# v0.8.4 - 2025/10/23 Adding Darwin (Mac) support for CPU PJRT plugin
+# v0.8.4 2025/10/23: Adding Darwin (Mac) support for CPU PJRT plugin
 
-- Added default "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in MacOS.
+- Added "${HOME}/Library/Application Support/GoMLX/PJRT" as a default search path for PJRT plugins in macOS.
 - Fixed cuda.go to be linux-only for now, with a safe default for other platforms.
   - Removed the requirement for static linking of CUDA PJRT plugin for Darwin.
 - `gopjrt_installer`: now also supports darwin/arm64.
   - Use -tags=all when building to include all installers (linux/darwin) if cross-platform installing.
 
-# v0.8.3 - 2025/10/02 New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
+# v0.8.3 2025/10/02: New gopjrt_installer; Updated `README.md`; Marked `xlabuilder` as deprecated.
 
 * New `github.com/gomlx/gopjrt/cmd/gopjrt_installer` command-line tool to install Gopjrt plugins.
   - Doesn't do sudo by itself.
@@ -153,8 +157,8 @@
 * Updated GitHub action (`go.yaml`) to only change the README.md with the result of the change, if pushing to the
   `main` branch.
 * Added `prjt.arena` to avoid costly allocations for CGO calls, and merged some of CGO calls for general speed-ups.
-  The following functions had > 50% improvements on their fixed-cost (measured on transfers with 1 value, and minimal programs)
-  execution time (**not the variable part**): 
+  The following functions had > 50% improvements on their fixed-cost (measured on transfers with one value, and
+  small programs) execution time (**not the variable part**): 
   * `Buffer.ToHost()`
   * `Client.BufferFromHost()`
   * `LoadedExecutable.Execute()`
@@ -176,7 +180,8 @@
 # v0.4.9 - 2024-11-25
 
 * Optional preloading CPU PJRT plugin:
-  * `github.com/gomlx/gopjrt/pjrt/cpu/static` that statically links the PJRT CPU plugin: easy to deploy binary. 
+  * `github.com/gomlx/gopjrt/pjrt/cpu/static` that statically links the PJRT CPU plugin, making it easy to deploy 
+    binaries. 
     It includes the corresponding C BUILD rule to build the static library (`libpjrt_c_api_cpu_static.a`)
   * `github.com/gomlx/gopjrt/pjrt/cpu/dynamic` that dynamically links (and preloads) the PJRT CPU plugin.
 * `pjrt_c_api_cpu.so` now compiled directly from `gopjrt`, and doesn't require cloning `xla` separately. It will

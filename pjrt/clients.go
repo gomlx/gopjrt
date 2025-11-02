@@ -230,7 +230,8 @@ func (c *Client) String() string {
 	} else {
 		pidStr = fmt.Sprintf("pid=%d", pid)
 	}
-	return fmt.Sprintf("Client[plugin=%q, platform=%q, %s]", c.plugin.Name(), c.Platform()+" - "+c.PlatformVersion(), pidStr)
+	return fmt.Sprintf("Client[plugin=%q, platform=%q, %s, %d device(s)]",
+		c.plugin.Name(), c.Platform()+" - "+c.PlatformVersion(), pidStr, len(c.addressableDevices))
 }
 
 // Platform returns the name of the client platform.

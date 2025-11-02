@@ -420,6 +420,16 @@ PJRT_Error* call_PJRT_LoadedExecutable_GetExecutable(const PJRT_Api *api, PJRT_L
 	return api->PJRT_LoadedExecutable_GetExecutable(args);
 }
 
+// call_PJRT_LoadedExecutable_GetDeviceAssignment calls the corresponding PJRT API method.
+// Retrieves the serialized DeviceAssignmentProto for a given
+// PJRT_LoadedExecutable. The implementation allocates the serialized data,
+// which is valid as long as `serialized_device_assignment` is alive. The
+// caller must call `serialized_device_assignment_deleter` to free the
+// backing memory.
+PJRT_Error* call_PJRT_LoadedExecutable_GetDeviceAssignment(const PJRT_Api *api, PJRT_LoadedExecutable_GetDeviceAssignment_Args* args) {
+	return api->PJRT_LoadedExecutable_GetDeviceAssignment(args);
+}
+
 // call_PJRT_Executable_Name calls the corresponding PJRT API method.
 // Returns a string that identifies the executable.
 PJRT_Error* call_PJRT_Executable_Name(const PJRT_Api *api, PJRT_Executable_Name_Args* args) {

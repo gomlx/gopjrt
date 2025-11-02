@@ -566,6 +566,14 @@ PJRT_LoadedExecutable_GetExecutable_Args* new_PJRT_LoadedExecutable_GetExecutabl
 	return p;
 }
 
+// new_PJRT_LoadedExecutable_GetDeviceAssignment_Args allocates a zero-initialized C.PJRT_LoadedExecutable_GetDeviceAssignment_Args structure, sets its .struct_size, and returns it.
+PJRT_LoadedExecutable_GetDeviceAssignment_Args* new_PJRT_LoadedExecutable_GetDeviceAssignment_Args() {
+	PJRT_LoadedExecutable_GetDeviceAssignment_Args* p = malloc(sizeof(PJRT_LoadedExecutable_GetDeviceAssignment_Args));
+	memset(p, 0, sizeof(PJRT_LoadedExecutable_GetDeviceAssignment_Args));
+	p->struct_size = PJRT_LoadedExecutable_GetDeviceAssignment_Args_STRUCT_SIZE;
+	return p;
+}
+
 // new_PJRT_Executable_Name_Args allocates a zero-initialized C.PJRT_Executable_Name_Args structure, sets its .struct_size, and returns it.
 PJRT_Executable_Name_Args* new_PJRT_Executable_Name_Args() {
 	PJRT_Executable_Name_Args* p = malloc(sizeof(PJRT_Executable_Name_Args));

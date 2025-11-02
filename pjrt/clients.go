@@ -275,7 +275,7 @@ func (c *Client) NumDevices() int {
 // NumForDevice returns the "deviceNum" for the given device.
 // The value deviceNum is an index to Client.AddressableDevices, and can be used in several other methods.
 //
-// It returns -1 if device not found in Client.AddressableDevices.
+// It returns -1 if the device is not found in Client.AddressableDevices.
 func (c *Client) NumForDevice(device *Device) int {
 	for deviceNum, otherDevice := range c.addressableDevices {
 		if device.localHardwareId == otherDevice.localHardwareId {

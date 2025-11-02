@@ -8,7 +8,8 @@ import (
 	"unsafe"
 
 	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -146,13 +147,16 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 
 	// f(x) = x + 1
 	dtype := dtypes.Float32
-	shape := xlabuilder.MakeShape(dtype, 2, 3)
-	builder := xlabuilder.New("Add1")
-	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
-	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
-	add1 := must1(xlabuilder.Add(x, one))
-	comp := must1(builder.Build(add1))
-	exec := must1(client.Compile().WithComputation(comp).Done())
+	shape := shapes.Make(dtype, 2, 3)
+	builder := stablehlo.New("Add1")
+	mainFn := builder.Main()
+	x := mainFn.NamedInput("x", shape)
+	one := must1(mainFn.ConstantFromScalar(float32(1)))
+	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+	add1 := must1(stablehlo.Add(x, broadcastedOne))
+	must(mainFn.Return(add1))
+	compBytes := must1(builder.Build())
+	exec := must1(client.Compile().WithStableHLO(compBytes).Done())
 
 	// Input is created as a "Device Buffer View"
 	storage := AlignedAlloc(shape.Memory(), BufferAlignment)
@@ -206,13 +210,16 @@ func TestNewSharedBuffer(t *testing.T) {
 
 	// f(x) = x + 1
 	dtype := dtypes.Float32
-	shape := xlabuilder.MakeShape(dtype, 2, 3)
-	builder := xlabuilder.New("Add1")
-	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
-	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
-	add1 := must1(xlabuilder.Add(x, one))
-	comp := must1(builder.Build(add1))
-	exec := must1(client.Compile().WithComputation(comp).Done())
+	shape := shapes.Make(dtype, 2, 3)
+	builder := stablehlo.New("Add1")
+	mainFn := builder.Main()
+	x := mainFn.NamedInput("x", shape)
+	one := must1(mainFn.ConstantFromScalar(float32(1)))
+	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+	add1 := must1(stablehlo.Add(x, broadcastedOne))
+	must(mainFn.Return(add1))
+	compBytes := must1(builder.Build())
+	exec := must1(client.Compile().WithStableHLO(compBytes).Done())
 
 	// Input is created as a "Device Buffer View"
 	inputBuffer, flatAny, err := client.NewSharedBuffer(dtype, shape.Dimensions)
@@ -265,13 +272,16 @@ func TestBufferData(t *testing.T) {
 
 	// f(x) = x + 1
 	dtype := dtypes.Float32
-	shape := xlabuilder.MakeShape(dtype, 2, 3)
-	builder := xlabuilder.New("Add1")
-	x := must1(xlabuilder.Parameter(builder, "x", 0, shape))
-	one := must1(xlabuilder.ScalarOne(builder, shape.DType))
-	add1 := must1(xlabuilder.Add(x, one))
-	comp := must1(builder.Build(add1))
-	exec := must1(client.Compile().WithComputation(comp).Done())
+	shape := shapes.Make(dtype, 2, 3)
+	builder := stablehlo.New("Add1")
+	mainFn := builder.Main()
+	x := mainFn.NamedInput("x", shape)
+	one := must1(mainFn.ConstantFromScalar(float32(1)))
+	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+	add1 := must1(stablehlo.Add(x, broadcastedOne))
+	must(mainFn.Return(add1))
+	compBytes := must1(builder.Build())
+	exec := must1(client.Compile().WithStableHLO(compBytes).Done())
 
 	// Input is created as a "Device Buffer View"
 	inputBuffer, flatAny, err := client.NewSharedBuffer(dtype, shape.Dimensions)

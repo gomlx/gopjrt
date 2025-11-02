@@ -250,9 +250,11 @@ func (c *Client) ProcessIndex() int {
 	return c.processIndex
 }
 
-// Devices returns a list of all devices visible to the runtime, including addressable
-// // and non-addressable devices.
-func (c *Client) Devices() ([]*Device, error) {
+// AllDevices returns a list of all devices visible to the runtime, including addressable
+// and non-addressable devices.
+//
+// Usually, you want to use the AddressableDevices method instead.
+func (c *Client) AllDevices() ([]*Device, error) {
 	return pjrtClientDevices(c.plugin, c)
 }
 
@@ -260,9 +262,14 @@ func (c *Client) Devices() ([]*Device, error) {
 // Addressable devices are those that the client can issue commands to.
 // All devices are addressable in a single-process environment (Client.ProcessIndex() == 0).
 //
-// The returned slice and the Devices are owned by the Client, don't change it.
+// The Client owns the returned slice and the devices. Don't change them.
 func (c *Client) AddressableDevices() []*Device {
 	return c.addressableDevices
+}
+
+// NumDevices returns the number of addressable devices.
+func (c *Client) NumDevices() int {
+	return len(c.addressableDevices)
 }
 
 // NumForDevice returns the "deviceNum" for the given device.

@@ -2,16 +2,18 @@ package pjrt
 
 import "C"
 import (
+	"os"
+	"runtime"
+	"unsafe"
+
 	"github.com/gomlx/gopjrt/internal/cbuffer"
 	"github.com/gomlx/gopjrt/internal/protos/compile_options"
 	"github.com/gomlx/gopjrt/internal/protos/xla"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"k8s.io/klog/v2"
-	"os"
-	"runtime"
-	"unsafe"
 )
 
 // EnvXlaDebugOptions is an environment variable that can be defined to set XLA DebugOptions proto when compiling
@@ -46,6 +48,10 @@ type CompileConfig struct {
 
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
+
+	// SPMD (Single Program, Multiple Data) options:
+	numReplicas      int // Leave as 0 for no SPMD
+	deviceAssignment []int
 
 	// err is the first error that occurred during setup.
 	err error
@@ -145,6 +151,10 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 		klog.V(1).Infof("pjrtClientCompile() failed: %v", err)
 		return nil, errors.WithMessagef(err, "failed to compile the program")
 	}
+
+	// Carry over configuration information:
+	exec.numReplicas = cc.numReplicas
+	exec.deviceAssignment = cc.deviceAssignment
 	klog.V(2).Infof("pjrtClientCompile() succeeded")
 	return exec, nil
 }
@@ -258,6 +268,52 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 		// Use XlaBuilder HLO:
 		cc.cbufferToFree = computation.SerializedHLO()
 		cc.WithHLO(cc.cbufferToFree.Bytes())
+	}
+	return cc
+}
+
+// WithSPMD configures the program to be compiled for "Single Program Multiple Data" (SPMD) mode.
+//
+// This means the same program will be executed on multiple devices, with different inputs per device.
+//
+// Later the inputs to the LoadedExecutable.Execute method will be divided in numReplicas slices, each fed
+// to the corresponding device.
+//
+// The device assignment is done automatically (see Client.DefaultDeviceAssignment), and it can be queried
+// using LoadedExecutable.GetDeviceAssignment method.
+//
+// It returns itself (CompileConfig) to allow cascading configuration calls.
+func (cc *CompileConfig) WithSPMD(numReplicas int) *CompileConfig {
+	if cc.err != nil {
+		return cc
+	}
+	if numReplicas <= 0 || numReplicas > cc.client.NumDevices() {
+		cc.err = errors.Errorf("invalid numReplicas=%d, must be >= 1 and <= %d (number of devices for the client)",
+			numReplicas, cc.client.NumDevices())
+		return cc
+	}
+	assignment, err := cc.client.DefaultDeviceAssignment(numReplicas, 1)
+	if err != nil {
+		cc.err = errors.WithMessagef(err, "failed to get default device assignment for SPMD with #%d replicas", numReplicas)
+		return cc
+	}
+	if len(assignment) != numReplicas {
+		cc.err = errors.Errorf("failed to get default device assignment for SPMD with #%d replicas, got instead %v",
+			numReplicas, assignment)
+		return cc
+	}
+	cc.deviceAssignment = assignment
+	assignmentProto := cc.options.ExecutableBuildOptions.DeviceAssignment
+	if assignmentProto == nil {
+		assignmentProto = &xla_data.DeviceAssignmentProto{}
+		cc.options.ExecutableBuildOptions.DeviceAssignment = assignmentProto
+	}
+	assignmentProto.ReplicaCount = int32(numReplicas)
+	assignmentProto.ComputationCount = int32(1) // also known as "num partitions"
+	assignmentProto.ComputationDevices = make([]*xla_data.DeviceAssignmentProto_ComputationDevice, 1)
+	assignmentProto.ComputationDevices[0].ReplicaDeviceIds = make([]int64, numReplicas)
+	for i := range numReplicas {
+		assignmentProto.ComputationDevices[0].ReplicaDeviceIds[i] = int64(assignment[i])
 	}
 	return cc
 }

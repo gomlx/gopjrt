@@ -8,6 +8,7 @@
   - Added `Client.NumDevices` to get the number of addressable devices.
 - Replaced `xlabuilder` with `stablehlo` in examples:
   - Enabled _darwin_ tests using `stablehlo`
+- Updated PJRT C API and protos from XLA sources.
 
 # v0.8.5 2025/10/27: Fixed `xlabuilder` for newer C compilers.
 

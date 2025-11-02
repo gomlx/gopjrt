@@ -34,12 +34,13 @@ PJRT_Error* ExecuteAndWait(const PJRT_Api *api, PJRT_LoadedExecutable_Execute_Ar
 */
 import "C"
 import (
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"runtime"
 	"slices"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // LoadedExecutable is a reference to a compiled program ready to be executed.
@@ -58,6 +59,10 @@ type LoadedExecutable struct {
 
 	// NumOutputs of the executable.
 	NumOutputs int
+
+	// SPMD (Single-Data, Multiple-Data) information, from compilation.
+	numReplicas      int
+	deviceAssignment []int
 
 	// OnDeviceMemoryUsageStats, OnHostMemoryUsageStats can be used to estimate the required memory usage for the executable on device (and on host).
 	OnDeviceMemoryUsageStats, OnHostMemoryUsageStats ExecutableMemoryUsageStats
@@ -174,6 +179,28 @@ func (e *LoadedExecutable) getExecutable() (*Executable, error) {
 	return newExecutable(e.plugin, args.executable), nil
 }
 
+// GetDeviceAssignment returns the device assignment of the executable.
+//
+// This is used when using multiple-devices. The assignment is a list of device indices, ordered by partition first
+// and then by replica.
+//
+// For example, if the executable 2 replicas and 2 partitions, and the assignment is [0, 1, 2, 3], that means:
+//
+// - Partition 0 uses devices [0, 1] for its replicas.
+// - Partition 1 uses devices [2, 3] for its replicas.
+//
+// If the number of partitions is 0, this is working in SPMD (single-program, multiple-data), and there are no
+// partitions, all devices are replicas.
+//
+// If both numReplicas and numPartitions are 0, this is not being parallelized on multiple devices, and the assignment
+// is nil.
+func (e *LoadedExecutable) GetDeviceAssignment() (numReplicas, numPartitions int, assignment []int, err error) {
+	if e == nil || e.plugin == nil || e.wrapper == nil {
+		return 0, 0, nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	}
+	return e.numReplicas, 0, e.deviceAssignment, nil
+}
+
 // Execute the compiled computation. It returns an ExecutionConfig for further configuration.
 // Call ExecutionConfig.Done and the computation is executed.
 //
@@ -187,6 +214,10 @@ func (e *LoadedExecutable) getExecutable() (*Executable, error) {
 // Example:
 //
 //	outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
+//
+// Multiple-devices execution (SPMD or MPMD): if using multiple devices, the inputs are split equally, one part
+// per device assignment (see GetDeviceAssignment). Similarly, Done will return a slice of buffers, one per device.
+// Care must be taken to use the outputs in the correct order.
 func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
 	c := &ExecutionConfig{
 		executable: e,
@@ -308,7 +339,7 @@ func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 	return c
 }
 
-// SetDonate set the donate status of all inputs in one call. The default is no input is donated.
+// SetDonate set the "donate" status of all inputs in one call. The default is no input is donated.
 //
 // Donated inputs become invalid after the execution, they are automatically destroyed.
 // Often donated arguments are also the output of a computation and are updated in place.

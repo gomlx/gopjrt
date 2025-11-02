@@ -46,9 +46,16 @@ func TestEndToEnd(t *testing.T) {
 		require.NoError(t, err)
 		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
 	}
-	spmdDefaultAssignment, err := client.DefaultDeviceAssignment(client.NumDevices(), 1)
-	require.NoError(t, err, "Failed to get default device assignment")
-	fmt.Printf("Default device assignment for SPMD with %d devices: %v\n", client.NumDevices(), spmdDefaultAssignment)
+
+	// Default device assignment for SPMD:
+	fmt.Println()
+	fmt.Printf("Default device assignment for SPMD:\n")
+	for i := range client.NumDevices() {
+		numReplicas := i + 1
+		spmdDefaultAssignment, err := client.DefaultDeviceAssignment(numReplicas, 1)
+		require.NoError(t, err, "Failed to get default device assignment")
+		fmt.Printf("\tWith %d devices: %v\n", numReplicas, spmdDefaultAssignment)
+	}
 	fmt.Println()
 
 	// f(x) = x^2+1

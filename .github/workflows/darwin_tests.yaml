@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  macos-tests:
+  test:
     runs-on: macos-latest
 
     steps:
@@ -29,15 +29,12 @@ jobs:
           (cd ./cmd/gopjrt_installer && go install .)
           sudo env GH_TOKEN=$GH_TOKEN $(go env GOPATH)/bin/gopjrt_installer -plugin darwin -version latest -path /usr/local
 
-# Tests disabled because they use XlaBuilder, which is not supported on macOS.
-# TODO: Re-enable them once rewritten using StableHLO.
-#
-#      - name: PreTest
-#        run: |
-#          export LD_LIBRARY_PATH=/usr/local/lib
-#          go test . -test.v
-#
-#      - name: Test
-#        run: |
-#          export LD_LIBRARY_PATH=/usr/local/lib
-#          go test ./pjrt/...
+      - name: PreTest
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib
+          go test . -test.v
+
+      - name: Test
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib
+          go test ./pjrt/...

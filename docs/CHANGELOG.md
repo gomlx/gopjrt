@@ -6,7 +6,8 @@
 - Package `pjrt`:
   - Renamed `Client.Devices` to `Client.AllDevices`.
   - Added `Client.NumDevices` to get the number of addressable devices.
-  - Removed `xlabuilder` dependency on tests, replaced by `stablehlo` package instead.
+- Replaced `xlabuilder` with `stablehlo` in examples:
+  - Enabled _darwin_ tests using `stablehlo`
 
 # v0.8.5 2025/10/27: Fixed `xlabuilder` for newer C compilers.
 

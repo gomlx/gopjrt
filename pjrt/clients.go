@@ -80,7 +80,29 @@ func pjrtClientAddressableDevices(plugin *Plugin, client *Client) ([]*Device, er
 	return devices, nil
 }
 
-// pjrtClientCompile compiles the program. Remember to make sure that the both the program and and compileOptionsProto
+func pjrtClientDefaultDeviceAssignment(plugin *Plugin, client *Client, numReplicas, numPartitions int) ([]int, error) {
+	args := C.new_PJRT_Client_DefaultDeviceAssignment_Args()
+	defer cFree(args)
+	args.client = client.client.c
+	args.num_replicas = C.int(numReplicas)
+	args.num_partitions = C.int(numPartitions)
+	assignmentSize := numReplicas * numPartitions
+	args.default_assignment_size = (C.size_t)(assignmentSize)
+	args.default_assignment = cMallocArray[C.int](assignmentSize)
+	defer cFree(args.default_assignment)
+	err := toError(plugin, C.call_PJRT_Client_DefaultDeviceAssignment(plugin.api, args))
+	if err != nil {
+		return nil, err
+	}
+	cAssignment := cDataToSlice[C.int](unsafe.Pointer(args.default_assignment), assignmentSize)
+	assignment := make([]int, assignmentSize)
+	for i, v := range cAssignment {
+		assignment[i] = int(v)
+	}
+	return assignment, nil
+}
+
+// pjrtClientCompile compiles the program. Make sure that both the program and the compileOptionsProto
 // are pinned until the C function returns.
 func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFormat string, compileOptionsProto []byte) (*LoadedExecutable, error) {
 	// Create the program struct.
@@ -202,8 +224,8 @@ func (client *clientC) Destroy(plugin *Plugin) error {
 }
 
 // IsValid returns if client has been properly created and not yet destroyed.
-func (client *Client) IsValid() bool {
-	return client != nil && client.client != nil && client.client.c != nil
+func (c *Client) IsValid() bool {
+	return c != nil && c.client != nil && c.client.c != nil
 }
 
 // Destroy the client, release resources, and Client is no longer valid.
@@ -270,6 +292,19 @@ func (c *Client) AddressableDevices() []*Device {
 // NumDevices returns the number of addressable devices.
 func (c *Client) NumDevices() int {
 	return len(c.addressableDevices)
+}
+
+// DefaultDeviceAssignment for the given number of replicas and partitions.
+//
+// Replicas refer to data parallelism: the number of identical copies of the program that will be run on
+// different data.
+//
+// Partitions refer to model parallelism: the number of independent copies of the program that will be run on
+// different parts of the model. For SPMD programs, this is always 1.
+//
+// The returned slice is of length numReplicas * numPartitions.
+func (c *Client) DefaultDeviceAssignment(numReplicas, numPartitions int) ([]int, error) {
+	return pjrtClientDefaultDeviceAssignment(c.plugin, c, numReplicas, numPartitions)
 }
 
 // NumForDevice returns the "deviceNum" for the given device.

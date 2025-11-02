@@ -26,6 +26,31 @@ func init() {
 // TestEndToEnd builds, compiles, and executes a minimal computation f(x) = x^2 using stablehlo to build the computation,
 // and pjrt to compile and execute it.
 func TestEndToEnd(t *testing.T) {
+	// PJRT plugin and create a client.
+	plugin, err := pjrt.GetPlugin(*flagPluginName)
+	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
+	fmt.Printf("Loaded %s\n", plugin)
+	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
+	client, err := plugin.NewClient(nil)
+	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	fmt.Printf("	client: %s\n", client)
+
+	// List devices.
+	addressableDevices := client.AddressableDevices()
+	fmt.Println("Addressable devices:")
+	for deviceNum, device := range addressableDevices {
+		hardwareId := device.LocalHardwareId()
+		addressable, err := device.IsAddressable()
+		require.NoError(t, err)
+		desc, err := device.GetDescription()
+		require.NoError(t, err)
+		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
+	}
+	spmdDefaultAssignment, err := client.DefaultDeviceAssignment(client.NumDevices(), 1)
+	require.NoError(t, err, "Failed to get default device assignment")
+	fmt.Printf("Default device assignment for SPMD with %d devices: %v\n", client.NumDevices(), spmdDefaultAssignment)
+	fmt.Println()
+
 	// f(x) = x^2+1
 	builder := stablehlo.New("x_times_x_plus_1") // Use valid identifier for module name
 	scalarF32 := shapes.Make(dtypes.F32)         // Scalar float32 shape
@@ -49,29 +74,7 @@ func TestEndToEnd(t *testing.T) {
 	// Get computation created.
 	compBytes, err := builder.Build()
 	require.NoError(t, err, "Failed to build StableHLO from ops.")
-	fmt.Printf("StableHLO:\n%s\n\n", string(compBytes))
-
-	// PJRT plugin and create a client.
-	plugin, err := pjrt.GetPlugin(*flagPluginName)
-	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
-	fmt.Printf("Loaded %s\n", plugin)
-	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
-	client, err := plugin.NewClient(nil)
-	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
-	fmt.Printf("	client: %s\n", client)
-
-	// List devices.
-	addressableDevices := client.AddressableDevices()
-	fmt.Println("Addressable devices:")
-	for deviceNum, device := range addressableDevices {
-		hardwareId := device.LocalHardwareId()
-		addressable, err := device.IsAddressable()
-		require.NoError(t, err)
-		desc, err := device.GetDescription()
-		require.NoError(t, err)
-		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
-	}
-	fmt.Println()
+	fmt.Printf("StableHLO:\n%s\n", string(compBytes))
 
 	// Compile program.
 	var loadedExec *pjrt.LoadedExecutable
@@ -89,7 +92,6 @@ func TestEndToEnd(t *testing.T) {
 				if !*flagTestAllDevices {
 					break
 				}
-				fmt.Printf("\t*** Warning: if using a CPU PJRT, it is known to fail on devices > 0: it seems to falsely advertise it has more than one device\n")
 			}
 			// Transfer input to an on-device buffer.
 			inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)

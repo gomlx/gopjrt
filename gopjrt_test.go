@@ -3,50 +3,53 @@ package gopjrt
 import (
 	"flag"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/pjrt"
-	"github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
 )
 
 var (
 	flagPluginName     = flag.String("plugin", "cpu", "PRJT plugin name or full path")
-	flagTestAllDevices = flag.Bool("alldevices", false, "Test all devices. Defaults to false because CPU PJRT seems to falsely advertise more than one device")
-	flagSaveHLO        = flag.String("savehlo", "", "Save HLO to file. If empty, do not save.")
-	flagLoadHLO        = flag.String("loadhlo", "", "Load HLO to test from file (as opposed to the one created with XlaBuilder.")
+	flagTestAllDevices = flag.Bool("alldevices", false, "Test all devices. Defaults to false "+
+		"because CPU PJRT adversive 4 devices (to help test multi-device setup)")
 )
 
 func init() {
 	klog.InitFlags(nil)
 }
 
-// TestEndToEnd builds, compiles, and executes a minimal computation f(x) = x^2 using xlabuilder to build the computation,
+// TestEndToEnd builds, compiles, and executes a minimal computation f(x) = x^2 using stablehlo to build the computation,
 // and pjrt to compile and execute it.
 func TestEndToEnd(t *testing.T) {
 	// f(x) = x^2+1
-	builder := xlabuilder.New("x*x+1")
-	x, err := xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32)) // Scalar float32.
-	require.NoError(t, err, "Failed to create Parameter")
-	fX, err := xlabuilder.Mul(x, x)
+	builder := stablehlo.New("x_times_x_plus_1") // Use valid identifier for module name
+	scalarF32 := shapes.Make(dtypes.F32)         // Scalar float32 shape
+
+	// Create main function and define its inputs.
+	mainFn := builder.Main()
+	x := mainFn.NamedInput("x", scalarF32)
+
+	// Build computation graph
+	fX, err := stablehlo.Multiply(x, x)
 	require.NoError(t, err, "Failed operation Mul")
-	one, err := xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(1)))
-	require.NoError(t, err, "Failed to create constant of 1")
-	fX, err = xlabuilder.Add(fX, one)
+
+	one, err := mainFn.ConstantFromScalar(float32(1))
+	require.NoError(t, err, "Failed to create a constant for 1")
+
+	fX, err = stablehlo.Add(fX, one)
 	require.NoError(t, err, "Failed operation Add")
+	err = mainFn.Return(fX) // Set the return value for the main function
+	require.NoError(t, err, "Failed to set return value")
 
 	// Get computation created.
-	comp, err := builder.Build(fX)
-	require.NoError(t, err, "Failed to build XlaComputation from ops.")
-	//fmt.Printf("HloModule proto:\n%s\n\n", comp.TextHLO())
-	if *flagSaveHLO != "" {
-		cBuffer := comp.SerializedHLO()
-		err := os.WriteFile(*flagSaveHLO, cBuffer.Bytes(), 0644)
-		require.NoError(t, err)
-	}
+	compBytes, err := builder.Build()
+	require.NoError(t, err, "Failed to build StableHLO from ops.")
+	fmt.Printf("StableHLO:\n%s\n\n", string(compBytes))
 
 	// PJRT plugin and create a client.
 	plugin, err := pjrt.GetPlugin(*flagPluginName)
@@ -72,15 +75,8 @@ func TestEndToEnd(t *testing.T) {
 
 	// Compile program.
 	var loadedExec *pjrt.LoadedExecutable
-	if *flagLoadHLO == "" {
-		loadedExec, err = client.Compile().WithComputation(comp).Done()
-		require.NoErrorf(t, err, "Failed to compile our x^2 HLO program")
-	} else {
-		hloProgram, err := os.ReadFile(*flagLoadHLO)
-		require.NoErrorf(t, err, "Failed to load HLO from file %q", *flagLoadHLO)
-		loadedExec, err = client.Compile().WithHLO(hloProgram).Done()
-		require.NoErrorf(t, err, "Failed to compile HLO program loaded from %q", *flagLoadHLO)
-	}
+	loadedExec, err = client.Compile().WithStableHLO(compBytes).Done()
+	require.NoErrorf(t, err, "Failed to compile program")
 	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
 	// Test values:

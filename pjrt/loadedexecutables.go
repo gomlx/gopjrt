@@ -426,7 +426,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 
 	// For some reason the line below doesn't work. I think something is wrong with PJRT ... but I'm not sure.
 	if numOutputs > 0 {
-		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputs, nil)
+		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputsPerDevice, nil)
 	}
 
 	// Create events to wait for the end of execution: leaving this as NULL is allowed, but what happens then

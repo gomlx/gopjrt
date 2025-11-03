@@ -366,13 +366,18 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		return nil, c.err
 	}
 	e := c.executable
-	if e == nil || e.plugin == nil || e.wrapper == nil {
+	plugin := e.plugin
+
+	if e == nil || plugin == nil || e.wrapper == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 
 	// If no devices were given, use the first addressable one.
 	if len(c.devices) == 0 {
+		if len(c.executable.deviceAssignment) != 0 {
+
+		}
 		devices := e.client.AddressableDevices()
 		if len(devices) == 0 {
 			return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
@@ -381,20 +386,21 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	}
 
 	// Dimensions of inputs/outputs.
+	numDevices := len(c.devices)
 	numInputs := len(c.inputs)
-	numOutputs := e.NumOutputs
+	if numInputs%numDevices != 0 {
+		return nil, errors.Errorf("LoadedExecutable.Execute() requires that the number of inputs be "+
+			"divisible by the number of devices, but got %d inputs and %d devices", numInputs, numDevices)
+	}
+	//numInputsPerDevice := numInputs / numDevices
+	numOutputsPerDevice := e.NumOutputs
+	numOutputs := numOutputsPerDevice * numDevices
 
 	// Allocations that CGO will use.
 	// Except if the number of inputs/outputs is very large, used the default arena size.
-	var arena *arenaContainer
 	minSize := (numInputs+numOutputs)*3*8 /*pointer size*/ + 1024
-	if minSize > arenaDefaultSize {
-		arena = newArena(arenaDefaultSize + minSize)
-		defer arena.Free()
-	} else {
-		arena = c.executable.plugin.getArenaFromPool()
-		defer c.executable.plugin.returnArenaToPool(arena)
-	}
+	arena := plugin.getArena(minSize)
+	defer plugin.returnArena(arena)
 
 	// Create arguments structures for call to Execute.
 	var args *C.PJRT_LoadedExecutable_Execute_Args
@@ -417,7 +423,6 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		options.non_donatable_input_indices = &nonDonatableIndices[0]
 	}
 
-	numDevices := 1
 	args.num_devices = C.size_t(numDevices)
 	args.execute_device = c.devices[0].cDevice
 

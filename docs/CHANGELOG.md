@@ -6,6 +6,7 @@
 - Package `pjrt`:
   - Renamed `Client.Devices` to `Client.AllDevices`.
   - Added `Client.NumDevices` to get the number of addressable devices.
+  - Arena pools for range of powers-of-2 sizes.
 - Replaced `xlabuilder` with `stablehlo` in examples:
   - Enabled _darwin_ tests using `stablehlo`
 - Updated PJRT C API and protos from XLA sources.

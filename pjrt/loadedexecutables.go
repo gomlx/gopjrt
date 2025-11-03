@@ -60,9 +60,10 @@ type LoadedExecutable struct {
 	// NumOutputs of the executable.
 	NumOutputs int
 
-	// SPMD (Single-Data, Multiple-Data) information, from compilation.
-	numReplicas      int
-	deviceAssignment []int
+	// numReplicas/numPartitions = 1,1 for single device execution, the default.
+	// For SPMD (Single-Data, Multiple-Data), numPartitions=1.
+	numReplicas, numPartitions int
+	deviceAssignment           []int
 
 	// OnDeviceMemoryUsageStats, OnHostMemoryUsageStats can be used to estimate the required memory usage for the executable on device (and on host).
 	OnDeviceMemoryUsageStats, OnHostMemoryUsageStats ExecutableMemoryUsageStats
@@ -100,9 +101,11 @@ func LoadedExecutablesAlive() int64 {
 // newLoadedExecutable creates LoadedExecutable and registers it for freeing.
 func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJRT_LoadedExecutable) (*LoadedExecutable, error) {
 	e := &LoadedExecutable{
-		plugin:  plugin,
-		client:  client,
-		wrapper: &loadedExecutableC{c: cLoadedExecutable, plugin: plugin},
+		plugin:        plugin,
+		client:        client,
+		wrapper:       &loadedExecutableC{c: cLoadedExecutable, plugin: plugin},
+		numPartitions: 1,
+		numReplicas:   1,
 	}
 	numLoadedExecutables.Add(1)
 	runtime.AddCleanup(e, func(e *loadedExecutableC) {
@@ -198,7 +201,7 @@ func (e *LoadedExecutable) GetDeviceAssignment() (numReplicas, numPartitions int
 	if e == nil || e.plugin == nil || e.wrapper == nil {
 		return 0, 0, nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
-	return e.numReplicas, 0, e.deviceAssignment, nil
+	return e.numReplicas, e.numPartitions, e.deviceAssignment, nil
 }
 
 // Execute the compiled computation. It returns an ExecutionConfig for further configuration.
@@ -368,31 +371,19 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	e := c.executable
 	plugin := e.plugin
 
-	if e == nil || plugin == nil || e.wrapper == nil {
+	if plugin == nil || e.wrapper == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 
-	// If no devices were given, use the first addressable one.
-	if len(c.devices) == 0 {
-		if len(c.executable.deviceAssignment) != 0 {
-
-		}
-		devices := e.client.AddressableDevices()
-		if len(devices) == 0 {
-			return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
-		}
-		c.devices = []*Device{devices[0]}
-	}
-
 	// Dimensions of inputs/outputs.
-	numDevices := len(c.devices)
+	numDevices := e.numReplicas * e.numPartitions
 	numInputs := len(c.inputs)
 	if numInputs%numDevices != 0 {
 		return nil, errors.Errorf("LoadedExecutable.Execute() requires that the number of inputs be "+
 			"divisible by the number of devices, but got %d inputs and %d devices", numInputs, numDevices)
 	}
-	//numInputsPerDevice := numInputs / numDevices
+	numInputsPerDevice := numInputs / numDevices
 	numOutputsPerDevice := e.NumOutputs
 	numOutputs := numOutputsPerDevice * numDevices
 
@@ -407,6 +398,7 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	args = arenaAlloc[C.PJRT_LoadedExecutable_Execute_Args](arena)
 	args.struct_size = C.PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE
 	args.executable = e.wrapper.c
+	args.num_devices = C.size_t(numDevices)
 
 	var options *C.PJRT_ExecuteOptions
 	options = arenaAlloc[C.PJRT_ExecuteOptions](arena) // Extra args that for some reason(?) go on a separate struct.
@@ -423,12 +415,13 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		options.non_donatable_input_indices = &nonDonatableIndices[0]
 	}
 
-	args.num_devices = C.size_t(numDevices)
-	args.execute_device = c.devices[0].cDevice
-
-	args.num_args = C.size_t(numInputs)
+	// Inputs organized per device.
+	args.num_args = C.size_t(numInputsPerDevice)
 	if args.num_args > 0 {
-		args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, c.inputs)
+		args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputsPerDevice, c.inputs)
+	}
+	if args.argument_lists == nil {
+		return nil, errors.Errorf("LoadedExecutable.Execute() failed to allocate argument_lists")
 	}
 
 	// For some reason the line below doesn't work. I think something is wrong with PJRT ... but I'm not sure.
@@ -440,8 +433,6 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	// (does it wait or not, and then what?) is not documented in PJRT.
 	perDeviceEvents := arenaAllocSlice[*C.PJRT_Event](arena, numDevices)
 	args.device_complete_events = (**C.PJRT_Event)(unsafe.SliceData(perDeviceEvents))
-	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
-	//defer cFree(args.device_complete_events)
 
 	err := toError(e.plugin, C.ExecuteAndWait(e.plugin.api, args))
 	if err != nil {
@@ -468,24 +459,27 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	return outputs, nil
 }
 
-// Allocate [numDevices][numBuffers]*Buffer C 2D-array to be used by PJRT C API, with the given Buffer pointers.
-func allocatePerDeviceBufferListWithArena(arena *arenaContainer, numDevices int, numBuffers int, buffers []*Buffer) ***C.PJRT_Buffer {
+// Allocate [numDevices][numBuffers]*Buffer C 2D-array to be used by PJRT C API.
+//
+// If buffers != nil it is used to initialize the newly allocated 2D-array. If buffers != nil it must be of size
+// numDevices * numBuffersPerDevice.
+func allocatePerDeviceBufferListWithArena(
+	arena *arenaContainer, numDevices int, numBuffersPerDevice int, buffers []*Buffer) ***C.PJRT_Buffer {
 	// Top level:
+	bufferIdx := 0
 	perDevice := arenaAllocSlice[**C.PJRT_Buffer](arena, numDevices)
 	for deviceIdx := range perDevice {
-		deviceBuffers := arenaAllocSlice[*C.PJRT_Buffer](arena, numBuffers)
+		deviceBuffers := arenaAllocSlice[*C.PJRT_Buffer](arena, numBuffersPerDevice)
 		perDevice[deviceIdx] = &deviceBuffers[0]
 		if buffers != nil {
-			for bufferIdx := range deviceBuffers {
-				if buffers[bufferIdx] == nil {
-					deviceBuffers[bufferIdx] = nil
+			for deviceBufferIdx := range deviceBuffers {
+				buf := buffers[bufferIdx]
+				bufferIdx++
+				if buf == nil || buf.wrapper == nil {
+					deviceBuffers[deviceBufferIdx] = nil
 					continue
 				}
-				if buffers[bufferIdx].wrapper == nil {
-					// Buffer given, but it's wrapper is nil -> probably it has already been destroyed.
-					panicf("buffers[%d].wrapper is nil, has it already been destroyed!?", bufferIdx)
-				}
-				deviceBuffers[bufferIdx] = buffers[bufferIdx].wrapper.c
+				deviceBuffers[deviceBufferIdx] = buf.wrapper.c
 			}
 		}
 	}

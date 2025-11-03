@@ -49,8 +49,7 @@ type CompileConfig struct {
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
 
-	// SPMD (Single Program, Multiple Data) options:
-	numReplicas      int // Leave as 0 for no SPMD
+	// Device assignment:
 	deviceAssignment []int
 
 	// err is the first error that occurred during setup.
@@ -65,7 +64,7 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 			ArgumentLayouts:            nil,
 			ParameterIsTupledArguments: false,
 			ExecutableBuildOptions:     nil,
-			CompilePortableExecutable:  true,
+			CompilePortableExecutable:  false,
 			ProfileVersion:             0,
 			SerializedMultiSliceConfig: nil,
 			EnvOptionOverrides:         nil,
@@ -98,7 +97,11 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 
 		// Set parsed configuration.
 		cc.options.ExecutableBuildOptions.DebugOptions = debugOptions
+
 	}
+
+	// Set default device assignment for single device execution.
+	cc.setDefaultDeviceAssignment()
 	return cc
 }
 
@@ -128,7 +131,12 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 			"to specify a program, before calling Done()")
 	}
 
-	// Makes sure program data is not moved around by the GC during the C/C++ call.
+	// Device assignment:
+	if cc.options.ExecutableBuildOptions.DeviceAssignment == nil {
+		return nil, errors.New("no device assignment given to Client.Compile()!?")
+	}
+
+	// Makes sure the GC does not move around program data during the C/C++ call.
 	var pinner runtime.Pinner
 	programPtr := unsafe.SliceData(cc.program)
 	pinner.Pin(programPtr)
@@ -153,7 +161,8 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 	}
 
 	// Carry over configuration information:
-	exec.numReplicas = cc.numReplicas
+	exec.numReplicas = int(cc.options.ExecutableBuildOptions.NumReplicas)
+	exec.numPartitions = int(cc.options.ExecutableBuildOptions.NumPartitions)
 	exec.deviceAssignment = cc.deviceAssignment
 	klog.V(2).Infof("pjrtClientCompile() succeeded")
 	return exec, nil
@@ -292,16 +301,28 @@ func (cc *CompileConfig) WithSPMD(numReplicas int) *CompileConfig {
 			numReplicas, cc.client.NumDevices())
 		return cc
 	}
-	assignment, err := cc.client.DefaultDeviceAssignment(numReplicas, 1)
+	cc.options.ExecutableBuildOptions.UseSpmdPartitioning = true
+	cc.options.ExecutableBuildOptions.NumReplicas = int64(numReplicas)
+	cc.options.ExecutableBuildOptions.NumPartitions = 1
+	cc.setDefaultDeviceAssignment()
+	return cc
+}
+
+func (cc *CompileConfig) setDefaultDeviceAssignment() {
+	numReplicas := int(cc.options.ExecutableBuildOptions.NumReplicas)
+	numPartitions := int(cc.options.ExecutableBuildOptions.NumPartitions)
+	assignment, err := cc.client.DefaultDeviceAssignment(numReplicas, numPartitions)
 	if err != nil {
-		cc.err = errors.WithMessagef(err, "failed to get default device assignment for SPMD with #%d replicas", numReplicas)
-		return cc
+		cc.err = errors.WithMessagef(err, "failed to get default device assignment %d replicas and %d partitions",
+			numReplicas, numPartitions)
+		return
 	}
-	if len(assignment) != numReplicas {
-		cc.err = errors.Errorf("failed to get default device assignment for SPMD with #%d replicas, got instead %v",
-			numReplicas, assignment)
-		return cc
+	if len(assignment) != numReplicas*numPartitions {
+		cc.err = errors.Errorf("failed to get default device assignments for %d replicas x %d partitions, got instead %v",
+			numReplicas, numPartitions, assignment)
+		return
 	}
+	klog.V(1).Infof("Device assignment for %d replicas and %d partitions: %v", numReplicas, numPartitions, assignment)
 	cc.deviceAssignment = assignment
 	assignmentProto := cc.options.ExecutableBuildOptions.DeviceAssignment
 	if assignmentProto == nil {
@@ -309,11 +330,13 @@ func (cc *CompileConfig) WithSPMD(numReplicas int) *CompileConfig {
 		cc.options.ExecutableBuildOptions.DeviceAssignment = assignmentProto
 	}
 	assignmentProto.ReplicaCount = int32(numReplicas)
-	assignmentProto.ComputationCount = int32(1) // also known as "num partitions"
-	assignmentProto.ComputationDevices = make([]*xla_data.DeviceAssignmentProto_ComputationDevice, 1)
-	assignmentProto.ComputationDevices[0].ReplicaDeviceIds = make([]int64, numReplicas)
-	for i := range numReplicas {
-		assignmentProto.ComputationDevices[0].ReplicaDeviceIds[i] = int64(assignment[i])
+	assignmentProto.ComputationCount = int32(numPartitions)
+	assignmentProto.ComputationDevices = make([]*xla_data.DeviceAssignmentProto_ComputationDevice, numPartitions)
+	for partitionIdx := range numPartitions {
+		assignmentProto.ComputationDevices[partitionIdx] = &xla_data.DeviceAssignmentProto_ComputationDevice{}
+		assignmentProto.ComputationDevices[partitionIdx].ReplicaDeviceIds = make([]int64, numReplicas)
+		for replicaIdx := range numReplicas {
+			assignmentProto.ComputationDevices[partitionIdx].ReplicaDeviceIds[replicaIdx] = int64(assignment[partitionIdx*numReplicas+replicaIdx])
+		}
 	}
-	return cc
 }

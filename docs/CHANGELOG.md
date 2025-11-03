@@ -1,12 +1,13 @@
 # Gopjrt Changelog
 
-# Next
+# v0.9.0 2025/11/03: Multi-device SPMD execution; TPU installation support; Deprecating `xlabuilder`.
 
 - `gopjrt_installer`: Added TPU installation.
 - Package `pjrt`:
   - Renamed `Client.Devices` to `Client.AllDevices`.
   - Added `Client.NumDevices` to get the number of addressable devices.
   - Arena pools for range of powers-of-2 sizes.
+  - Added `Compile().WithSPMD` for multi-device SPMD execution.
 - Replaced `xlabuilder` with `stablehlo` in examples:
   - Enabled _darwin_ tests using `stablehlo`
 - Updated PJRT C API and protos from XLA sources.

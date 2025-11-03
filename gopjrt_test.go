@@ -94,31 +94,29 @@ func TestEndToEnd(t *testing.T) {
 	wants := []float32{1.01, 2, 10, 17, 26}
 	fmt.Printf("f(x) = x^2 + 1:\n")
 	for ii, input := range inputs {
-		for deviceNum := range addressableDevices {
-			if deviceNum > 0 {
-				if !*flagTestAllDevices {
-					break
-				}
-			}
-			// Transfer input to an on-device buffer.
-			inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
-			require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
+		// For single-device tests we use always the same device.
+		_, _, deviceAssignment, err := loadedExec.GetDeviceAssignment()
+		require.NoError(t, err, "Failed to get device assignment for execution")
+		deviceNum := deviceAssignment[0] // It will be 0 almost always.
 
-			// Execute: it returns the output on-device buffer(s).
-			outputBuffers, err := loadedExec.Execute(inputBuffer).OnDevicesByNum(deviceNum).Done()
-			require.NoErrorf(t, err, "Failed to execute on input %d, deviceNum=%d", input, deviceNum)
+		// Transfer input to an on-device buffer.
+		inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
+		require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
 
-			// Transfer output on-device buffer to a "host" value (in Go).
-			output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
-			require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+		// Execute: it returns the output on-device buffer(s).
+		outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
+		require.NoErrorf(t, err, "Failed to execute on input %g, deviceNum=%d", input, deviceNum)
 
-			// Print and check value is what we wanted.
-			fmt.Printf("\t[device#%d] f(x=%g) = %g\n", deviceNum, input, output)
-			require.InDelta(t, output, wants[ii], 0.001)
+		// Transfer output on-device buffer to a "host" value (in Go).
+		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
+		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
 
-			// Release inputBuffer -- and don't wait for the GC.
-			require.NoError(t, inputBuffer.Destroy())
-		}
+		// Print and check value is what we wanted.
+		fmt.Printf("\t[device#%d] f(x=%g) = %g\n", deviceNum, input, output)
+		require.InDelta(t, output, wants[ii], 0.001)
+
+		// Release inputBuffer -- and don't wait for the GC.
+		require.NoError(t, inputBuffer.Destroy())
 	}
 
 	// Destroy the client and leave.

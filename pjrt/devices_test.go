@@ -35,7 +35,7 @@ func TestClient_Devices(t *testing.T) {
 		}
 		desc, err := d.GetDescription()
 		require.NoError(t, err)
-		fmt.Printf("\t\tDevice Local Hardware Id %d: %s\n", d.LocalHardwareId(), desc.DebugString())
+		fmt.Printf("\t\tDevice Local Hardware Id %d: %s\n", d.LocalHardwareID(), desc.DebugString())
 	}
 	require.Equal(t, countAddressable, len(addressableDevices))
 	require.NoError(t, client.Destroy())

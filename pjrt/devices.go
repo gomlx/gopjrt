@@ -8,6 +8,7 @@ package pjrt
 import "C"
 import (
 	"fmt"
+
 	"k8s.io/klog/v2"
 )
 
@@ -79,9 +80,9 @@ func (d *Device) IsAddressable() (bool, error) {
 	return bool(args.is_addressable), nil
 }
 
-// LocalHardwareId returns an opaque hardware ID, e.g., the CUDA device number. In general, not guaranteed
+// LocalHardwareID returns an opaque hardware ID, e.g., the CUDA device number. In general, not guaranteed
 // to be dense, and -1 if undefined.
-func (d *Device) LocalHardwareId() int {
+func (d *Device) LocalHardwareID() int {
 	return d.localHardwareId
 }
 

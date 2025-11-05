@@ -27,7 +27,7 @@ func TestSPMD(t *testing.T) {
 	addressableDevices := client.AddressableDevices()
 	fmt.Println("Addressable devices:")
 	for deviceNum, device := range addressableDevices {
-		hardwareId := device.LocalHardwareId()
+		hardwareId := device.LocalHardwareID()
 		addressable, err := device.IsAddressable()
 		require.NoError(t, err)
 		desc, err := device.GetDescription()
@@ -43,7 +43,7 @@ func TestSPMD(t *testing.T) {
 	fmt.Printf("\tWith %d devices: %v\n", numReplicas, spmdDefaultAssignment)
 	replicaGroups := [][]int{spmdDefaultAssignment}
 
-	t.Run("CollectiveAllReduce_sum", func(t *testing.T) {
+	t.Run("AllReduce_sum", func(t *testing.T) {
 		// f(x_r) = Reduce_sum(CollectiveAllReduce_sum(x_r))
 		builder := stablehlo.New("sum_x0")
 		mainFn := builder.Main()
@@ -53,7 +53,7 @@ func TestSPMD(t *testing.T) {
 		lhs := reductionFn.NamedInput("lhs", shapes.Make(dtypes.F32))
 		rhs := reductionFn.NamedInput("rhs", shapes.Make(dtypes.F32))
 		must(reductionFn.Return(must1(stablehlo.Add(lhs, rhs))))
-		reducedReplicas, err := stablehlo.CollectiveAllReduce(x, replicaGroups, reductionFn)
+		reducedReplicas, err := stablehlo.AllReduce(x, replicaGroups, reductionFn)
 		require.NoError(t, err, "Failed operation CollectiveAllReduce")
 		zero := must1(mainFn.ConstantFromScalar(float32(0)))
 		sum, err := stablehlo.Reduce(reducedReplicas, zero, reductionFn, 0)

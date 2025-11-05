@@ -8,6 +8,7 @@
   - Added `Client.NumDevices` to get the number of addressable devices.
   - Arena pools for range of powers-of-2 sizes.
   - Added `Compile().WithSPMD` for multi-device SPMD execution.
+  - Default compilation is "portable" (can be run in any device), but it allows for device specific as well.
 - Replaced `xlabuilder` with `stablehlo` in examples:
   - Enabled _darwin_ tests using `stablehlo`
 - Updated PJRT C API and protos from XLA sources.

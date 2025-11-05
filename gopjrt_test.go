@@ -1,4 +1,4 @@
-package gopjrt
+package gopjrt_test
 
 import (
 	"flag"
@@ -14,9 +14,7 @@ import (
 )
 
 var (
-	flagPluginName     = flag.String("plugin", "cpu", "PRJT plugin name or full path")
-	flagTestAllDevices = flag.Bool("alldevices", false, "Test all devices. Defaults to false "+
-		"because CPU PJRT adversive 4 devices (to help test multi-device setup)")
+	flagPluginName = flag.String("plugin", "cpu", "PRJT plugin name or full path")
 )
 
 func init() {
@@ -39,12 +37,13 @@ func TestEndToEnd(t *testing.T) {
 	addressableDevices := client.AddressableDevices()
 	fmt.Println("Addressable devices:")
 	for deviceNum, device := range addressableDevices {
-		hardwareId := device.LocalHardwareId()
+		hardwareID := device.LocalHardwareID()
 		addressable, err := device.IsAddressable()
 		require.NoError(t, err)
 		desc, err := device.GetDescription()
 		require.NoError(t, err)
-		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
+		fmt.Printf("\tDevice #%d: hardwareID=%d, addressable=%v, description=%s\n",
+			deviceNum, hardwareID, addressable, desc.DebugString())
 	}
 
 	// Default device assignment for SPMD:
@@ -62,7 +61,7 @@ func TestEndToEnd(t *testing.T) {
 	builder := stablehlo.New("x_times_x_plus_1") // Use valid identifier for module name
 	scalarF32 := shapes.Make(dtypes.F32)         // Scalar float32 shape
 
-	// Create main function and define its inputs.
+	// Create a main function and define its inputs.
 	mainFn := builder.Main()
 	x := mainFn.NamedInput("x", scalarF32)
 
@@ -83,42 +82,45 @@ func TestEndToEnd(t *testing.T) {
 	require.NoError(t, err, "Failed to build StableHLO from ops.")
 	fmt.Printf("StableHLO:\n%s\n", string(compBytes))
 
-	// Compile program.
+	// Compile program: the default compilation is "portable", meaning it can be executed by any device.
 	var loadedExec *pjrt.LoadedExecutable
 	loadedExec, err = client.Compile().WithStableHLO(compBytes).Done()
 	require.NoErrorf(t, err, "Failed to compile program")
 	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 
-	// Test values:
+	// Test devices and values.
 	inputs := []float32{0.1, 1, 3, 4, 5}
 	wants := []float32{1.01, 2, 10, 17, 26}
 	fmt.Printf("f(x) = x^2 + 1:\n")
-	for ii, input := range inputs {
-		// For single-device tests we use always the same device.
-		_, _, deviceAssignment, err := loadedExec.GetDeviceAssignment()
-		require.NoError(t, err, "Failed to get device assignment for execution")
-		deviceNum := deviceAssignment[0] // It will be 0 almost always.
+	for deviceNum := range client.NumDevices() {
+		fmt.Printf(" Device #%d:\n", deviceNum)
+		for ii, input := range inputs {
+			// For single-device tests we use always the same device.
+			_, _, deviceAssignment, err := loadedExec.GetDeviceAssignment()
+			require.NoError(t, err, "Failed to get device assignment for execution")
+			require.Nil(t, deviceAssignment,
+				"default computation is 'portable',  meaning there should be no device assignment")
 
-		// Transfer input to an on-device buffer.
-		inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
-		require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
+			// Transfer input to an on-device buffer.
+			inputBuffer, err := pjrt.ScalarToBufferOnDeviceNum(client, deviceNum, input)
+			require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, deviceNum)
 
-		// Execute: it returns the output on-device buffer(s).
-		outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
-		require.NoErrorf(t, err, "Failed to execute on input %g, deviceNum=%d", input, deviceNum)
+			// Execute: it returns the output on-device buffer(s).
+			outputBuffers, err := loadedExec.Execute(inputBuffer).OnDeviceByNum(deviceNum).Done()
+			require.NoErrorf(t, err, "Failed to execute on input %g, deviceNum=%d", input, deviceNum)
 
-		// Transfer output on-device buffer to a "host" value (in Go).
-		output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
-		require.NoErrorf(t, err, "Failed to transfer results of execution on input %d", input)
+			// Transfer output on-device buffer to a "host" value (in Go).
+			output, err := pjrt.BufferToScalar[float32](outputBuffers[0])
+			require.NoErrorf(t, err, "Failed to transfer results of execution on input %g", input)
 
-		// Print and check value is what we wanted.
-		fmt.Printf("\t[device#%d] f(x=%g) = %g\n", deviceNum, input, output)
-		require.InDelta(t, output, wants[ii], 0.001)
+			// Print and check value is what we wanted.
+			fmt.Printf("\tf(x=%g) = %g\n", input, output)
+			require.InDelta(t, output, wants[ii], 0.001)
 
-		// Release inputBuffer -- and don't wait for the GC.
-		require.NoError(t, inputBuffer.Destroy())
+			// Release inputBuffer -- and don't wait for the GC.
+			require.NoError(t, inputBuffer.Destroy())
+		}
 	}
-
 	// Destroy the client and leave.
 	err = client.Destroy()
 	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)

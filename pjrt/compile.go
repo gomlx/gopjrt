@@ -2,16 +2,18 @@ package pjrt
 
 import "C"
 import (
+	"os"
+	"runtime"
+	"unsafe"
+
 	"github.com/gomlx/gopjrt/internal/cbuffer"
 	"github.com/gomlx/gopjrt/internal/protos/compile_options"
 	"github.com/gomlx/gopjrt/internal/protos/xla"
+	"github.com/gomlx/gopjrt/internal/protos/xla_data"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"k8s.io/klog/v2"
-	"os"
-	"runtime"
-	"unsafe"
 )
 
 // EnvXlaDebugOptions is an environment variable that can be defined to set XLA DebugOptions proto when compiling
@@ -47,6 +49,9 @@ type CompileConfig struct {
 	// cbufferToFree is going to be freed after Done is called, if set.
 	cbufferToFree *cbuffer.CBuffer
 
+	// Device assignment:
+	deviceAssignment []int
+
 	// err is the first error that occurred during setup.
 	err error
 }
@@ -59,7 +64,7 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 			ArgumentLayouts:            nil,
 			ParameterIsTupledArguments: false,
 			ExecutableBuildOptions:     nil,
-			CompilePortableExecutable:  true,
+			CompilePortableExecutable:  true, // Default is portable. It is set to false if a device assignment is set.
 			ProfileVersion:             0,
 			SerializedMultiSliceConfig: nil,
 			EnvOptionOverrides:         nil,
@@ -86,7 +91,7 @@ func newCompileConfig(client *Client) (cc *CompileConfig) {
 		if err != nil {
 			klog.Infof("Failed to convert xla.DebugOptions proto to text: %v", err)
 		} else {
-			klog.Infof("This adds 10ms!! of time to the execution of the compiled graph!")
+			klog.Infof("This adds 10ms(!) of time to the execution of the compiled graph!")
 			klog.Infof("%s=%s -> %s", EnvXlaDebugOptions, debugOptionsStr, textBytes)
 		}
 
@@ -122,7 +127,29 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 			"to specify a program, before calling Done()")
 	}
 
-	// Makes sure program data is not moved around by the GC during the C/C++ call.
+	// Device assignment:
+	numReplicas := max(1, int(cc.options.ExecutableBuildOptions.NumReplicas))
+	numPartitions := max(1, int(cc.options.ExecutableBuildOptions.NumPartitions))
+	numDevices := numReplicas * numPartitions
+	if cc.options.CompilePortableExecutable {
+		if numDevices > 1 {
+			return nil, errors.Errorf(
+				"portable computations must be on one device only, it can't be a SPMD or MPMD: got NumReplicas=%d "+
+					"and NumPartitions=%d", numReplicas, numPartitions)
+		}
+		if cc.deviceAssignment != nil {
+			return nil, errors.New(
+				"portable computations cannot have a device assignment: by definition they are defined to " +
+					"run on any device")
+		}
+	} else {
+		if cc.options.ExecutableBuildOptions.DeviceAssignment == nil {
+			return nil, errors.New("no device assignment given to Client.Compile(), but computation is not " +
+				"(device) portable!?")
+		}
+	}
+
+	// Makes sure the GC does not move around program data during the C/C++ call.
 	var pinner runtime.Pinner
 	programPtr := unsafe.SliceData(cc.program)
 	pinner.Pin(programPtr)
@@ -145,6 +172,12 @@ func (cc *CompileConfig) Done() (*LoadedExecutable, error) {
 		klog.V(1).Infof("pjrtClientCompile() failed: %v", err)
 		return nil, errors.WithMessagef(err, "failed to compile the program")
 	}
+
+	// Carry over configuration information:
+	exec.numReplicas = numReplicas
+	exec.numPartitions = numPartitions
+	exec.deviceAssignment = cc.deviceAssignment
+	exec.isPortable = cc.options.CompilePortableExecutable
 	klog.V(2).Infof("pjrtClientCompile() succeeded")
 	return exec, nil
 }
@@ -219,7 +252,7 @@ type XlaComputation interface {
 // Behind the scenes it is an HLO program (HloModule proto), but this handles the details.
 // If plugin.UseStableHLO is set to true, it takes the StableHLO (in MLIR format) program instead.
 //
-// Either WithHLO, WithStableHLO or WithComputation must be set, before Done can be called
+// Either WithHLO, WithStableHLO, or WithComputation must be set before Done can be called
 // to trigger the computation, but not both.
 // It panics if more than one version of the program is called.
 //
@@ -260,4 +293,96 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 		cc.WithHLO(cc.cbufferToFree.Bytes())
 	}
 	return cc
+}
+
+// WithSPMD configures the program to be compiled for "Single Program Multiple Data" (SPMD) mode.
+//
+// This means the same program will be executed on multiple devices, with different inputs per device.
+//
+// Later the inputs to the LoadedExecutable.Execute method will be divided in numReplicas slices, each fed
+// to the corresponding device.
+//
+// The device assignment is done automatically (see Client.DefaultDeviceAssignment), and it can be queried
+// using LoadedExecutable.GetDeviceAssignment method.
+//
+// See WithDeviceAssignment if you want to specify the device assignment manually.
+//
+// It panics if numReplicas is not in the range [1, numDevices].
+//
+// It returns itself (CompileConfig) to allow cascading configuration calls.
+func (cc *CompileConfig) WithSPMD(numReplicas int) *CompileConfig {
+	if cc.err != nil {
+		return cc
+	}
+	if numReplicas <= 0 || numReplicas > cc.client.NumDevices() {
+		cc.err = errors.Errorf("invalid numReplicas=%d, must be >= 1 and <= %d (number of devices for the client)",
+			numReplicas, cc.client.NumDevices())
+		return cc
+	}
+	cc.options.ExecutableBuildOptions.UseSpmdPartitioning = true
+	cc.options.ExecutableBuildOptions.NumReplicas = int64(numReplicas)
+	cc.options.ExecutableBuildOptions.NumPartitions = 1
+	cc.options.CompilePortableExecutable = false
+	cc.setDefaultDeviceAssignment()
+	return cc
+}
+
+// WithDeviceAssignment configures the device assignment for the program.
+// The device assignment is used to determine the device on which each computation will be executed.
+//
+// The device assignment is a list of device IDs, one for each computation in the program,
+// so there should be numReplicas*numPartitions entries -- organized in "numReplicas" rows and
+// "numPartitions" columns (row-major).
+//
+// For example, if numReplicas=2 and numPartitions=3, a device assignment would specify the (replica, partition) pairs
+// [(replica=0,partition=0), (0,1), (1,0), (1,1), (2,0), (2,1)].
+//
+// If not set, the device assignment is done automatically (see Client.DefaultDeviceAssignment), and it can be queried
+// using LoadedExecutable.GetDeviceAssignment method after compilation.
+//
+// If not set directly or indirectly with WithSPMD the program defaults to being portable, and the device assignment
+// is ignored.
+//
+// It returns itself (CompileConfig) to allow cascading configuration calls.
+func (cc *CompileConfig) WithDeviceAssignment(assignment []int) *CompileConfig {
+	cc.options.CompilePortableExecutable = false
+	cc.deviceAssignment = assignment
+	numReplicas := int(cc.options.ExecutableBuildOptions.NumReplicas)
+	numPartitions := int(cc.options.ExecutableBuildOptions.NumPartitions)
+	klog.V(1).Infof("Device assignment for %d replicas and %d partitions: %v", numReplicas, numPartitions, assignment)
+	cc.deviceAssignment = assignment
+	assignmentProto := cc.options.ExecutableBuildOptions.DeviceAssignment
+	if assignmentProto == nil {
+		assignmentProto = &xla_data.DeviceAssignmentProto{}
+		cc.options.ExecutableBuildOptions.DeviceAssignment = assignmentProto
+	}
+	assignmentProto.ReplicaCount = int32(numReplicas)
+	assignmentProto.ComputationCount = int32(numPartitions)
+	assignmentProto.ComputationDevices = make([]*xla_data.DeviceAssignmentProto_ComputationDevice, numPartitions)
+	for partitionIdx := range numPartitions {
+		assignmentProto.ComputationDevices[partitionIdx] = &xla_data.DeviceAssignmentProto_ComputationDevice{}
+		assignmentProto.ComputationDevices[partitionIdx].ReplicaDeviceIds = make([]int64, numReplicas)
+		for replicaIdx := range numReplicas {
+			assignmentProto.ComputationDevices[partitionIdx].ReplicaDeviceIds[replicaIdx] = int64(
+				assignment[replicaIdx*numPartitions+partitionIdx]) // replica-major order.
+		}
+	}
+	return cc
+}
+
+func (cc *CompileConfig) setDefaultDeviceAssignment() {
+	numReplicas := int(cc.options.ExecutableBuildOptions.NumReplicas)
+	numPartitions := int(cc.options.ExecutableBuildOptions.NumPartitions)
+	assignment, err := cc.client.DefaultDeviceAssignment(numReplicas, numPartitions)
+	if err != nil {
+		cc.err = errors.WithMessagef(err, "failed to get default device assignment %d replicas and %d partitions",
+			numReplicas, numPartitions) //
+		return
+	}
+	if len(assignment) != numReplicas*numPartitions {
+		cc.err = errors.Errorf("failed to get default device assignments for %d replicas x %d partitions, got instead %v",
+			numReplicas, numPartitions, assignment)
+		return
+	}
+	_ = cc.WithDeviceAssignment(assignment)
 }

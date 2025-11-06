@@ -7,9 +7,10 @@ package pjrt
 */
 import "C"
 import (
+	"runtime"
+
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"runtime"
 )
 
 // Executable is a reference that describes a compiled program -- it cannot be executed, only introspected.
@@ -139,8 +140,8 @@ func (e *Executable) GetMemoryStats() (onDevice, onHost ExecutableMemoryUsageSta
 	}
 	defer runtime.KeepAlive(e)
 
-	arena := e.wrapper.plugin.getArenaFromPool()
-	defer e.wrapper.plugin.returnArenaToPool(arena)
+	arena := e.wrapper.plugin.getDefaultArena()
+	defer e.wrapper.plugin.returnArena(arena)
 
 	var args *C.PJRT_Executable_GetCompiledMemoryStats_Args
 

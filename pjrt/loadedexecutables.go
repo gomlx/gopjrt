@@ -34,12 +34,13 @@ PJRT_Error* ExecuteAndWait(const PJRT_Api *api, PJRT_LoadedExecutable_Execute_Ar
 */
 import "C"
 import (
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"runtime"
 	"slices"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 // LoadedExecutable is a reference to a compiled program ready to be executed.
@@ -58,6 +59,12 @@ type LoadedExecutable struct {
 
 	// NumOutputs of the executable.
 	NumOutputs int
+
+	// numReplicas/numPartitions = 1,1 for single device execution, the default.
+	// For SPMD (Single-Data, Multiple-Data), numPartitions=1.
+	numReplicas, numPartitions int
+	deviceAssignment           []int
+	isPortable                 bool
 
 	// OnDeviceMemoryUsageStats, OnHostMemoryUsageStats can be used to estimate the required memory usage for the executable on device (and on host).
 	OnDeviceMemoryUsageStats, OnHostMemoryUsageStats ExecutableMemoryUsageStats
@@ -95,9 +102,11 @@ func LoadedExecutablesAlive() int64 {
 // newLoadedExecutable creates LoadedExecutable and registers it for freeing.
 func newLoadedExecutable(plugin *Plugin, client *Client, cLoadedExecutable *C.PJRT_LoadedExecutable) (*LoadedExecutable, error) {
 	e := &LoadedExecutable{
-		plugin:  plugin,
-		client:  client,
-		wrapper: &loadedExecutableC{c: cLoadedExecutable, plugin: plugin},
+		plugin:        plugin,
+		client:        client,
+		wrapper:       &loadedExecutableC{c: cLoadedExecutable, plugin: plugin},
+		numPartitions: 1,
+		numReplicas:   1,
 	}
 	numLoadedExecutables.Add(1)
 	runtime.AddCleanup(e, func(e *loadedExecutableC) {
@@ -174,6 +183,32 @@ func (e *LoadedExecutable) getExecutable() (*Executable, error) {
 	return newExecutable(e.plugin, args.executable), nil
 }
 
+// GetDeviceAssignment returns the device assignment of the executable.
+//
+// This is used when using multiple-devices. The assignment is a list of device indices, ordered by replica first
+// and then by partition number.
+//
+// For example, if the executable 2 replicas and 2 partitions, and the assignment is [0, 1, 2, 3], that means:
+//
+// - Partition 0 uses devices [0, 2] for its replicas.
+// - Partition 1 uses devices [1, 3] for its replicas.
+//
+// If the number of partitions is 0, this is working in SPMD (single-program, multiple-data), and there are no
+// partitions, all devices are replicas.
+//
+// If computation was compiled in a portable fashion, the assignment is nil. See IsPortable.
+func (e *LoadedExecutable) GetDeviceAssignment() (numReplicas, numPartitions int, assignment []int, err error) {
+	if e == nil || e.plugin == nil || e.wrapper == nil {
+		return 0, 0, nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
+	}
+	return e.numReplicas, e.numPartitions, e.deviceAssignment, nil
+}
+
+// IsPortable returns whether the computation was compiled to be device-portable -- it can run on any device.
+func (e *LoadedExecutable) IsPortable() bool {
+	return e.isPortable
+}
+
 // Execute the compiled computation. It returns an ExecutionConfig for further configuration.
 // Call ExecutionConfig.Done and the computation is executed.
 //
@@ -187,12 +222,23 @@ func (e *LoadedExecutable) getExecutable() (*Executable, error) {
 // Example:
 //
 //	outputBuffers, err := loadedExec.Execute(inputBuffer).Done()
+//
+// Multiple-devices execution (SPMD or MPMD): if using multiple devices, the inputs slice is split equally, one part
+// per device assignment (see GetDeviceAssignment). Similarly, Done will return a slice of buffers, one per device.
+// Care must be taken to use the outputs in the correct order.
+//
+// Example: if executing f(x,y) on two replicas, you should call Execute(x_0, y_0, x_1, y_1), where f(x_0, y_0)
+// will be executed on the first replica and f(x_1, y_1) on the second replica.
 func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
 	c := &ExecutionConfig{
 		executable: e,
 		inputs:     inputs,
 	}
 	c.DonateNone()
+	if e.isPortable {
+		// Default to the first addressable device.
+		_ = c.OnDeviceByNum(0)
+	}
 	return c
 }
 
@@ -204,72 +250,64 @@ func (e *LoadedExecutable) Execute(inputs ...*Buffer) *ExecutionConfig {
 // TODO: add support for multi-device execution, with some inputs shared across devices, and some per-device specific.
 type ExecutionConfig struct {
 	executable         *LoadedExecutable
-	devices            []*Device
+	onDevice           *Device
 	inputs             []*Buffer
 	nonDonatableInputs []int
+
+	// portableDevice is the device to execute the computation on, if it is portable.
+	portableDevice int
 
 	// err saves an error during the configuration.
 	err error
 }
 
-// OnDevices selects which devices to execute.
+// OnDevice selects which devices to execute.
 // Usually only 1, but more than one can be configured.
 //
 // The default is to use the first addressable device.
-// See also OnDevicesByNum.
-func (c *ExecutionConfig) OnDevices(devices ...*Device) *ExecutionConfig {
+// See also OnDeviceByNum.
+func (c *ExecutionConfig) OnDevice(device *Device) *ExecutionConfig {
 	if c.err != nil {
 		return c
 	}
-	if len(devices) == 0 {
-		// Trivial case.
-		c.devices = nil
+	if device == nil {
+		c.err = errors.New("LoadedExecutable.Execute().OnDevice() given a nil device")
 		return c
 	}
-	c.devices = make([]*Device, len(devices))
-	for ii, device := range devices {
-		if device == nil {
-			c.err = errors.New("LoadedExecutable.Execute().OnDevices() given a nil device")
-			return c
-		}
-		addressable, err := device.IsAddressable()
-		if err != nil {
-			c.err = errors.WithMessagef(err, "LoadedExecutable.Execute().OnDevices() failed to check whether device is addressable")
-			return c
-		}
-		if !addressable {
-			c.err = errors.New("LoadedExecutable.Execute().OnDevices() given a non addressable device")
-			return c
-		}
-		c.devices[ii] = device
+	addressable, err := device.IsAddressable()
+	if err != nil {
+		c.err = errors.WithMessagef(err, "LoadedExecutable.Execute().OnDevice() failed to check whether device is addressable")
+		return c
 	}
+	if !addressable {
+		c.err = errors.New("LoadedExecutable.Execute().OnDevice() given a non addressable device")
+		return c
+	}
+	c.onDevice = device
 	return c
 }
 
-// OnDevicesByNum selects which devices to execute.
+// OnDeviceByNum selects which devices to execute.
 // The devicesNum point to the device in the list returned by Client.AddressableDevices.
 // Usually only 1, but more than one can be configured.
 //
 // The default is to use the first addressable device.
-// See also OnDevices.
-func (c *ExecutionConfig) OnDevicesByNum(devicesNum ...int) *ExecutionConfig {
+//
+// This is only used for portable executables (see LoadedExecutable.IsPortable) that execute on exactly one device.
+// For multi-device computations, or if the device was specified during the compilation, setting the device
+// will lead to an error.
+//
+// See also OnDevice.
+func (c *ExecutionConfig) OnDeviceByNum(deviceNum int) *ExecutionConfig {
 	if c.err != nil {
 		return c
 	}
-	if len(devicesNum) == 0 {
-		c.devices = nil
+	addressableDevices := c.executable.client.addressableDevices
+	if deviceNum < 0 || deviceNum >= len(addressableDevices) {
+		c.err = errors.Errorf("LoadedExecutable.Execute().OnDevice() invalid deviceNum=%d, only %d addressable devices available", deviceNum, len(addressableDevices))
 		return c
 	}
-	addressableDevices := c.executable.client.addressableDevices
-	devices := make([]*Device, len(devicesNum))
-	for ii, deviceNum := range devicesNum {
-		if deviceNum < 0 || deviceNum >= len(addressableDevices) {
-			c.err = errors.Errorf("LoadedExecutable.Execute().OnDevices() invalid deviceNum=%d, only %d addressable devices available", deviceNum, len(addressableDevices))
-			return c
-		}
-		devices[ii] = addressableDevices[deviceNum]
-	}
-	return c.OnDevices(devices...)
+	return c.OnDevice(addressableDevices[deviceNum])
 }
 
 // DonateAll marks all inputs to be "donated".
@@ -308,7 +346,7 @@ func (c *ExecutionConfig) Donate(inputsIndices ...int) *ExecutionConfig {
 	return c
 }
 
-// SetDonate set the donate status of all inputs in one call. The default is no input is donated.
+// SetDonate set the "donate" status of all inputs in one call. The default is no input is donated.
 //
 // Donated inputs become invalid after the execution, they are automatically destroyed.
 // Often donated arguments are also the output of a computation and are updated in place.
@@ -330,46 +368,59 @@ func (c *ExecutionConfig) SetDonate(donate []bool) *ExecutionConfig {
 	return c
 }
 
+// Done triggers the execution of the compiled computation.
 func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
 	e := c.executable
-	if e == nil || e.plugin == nil || e.wrapper == nil {
+	plugin := e.plugin
+
+	if plugin == nil || e.wrapper == nil {
 		return nil, errors.New("LoadedExecutable is nil, or its plugin or wrapped C representation is nil -- has it been destroyed already?")
 	}
 	defer runtime.KeepAlive(e)
 
-	// If no devices were given, use the first addressable one.
-	if len(c.devices) == 0 {
-		devices := e.client.AddressableDevices()
-		if len(devices) == 0 {
-			return nil, errors.New("LoadedExecutable.Execute can't find addressable device to execute")
-		}
-		c.devices = []*Device{devices[0]}
-	}
-
 	// Dimensions of inputs/outputs.
+	numDevices := e.numReplicas * e.numPartitions
 	numInputs := len(c.inputs)
-	numOutputs := e.NumOutputs
+	if numInputs%numDevices != 0 {
+		return nil, errors.Errorf("LoadedExecutable.Execute() requires that the number of inputs be "+
+			"divisible by the number of devices, but got %d inputs and %d devices", numInputs, numDevices)
+	}
+	numInputsPerDevice := numInputs / numDevices
+	numOutputsPerDevice := e.NumOutputs
+	numOutputs := numOutputsPerDevice * numDevices
 
 	// Allocations that CGO will use.
 	// Except if the number of inputs/outputs is very large, used the default arena size.
-	var arena *arenaContainer
 	minSize := (numInputs+numOutputs)*3*8 /*pointer size*/ + 1024
-	if minSize > arenaDefaultSize {
-		arena = newArena(arenaDefaultSize + minSize)
-		defer arena.Free()
-	} else {
-		arena = c.executable.plugin.getArenaFromPool()
-		defer c.executable.plugin.returnArenaToPool(arena)
-	}
+	arena := plugin.getArena(minSize)
+	defer plugin.returnArena(arena)
 
 	// Create arguments structures for call to Execute.
 	var args *C.PJRT_LoadedExecutable_Execute_Args
 	args = arenaAlloc[C.PJRT_LoadedExecutable_Execute_Args](arena)
 	args.struct_size = C.PJRT_LoadedExecutable_Execute_Args_STRUCT_SIZE
 	args.executable = e.wrapper.c
+	args.num_devices = C.size_t(numDevices)
+	if e.isPortable {
+		if numDevices > 1 {
+			return nil, errors.Errorf("invalid number of devices for portable executable, portable "+
+				"executables only work for one device, got %d devices", numDevices)
+		}
+		if c.onDevice == nil {
+			return nil, errors.Errorf("LoadedExecutable.Execute() requires that OnDevice to be set to" +
+				" non-nil device before Done")
+		}
+		args.execute_device = c.onDevice.cDevice
+	} else {
+		if c.onDevice != nil {
+			return nil, errors.Errorf("LoadedExecutable.Execute(): non-portable computation cannot set " +
+				"OnDevice or OnDeviceNum: the device(s) was(were) determined during the compilation")
+		}
+		args.execute_device = nil
+	}
 
 	var options *C.PJRT_ExecuteOptions
 	options = arenaAlloc[C.PJRT_ExecuteOptions](arena) // Extra args that for some reason(?) go on a separate struct.
@@ -386,26 +437,24 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 		options.non_donatable_input_indices = &nonDonatableIndices[0]
 	}
 
-	numDevices := 1
-	args.num_devices = C.size_t(numDevices)
-	args.execute_device = c.devices[0].cDevice
-
-	args.num_args = C.size_t(numInputs)
+	// Inputs organized per device.
+	args.num_args = C.size_t(numInputsPerDevice)
 	if args.num_args > 0 {
-		args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputs, c.inputs)
+		args.argument_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numInputsPerDevice, c.inputs)
+		if args.argument_lists == nil {
+			return nil, errors.Errorf("LoadedExecutable.Execute() failed to allocate argument_lists")
+		}
 	}
 
 	// For some reason the line below doesn't work. I think something is wrong with PJRT ... but I'm not sure.
 	if numOutputs > 0 {
-		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputs, nil)
+		args.output_lists = allocatePerDeviceBufferListWithArena(arena, numDevices, numOutputsPerDevice, nil)
 	}
 
 	// Create events to wait for the end of execution: leaving this as NULL is allowed, but what happens then
 	// (does it wait or not, and then what?) is not documented in PJRT.
 	perDeviceEvents := arenaAllocSlice[*C.PJRT_Event](arena, numDevices)
 	args.device_complete_events = (**C.PJRT_Event)(unsafe.SliceData(perDeviceEvents))
-	//args.device_complete_events = cMallocArray[*C.PJRT_Event](numDevices)
-	//defer cFree(args.device_complete_events)
 
 	err := toError(e.plugin, C.ExecuteAndWait(e.plugin.api, args))
 	if err != nil {
@@ -432,24 +481,27 @@ func (c *ExecutionConfig) Done() ([]*Buffer, error) {
 	return outputs, nil
 }
 
-// Allocate [numDevices][numBuffers]*Buffer C 2D-array to be used by PJRT C API, with the given Buffer pointers.
-func allocatePerDeviceBufferListWithArena(arena *arenaContainer, numDevices int, numBuffers int, buffers []*Buffer) ***C.PJRT_Buffer {
+// Allocate [numDevices][numBuffers]*Buffer C 2D-array to be used by PJRT C API.
+//
+// If buffers != nil it is used to initialize the newly allocated 2D-array. If buffers != nil it must be of size
+// numDevices * numBuffersPerDevice.
+func allocatePerDeviceBufferListWithArena(
+	arena *arenaContainer, numDevices int, numBuffersPerDevice int, buffers []*Buffer) ***C.PJRT_Buffer {
 	// Top level:
+	bufferIdx := 0
 	perDevice := arenaAllocSlice[**C.PJRT_Buffer](arena, numDevices)
 	for deviceIdx := range perDevice {
-		deviceBuffers := arenaAllocSlice[*C.PJRT_Buffer](arena, numBuffers)
+		deviceBuffers := arenaAllocSlice[*C.PJRT_Buffer](arena, numBuffersPerDevice)
 		perDevice[deviceIdx] = &deviceBuffers[0]
 		if buffers != nil {
-			for bufferIdx := range deviceBuffers {
-				if buffers[bufferIdx] == nil {
-					deviceBuffers[bufferIdx] = nil
+			for deviceBufferIdx := range deviceBuffers {
+				buf := buffers[bufferIdx]
+				bufferIdx++
+				if buf == nil || buf.wrapper == nil {
+					deviceBuffers[deviceBufferIdx] = nil
 					continue
 				}
-				if buffers[bufferIdx].wrapper == nil {
-					// Buffer given, but it's wrapper is nil -> probably it has already been destroyed.
-					panicf("buffers[%d].wrapper is nil, has it already been destroyed!?", bufferIdx)
-				}
-				deviceBuffers[bufferIdx] = buffers[bufferIdx].wrapper.c
+				deviceBuffers[deviceBufferIdx] = buf.wrapper.c
 			}
 		}
 	}

@@ -225,6 +225,9 @@ extern PJRT_LoadedExecutable_Destroy_Args* new_PJRT_LoadedExecutable_Destroy_Arg
 // new_PJRT_LoadedExecutable_GetExecutable_Args allocates a zero-initialized C.PJRT_LoadedExecutable_GetExecutable_Args structure, sets its .struct_size, and returns it.
 extern PJRT_LoadedExecutable_GetExecutable_Args* new_PJRT_LoadedExecutable_GetExecutable_Args();
 
+// new_PJRT_LoadedExecutable_GetDeviceAssignment_Args allocates a zero-initialized C.PJRT_LoadedExecutable_GetDeviceAssignment_Args structure, sets its .struct_size, and returns it.
+extern PJRT_LoadedExecutable_GetDeviceAssignment_Args* new_PJRT_LoadedExecutable_GetDeviceAssignment_Args();
+
 // new_PJRT_Executable_Name_Args allocates a zero-initialized C.PJRT_Executable_Name_Args structure, sets its .struct_size, and returns it.
 extern PJRT_Executable_Name_Args* new_PJRT_Executable_Name_Args();
 

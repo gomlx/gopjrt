@@ -57,8 +57,8 @@ func (wrapper *bufferWrapper) Destroy() error {
 	}
 	defer runtime.KeepAlive(wrapper)
 
-	arena := wrapper.plugin.getArenaFromPool()
-	defer wrapper.plugin.returnArenaToPool(arena)
+	arena := wrapper.plugin.getDefaultArena()
+	defer wrapper.plugin.returnArena(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Destroy_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Destroy_Args_STRUCT_SIZE
 	args.buffer = wrapper.c
@@ -137,8 +137,8 @@ func (b *Buffer) Dimensions() (dims []int, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := plugin.getArenaFromPool()
-	defer plugin.returnArenaToPool(arena)
+	arena := plugin.getDefaultArena()
+	defer plugin.returnArena(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Dimensions_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Dimensions_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
@@ -167,8 +167,8 @@ func (b *Buffer) DType() (dtype dtypes.DType, err error) {
 		return b.dtype, nil
 	}
 
-	arena := plugin.getArenaFromPool()
-	defer plugin.returnArenaToPool(arena)
+	arena := plugin.getDefaultArena()
+	defer plugin.returnArena(arena)
 	args := arenaAlloc[C.PJRT_Buffer_ElementType_Args](arena)
 	args.struct_size = C.PJRT_Buffer_ElementType_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
@@ -191,8 +191,8 @@ func (b *Buffer) Device() (device *Device, err error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := plugin.getArenaFromPool()
-	defer plugin.returnArenaToPool(arena)
+	arena := plugin.getDefaultArena()
+	defer plugin.returnArena(arena)
 	args := arenaAlloc[C.PJRT_Buffer_Device_Args](arena)
 	args.struct_size = C.PJRT_Buffer_Device_Args_STRUCT_SIZE
 	args.buffer = b.wrapper.c
@@ -224,8 +224,8 @@ func (b *Buffer) Size() (int, error) {
 	}
 	defer runtime.KeepAlive(b)
 
-	arena := plugin.getArenaFromPool()
-	defer plugin.returnArenaToPool(arena)
+	arena := plugin.getDefaultArena()
+	defer plugin.returnArena(arena)
 
 	// It uses a PJRT_Buffer_ToHostBuffer_Args but it doesn't transfer, only inquire about size.
 	args := arenaAlloc[C.PJRT_Buffer_ToHostBuffer_Args](arena)

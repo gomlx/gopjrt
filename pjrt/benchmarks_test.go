@@ -7,24 +7,26 @@ package pjrt
 import (
 	"flag"
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/xlabuilder"
-	benchmarks "github.com/janpfeifer/go-benchmarks"
 	"runtime"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
+	benchmarks "github.com/janpfeifer/go-benchmarks"
 )
 
 var (
 	flagBenchDuration = flag.Duration("bench_duration", 1*time.Second, "Benchmark duration")
 
 	// testShapes used during benchmarks executing small computation graphs.
-	testShapes = []xlabuilder.Shape{
-		xlabuilder.MakeShape(dtypes.Float32, 1, 1),
-		xlabuilder.MakeShape(dtypes.Float32, 10, 10),
-		xlabuilder.MakeShape(dtypes.Float32, 100, 100),
-		xlabuilder.MakeShape(dtypes.Float32, 1000, 1000),
+	testShapes = []shapes.Shape{
+		shapes.Make(dtypes.Float32, 1, 1),
+		shapes.Make(dtypes.Float32, 10, 10),
+		shapes.Make(dtypes.Float32, 100, 100),
+		shapes.Make(dtypes.Float32, 1000, 1000),
 	}
 )
 
@@ -78,12 +80,12 @@ func TestBenchArena(t *testing.T) {
 			case "arenaPool":
 				fn = func() {
 					for _ = range repeats {
-						arena := plugin.getArenaFromPool()
+						arena := plugin.getDefaultArena()
 						for idx := range numAllocations {
 							allocations[idx] = arenaAlloc[int](arena)
 						}
 						dummyCGO(unsafe.Pointer(allocations[numAllocations-1]))
-						plugin.returnArenaToPool(arena)
+						plugin.returnArena(arena)
 					}
 				}
 			case "malloc":
@@ -228,13 +230,16 @@ func TestBenchAdd1Execution(t *testing.T) {
 		}
 		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
 
-		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
+		builder := stablehlo.New(fmt.Sprintf("Add1/%s", s))
+		mainFn := builder.Main()
 		// f(x) = x + 1
-		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
-		one := must1(xlabuilder.ScalarOne(builder, s.DType))
-		add1 := must1(xlabuilder.Add(x, one))
-		comp := must1(builder.Build(add1))
-		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+		x := mainFn.NamedInput("x", s)
+		one := must1(mainFn.ConstantFromScalar(float32(1)))
+		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+		add1 := must1(stablehlo.Add(x, broadcastedOne))
+		must(mainFn.Return(add1))
+		compBytes := must1(builder.Build())
+		execs[shapeIdx] = must1(client.Compile().WithStableHLO(compBytes).Done())
 		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
 		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
@@ -291,15 +296,19 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 		}
 		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
 
-		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
-		// f(x) = x + 1
-		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
-		one := must1(xlabuilder.ScalarOne(builder, s.DType))
-		add1 := must1(xlabuilder.Add(x, one))
-		half := must1(xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(0.5))))
-		div2 := must1(xlabuilder.Mul(add1, half))
-		comp := must1(builder.Build(div2))
-		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+		builder := stablehlo.New(fmt.Sprintf("Add1/%s", s))
+		mainFn := builder.Main()
+		// f(x) = (x + 1) * 0.5
+		x := mainFn.NamedInput("x", s)
+		one := must1(mainFn.ConstantFromScalar(float32(1)))
+		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+		add1 := must1(stablehlo.Add(x, broadcastedOne))
+		half := must1(mainFn.ConstantFromScalar(float32(0.5)))
+		broadcastedHalf := must1(stablehlo.BroadcastInDim(half, x.Shape(), nil))
+		div2 := must1(stablehlo.Multiply(add1, broadcastedHalf))
+		must(mainFn.Return(div2))
+		compBytes := must1(builder.Build())
+		execs[shapeIdx] = must1(client.Compile().WithStableHLO(compBytes).Done())
 		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
 		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {
@@ -356,18 +365,29 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 		}
 		buffers[shapeIdx] = must1(ArrayToBuffer(client, inputData[shapeIdx], s.Dimensions...))
 
-		builder := xlabuilder.New(fmt.Sprintf("Add1/%s", s))
-		// f(x) = x + 1
-		x := must1(xlabuilder.Parameter(builder, "x", 0, s))
-		one := must1(xlabuilder.ScalarOne(builder, s.DType))
-		add1 := must1(xlabuilder.Add(x, one))
-		half := must1(xlabuilder.Constant(builder, xlabuilder.NewScalarLiteral(float32(0.5))))
-		div2 := must1(xlabuilder.Mul(add1, half))
-		mean := must1(xlabuilder.ReduceSum(div2))
-		normalized := must1(xlabuilder.Sub(div2, mean))
+		builder := stablehlo.New(fmt.Sprintf("MeanNormalized/%s", s))
+		mainFn := builder.Main()
+		// f(x) = (x + 1) * 0.5 - mean((x + 1) * 0.5)
+		x := mainFn.NamedInput("x", s)
+		one := must1(mainFn.ConstantFromScalar(float32(1)))
+		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
+		add1 := must1(stablehlo.Add(x, broadcastedOne))
+		half := must1(mainFn.ConstantFromScalar(float32(0.5)))
+		broadcastedHalf := must1(stablehlo.BroadcastInDim(half, x.Shape(), nil))
+		div2 := must1(stablehlo.Multiply(add1, broadcastedHalf))
 
-		comp := must1(builder.Build(normalized))
-		execs[shapeIdx] = must1(client.Compile().WithComputation(comp).Done())
+		reductionFn := mainFn.Closure()
+		lhs := reductionFn.NamedInput("lhs", shapes.Make(dtypes.F32))
+		rhs := reductionFn.NamedInput("rhs", shapes.Make(dtypes.F32))
+		must(reductionFn.Return(must1(stablehlo.Add(lhs, rhs))))
+		initialValue := must1(mainFn.ConstantFromScalar(float32(0)))
+
+		mean := must1(stablehlo.Reduce(div2, initialValue, reductionFn))
+		normalized := must1(stablehlo.Subtract(div2, mean))
+
+		must(mainFn.Return(normalized))
+		compBytes := must1(builder.Build())
+		execs[shapeIdx] = must1(client.Compile().WithStableHLO(compBytes).Done())
 		testFns[shapeIdx].Name = fmt.Sprintf("%s/shape=%s", t.Name(), s)
 		testFns[shapeIdx].Func = func() {
 			for _ = range repeats {

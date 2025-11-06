@@ -90,7 +90,7 @@ func TestMinimal(t *testing.T) {
 		require.NoErrorf(t, err, "Failed to create on-device buffer for input %v, deviceNum=%d", input, 0)
 
 		// Execute: it returns the output on-device buffer(s).
-		outputBuffers, err := loadedExec.Execute(inputBuffer).OnDevicesByNum(0).Done()
+		outputBuffers, err := loadedExec.Execute(inputBuffer).OnDeviceByNum(0).Done()
 		require.NoErrorf(t, err, "Failed to execute on input %d, deviceNum=%d", input, 0)
 
 		// Transfer output on-device buffer to a "host" value (in Go).

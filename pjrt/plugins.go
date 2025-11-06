@@ -9,10 +9,10 @@ package pjrt
 import "C"
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
-	"sync"
 	"unsafe"
+
+	"github.com/pkg/errors"
 )
 
 // Plugin represents a loaded PJRT plugin that can be used to compile and execute StableHLO code.
@@ -46,7 +46,7 @@ type Plugin struct {
 	UseTextStableHLO bool
 
 	// arenaPool reuses C-allocated buffers to pass parameters to the PJRT api. Pool shared across all clients.
-	arenaPool *sync.Pool
+	arenaPools *arenaPools
 }
 
 // pjrtPluginInitialize calls C.PJRT_Plugin_Initialize.
@@ -80,9 +80,7 @@ func newPlugin(name, pluginPath string, api *C.PJRT_Api, dllHandle dllHandleWrap
 		dllHandle:        dllHandle,
 		UseStableHLO:     os.Getenv("GOPJRT_NO_STABLE_HLO") == "",
 		UseTextStableHLO: os.Getenv("GOPJRT_TEXT_STABLE_HLO") != "",
-		arenaPool: &sync.Pool{
-			New: func() interface{} { return newArena(arenaDefaultSize) },
-		},
+		arenaPools:       newArenaPools(),
 	}
 	err := pjrtPluginInitialize(plugin)
 	if err != nil {
@@ -166,15 +164,19 @@ func (p *Plugin) NewClient(options NamedValuesMap) (*Client, error) {
 	return newClient(p, options)
 }
 
-// getArenaFromPool gets an arena of the default size.
-// Must be matched with a call returnArenaToPool when it's no longer used.
-func (p *Plugin) getArenaFromPool() *arenaContainer {
-	return p.arenaPool.Get().(*arenaContainer)
+// getDefaultArena gets an arena of the default minimum size.
+func (p *Plugin) getDefaultArena() *arenaContainer {
+	return p.arenaPools.Get(minPooledArenaSize)
 }
 
-// returnArenaToPool returns an arena acquired with getArenaFromPool.
+// getArena gets an arena of at least the given size (they are stored in pools of power of 2 sizes).
+// Must be matched with a call returnArena when it's no longer used.
+func (p *Plugin) getArena(size int) *arenaContainer {
+	return p.arenaPools.Get(size)
+}
+
+// returnArena returns an arena acquired with getDefaultArena.
 // It also resets the arena.
-func (p *Plugin) returnArenaToPool(a *arenaContainer) {
-	a.Reset()
-	p.arenaPool.Put(a)
+func (p *Plugin) returnArena(a *arenaContainer) {
+	p.arenaPools.Return(a)
 }

@@ -6,7 +6,8 @@ import (
 
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/dtypes/bfloat16"
-	"github.com/gomlx/gopjrt/xlabuilder"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
 	"github.com/stretchr/testify/require"
 	"github.com/x448/float16"
 )
@@ -213,15 +214,18 @@ func testZeroDimNewSharedBuffer(t *testing.T, client *Client, dtype dtypes.DType
 
 func testZeroDimAsInput(t *testing.T, client *Client, dtype dtypes.DType, dimensions []int) {
 	// Create a simple computation that takes input and returns it unchanged (identity function)
-	builder := xlabuilder.New("ZeroDimIdentity")
-	shape := xlabuilder.MakeShape(dtype, dimensions...)
-	param, err := xlabuilder.Parameter(builder, "input", 0, shape)
-	require.NoError(t, err, "Failed to create parameter")
+	builder := stablehlo.New("ZeroDimIdentity")
+	shape := shapes.Make(dtype, dimensions...)
+	mainFn := builder.Main()
+	param := mainFn.NamedInput("input", shape)
 
-	comp, err := builder.Build(param)
+	err := mainFn.Return(param)
+	require.NoError(t, err, "Failed to set return value")
+
+	compBytes, err := builder.Build()
 	require.NoError(t, err, "Failed to build computation")
 
-	exec, err := client.Compile().WithComputation(comp).Done()
+	exec, err := client.Compile().WithStableHLO(compBytes).Done()
 	require.NoError(t, err, "Failed to compile computation")
 	defer func() {
 		require.NoError(t, exec.Destroy(), "Failed to destroy executable")
@@ -262,71 +266,60 @@ func testZeroDimAsInput(t *testing.T, client *Client, dtype dtypes.DType, dimens
 
 func testZeroDimAsOutput(t *testing.T, client *Client, dtype dtypes.DType, dimensions []int) {
 	// Create a computation that outputs a zero-dimension constant
-	builder := xlabuilder.New("ZeroDimConstant")
-	shape := xlabuilder.MakeShape(dtype, dimensions...)
+	builder := stablehlo.New("ZeroDimConstant")
+	shape := shapes.Make(dtype, dimensions...)
+	mainFn := builder.Main()
 
-	var scalar *xlabuilder.Op
+	var scalar *stablehlo.Value
 	var err error
 
 	switch dtype {
 	case dtypes.Bool:
-		scalarLit := xlabuilder.NewScalarLiteral(true)
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(true)
 	case dtypes.Float16:
-		scalarLit := xlabuilder.NewScalarLiteral(float16.Float16(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(float16.Float16(0))
 	case dtypes.BFloat16:
-		scalarLit := xlabuilder.NewScalarLiteral(bfloat16.BFloat16(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(bfloat16.BFloat16(0))
 	case dtypes.Float32:
-		scalarLit := xlabuilder.NewScalarLiteral(float32(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(float32(0))
 	case dtypes.Float64:
-		scalarLit := xlabuilder.NewScalarLiteral(float64(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(float64(0))
 	case dtypes.Int8:
-		scalarLit := xlabuilder.NewScalarLiteral(int8(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(int8(0))
 	case dtypes.Int16:
-		scalarLit := xlabuilder.NewScalarLiteral(int16(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(int16(0))
 	case dtypes.Int32:
-		scalarLit := xlabuilder.NewScalarLiteral(int32(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(int32(0))
 	case dtypes.Int64:
-		scalarLit := xlabuilder.NewScalarLiteral(int64(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(int64(0))
 	case dtypes.Uint8:
-		scalarLit := xlabuilder.NewScalarLiteral(uint8(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(uint8(0))
 	case dtypes.Uint16:
-		scalarLit := xlabuilder.NewScalarLiteral(uint16(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(uint16(0))
 	case dtypes.Uint32:
-		scalarLit := xlabuilder.NewScalarLiteral(uint32(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(uint32(0))
 	case dtypes.Uint64:
-		scalarLit := xlabuilder.NewScalarLiteral(uint64(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(uint64(0))
 	case dtypes.Complex64:
-		scalarLit := xlabuilder.NewScalarLiteral(complex64(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(complex64(0))
 	case dtypes.Complex128:
-		scalarLit := xlabuilder.NewScalarLiteral(complex128(0))
-		scalar, err = xlabuilder.Constant(builder, scalarLit)
+		scalar, err = mainFn.ConstantFromScalar(complex128(0))
 	default:
 		t.Fatalf("Unsupported dtype: %v", dtype)
 	}
 
 	require.NoError(t, err, "Failed to create scalar constant")
 
-	broadcast, err := xlabuilder.BroadcastInDim(scalar, shape, []int{})
+	broadcast, err := stablehlo.BroadcastInDim(scalar, shape, nil)
 	require.NoError(t, err, "Failed to broadcast to zero dimensions")
 
-	comp, err := builder.Build(broadcast)
+	err = mainFn.Return(broadcast)
+	require.NoError(t, err, "Failed to set return value")
+
+	compBytes, err := builder.Build()
 	require.NoError(t, err, "Failed to build computation")
 
-	exec, err := client.Compile().WithComputation(comp).Done()
+	exec, err := client.Compile().WithStableHLO(compBytes).Done()
 	require.NoError(t, err, "Failed to compile computation")
 	defer func() {
 		require.NoError(t, exec.Destroy(), "Failed to destroy executable")

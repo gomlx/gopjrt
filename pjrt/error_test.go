@@ -2,24 +2,30 @@ package pjrt
 
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/xlabuilder"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
+	"github.com/stretchr/testify/require"
 )
 
 func TestError(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := xlabuilder.New(t.Name())
+	builder := stablehlo.New(t.Name())
+	mainFn := builder.Main()
 
 	// f(x, y) = x+y
-	x := capture(xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	y := capture(xlabuilder.Parameter(builder, "y", 1, xlabuilder.MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	fXY := capture(xlabuilder.Add(x, y)).Test(t)
+	scalarF32 := shapes.Make(dtypes.F32)
+	x := mainFn.NamedInput("x", scalarF32) // Scalar float32.
+	y := mainFn.NamedInput("y", scalarF32) // Scalar float32.
+	fXY := capture(stablehlo.Add(x, y)).Test(t)
 
 	// Take program and compile.
-	comp := capture(builder.Build(fXY)).Test(t)
-	exec, err := client.Compile().WithComputation(comp).Done()
+	err := mainFn.Return(fXY)
+	require.NoError(t, err, "Failed to set return value")
+	compBytes := capture(builder.Build()).Test(t)
+	exec, err := client.Compile().WithStableHLO(compBytes).Done()
 	require.NoErrorf(t, err, "Failed to compile program")
 
 	// Call with no arguments: should return an error.

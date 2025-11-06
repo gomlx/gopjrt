@@ -2,26 +2,32 @@ package pjrt
 
 import (
 	"fmt"
-	"github.com/gomlx/gopjrt/dtypes"
-	"github.com/gomlx/gopjrt/xlabuilder"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/stablehlo"
+	"github.com/gomlx/stablehlo/types/shapes"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDonatableConfig(t *testing.T) {
 	client := getPJRTClient(t)
-	builder := xlabuilder.New(t.Name())
+	builder := stablehlo.New(t.Name())
+	mainFn := builder.Main()
 
 	// f(x, y, z) = x*y + z
-	x := capture(xlabuilder.Parameter(builder, "x", 0, xlabuilder.MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	y := capture(xlabuilder.Parameter(builder, "y", 1, xlabuilder.MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	z := capture(xlabuilder.Parameter(builder, "y", 2, xlabuilder.MakeShape(dtypes.F32))).Test(t) // Scalar float32.
-	fX := capture(xlabuilder.Mul(x, y)).Test(t)
-	fX = capture(xlabuilder.Add(fX, z)).Test(t)
+	scalarF32 := shapes.Make(dtypes.F32)
+	x := mainFn.NamedInput("x", scalarF32) // Scalar float32.
+	y := mainFn.NamedInput("y", scalarF32) // Scalar float32.
+	z := mainFn.NamedInput("z", scalarF32) // Scalar float32.
+	fX := capture(stablehlo.Multiply(x, y)).Test(t)
+	fX = capture(stablehlo.Add(fX, z)).Test(t)
 
 	// Take program and compile.
-	comp := capture(builder.Build(fX)).Test(t)
-	exec, err := client.Compile().WithComputation(comp).Done()
+	err := mainFn.Return(fX)
+	require.NoError(t, err, "Failed to set return value")
+	compBytes := capture(builder.Build()).Test(t)
+	exec, err := client.Compile().WithStableHLO(compBytes).Done()
 	require.NoErrorf(t, err, "Failed to compile program")
 
 	fmt.Println("Memory usage:")

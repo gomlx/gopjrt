@@ -4,12 +4,13 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Bazel Skylib, required by llvm.
 #SKYLIB_VERSION = "1.5.0"
-SKYLIB_VERSION = "1.7.1"
+SKYLIB_VERSION = "1.8.1"
 
 http_archive(
     name = "bazel_skylib",
     # sha256 = "cd55a062e763b9349921f0f5db8c3933288dc8ba4f76dd9416aac68acee3cb94",  # 1.5.0
-    sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",  # 1.7.1
+    # sha256 = "bc283cdfcd526a52c3201279cda4bc298652efa898b10b4db0837dc51652756f",  # 1.7.1
+    sha256 = "51b5105a760b353773f904d2bbc5e664d0987fbaf22265164de65d43e910d8ac",  # 1.7.1
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = SKYLIB_VERSION),
         "https://github.com/bazelbuild/bazel-skylib/releases/download/{version}/bazel-skylib-{version}.tar.gz".format(version = SKYLIB_VERSION),
@@ -21,18 +22,46 @@ http_archive(
 # Notice bazel.sh scrape the line below for the OpenXLA version, the format
 # of the line should remain the same (the hash in between quotes), or bazel.sh
 # must be changed accordingly.
-OPENXLA_XLA_COMMIT_HASH = "f25e0d397946df15ac4c653091314ca8bcee3286"  # From 2025-08-15
+OPENXLA_XLA_COMMIT_HASH = "aaf226d5f36673ed2b6ac24e662f43407f89698c"  # From 2025-11-07
+#OPENXLA_XLA_COMMIT_HASH = "f25e0d397946df15ac4c653091314ca8bcee3286"  # From 2025-08-15
 #OPENXLA_XLA_COMMIT_HASH = "dd2192e2ffd24f35843918b3bce3fd441034613e"  # From 2025-04-30
 
 http_archive(
     name = "xla",
-    sha256 = "3998e31b672ffb6aebb49167ca15f9b2556f900ed45dc22a7bfdcf2cd68fc267",  # From 2025-08-15
+    sha256 = "e4e82f222507bb4d8355f3e3dea8d219762aa4ec22787c8cc7f09b65a75a357b",  # From 2025-11-07
+    # sha256 = "3998e31b672ffb6aebb49167ca15f9b2556f900ed45dc22a7bfdcf2cd68fc267",  # From 2025-08-15
     # sha256 = "71518ca1802600f4b00e409101f2e61ad2032bddc2dd60ee1fd98a9f3bb3e704",  # From 2025-04-30
     strip_prefix = "xla-" + OPENXLA_XLA_COMMIT_HASH,
     urls = [
         "https://github.com/openxla/xla/archive/{hash}.zip".format(hash = OPENXLA_XLA_COMMIT_HASH),
     ],
 )
+
+# Initialize toolchains for ML projects.
+#
+# A hermetic build system is designed to produce completely reproducible builds for C++.
+# Details: https://github.com/google-ml-infra/rules_ml_toolchain
+http_archive(
+    name = "rules_ml_toolchain",
+    sha256 = "38f1954af9336c3d020a3b807a3585fdaefa8e9bee725664663279cc4309b8c6",
+    strip_prefix = "rules_ml_toolchain-71d74ee1f7ad0e74c50b3c546d21872d42676e37",
+    urls = [
+        "https://github.com/google-ml-infra/rules_ml_toolchain/archive/71d74ee1f7ad0e74c50b3c546d21872d42676e37.tar.gz",
+    ],
+)
+
+load(
+    "@rules_ml_toolchain//cc/deps:cc_toolchain_deps.bzl",
+    "cc_toolchain_deps",
+)
+
+cc_toolchain_deps()
+
+register_toolchains("@rules_ml_toolchain//cc:linux_x86_64_linux_x86_64")
+register_toolchains("@rules_ml_toolchain//cc:linux_x86_64_linux_x86_64_cuda")
+register_toolchains("@rules_ml_toolchain//cc:linux_x86_64_linux_x86_64_sycl")
+register_toolchains("@rules_ml_toolchain//cc:linux_aarch64_linux_aarch64")
+register_toolchains("@rules_ml_toolchain//cc:linux_aarch64_linux_aarch64_cuda")
 
 # Initialize the XLA repository and all dependencies.
 

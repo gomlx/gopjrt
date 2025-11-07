@@ -12,8 +12,9 @@
 # Versions 8 and above don't work. They seem to require blzmod (and the compatibility --enable_workspace build option
 # doesn't seem to work the same):
 # export USE_BAZEL_VERSION=last_green
-export USE_BAZEL_VERSION=7.4.1  # Same used by OpenXLA/XLA as of 2025-04-10
+# export USE_BAZEL_VERSION=7.4.1  # Same used by OpenXLA/XLA as of 2025-04-10
 # export USE_BAZEL_VERSION=7.6.1
+export USE_BAZEL_VERSION=7.7.0  # Same used by OpenXLA/XLA as of 2025-11-07 (see xla/.bazelversion)
 
 DEBUG=0
 OUTPUT_DIR=""

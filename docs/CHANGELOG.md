@@ -1,9 +1,12 @@
 # Gopjrt Changelog
 
-# v0.9.1 2025/11/07: More multi-device support
+# v0.9.1 2025/11/07: More multi-device support; updated CPU PJRT; dropped static CPU PJRT linking.
 
 - Package `pjrt`:
   - Added `Buffer.CopyToDevice()`.
+- Updated and rebuilt XLA's CPU PJRT and XlaBuilder for new release.
+  - Static builds of PJRT CPU no longer working (Bazel issues).
+  - XlaBuilder no longer included – making the binary packages smaller.
 
 # v0.9.0 2025/11/06: Multi-device SPMD execution; TPU installation support; Deprecating `xlabuilder`.
 
@@ -16,7 +19,7 @@
   - Arena pools for powers-of-2 sizes.
 - Replaced `xlabuilder` with `stablehlo` in examples:
   - Enabled _darwin_ tests using `stablehlo`
-- Updated PJRT C API and protos from XLA sources.
+- Updated the PJRT C API and the proto-buffers from XLA sources.
 
 # v0.8.5 2025/10/27: Fixed `xlabuilder` for newer C compilers.
 

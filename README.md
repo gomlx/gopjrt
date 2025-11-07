@@ -120,7 +120,7 @@ For that, import (as `_`) one of the following packages:
   distribute a CPU PJRT with your program. But it's slower to build, potentially taking a few extra (annoying) seconds
   (static libraries are much slower to link). 
   As of version v0.9.1 this is no longer built by default – you can still install the Linux CPU PJRT from release 
-  v0.9.0 if you need this. This is a limitation of XLA/Bazel combination -- for which a previous hack worked. 
+  v0.9.0 if you need this. This is a limitation of XLA/Bazel combination – for which a previous hack worked. 
   Hopefully, with time XLA will migrate to using the new Bazel where static libraries are supported, and we can
   include it again.
 
@@ -208,10 +208,10 @@ Environment variables that help control or debug how GoPJRT works:
 
 All tests support (in linux) the following build tags to pre-link the CPU plugin (as opposed to `dlopen` the plugin) -- select at most one of them:  
 
-* `--tags pjrt_cpu_static`: link (preload) the CPU PJRT plugin from the static library (`.a`) version. 
-  Slowest to build (but executes the same speed).
 * `--tags pjrt_cpu_dynamic`: link (preload) the CPU PJRT plugin from the dynamic library (`.so`) version. 
   Faster to build, but deployments require deploying the `libpjrt_c_api_cpu_dynamic.so` file along.
+* `--tags pjrt_cpu_static`: (**experimental**) link (preload) the CPU PJRT plugin from the static library (`.a`) version.
+  Slowest to build (but executes the same speed).
 
 ## Acknowledgements
 This project uses the following components from the [OpenXLA project](https://openxla.org/):

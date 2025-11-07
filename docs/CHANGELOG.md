@@ -1,9 +1,10 @@
 # Gopjrt Changelog
 
-# v0.9.1 2025/11/07: More multi-device support
+# v0.9.1 2025/11/07: More multi-device support; updated CPU PJRT.
 
 - Package `pjrt`:
   - Added `Buffer.CopyToDevice()`.
+- Updated and rebuilt XLA's CPU PJRT and XlaBuilder for new release.
 
 # v0.9.0 2025/11/06: Multi-device SPMD execution; TPU installation support; Deprecating `xlabuilder`.
 

@@ -1,5 +1,10 @@
 # Gopjrt Changelog
 
+# Next
+
+- Package `pjrt`:
+  - Added `Buffer.CopyToDevice()`.
+
 # v0.9.0 2025/11/06: Multi-device SPMD execution; TPU installation support; Deprecating `xlabuilder`.
 
 - `gopjrt_installer`: Added TPU installation.

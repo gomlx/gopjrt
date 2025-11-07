@@ -350,3 +350,33 @@ func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err erro
 	flat = flatV.Interface()
 	return
 }
+
+// CopyToDevice copies the buffer to the given device, and returns a new buffer.
+// The original buffer is not affected.
+func (b *Buffer) CopyToDevice(dstDevice *Device) (*Buffer, error) {
+	plugin, err := b.getPlugin()
+	if err != nil {
+		return nil, err
+	}
+	if dstDevice == nil || dstDevice.cDevice == nil {
+		return nil, errors.New("destination device is nil")
+	}
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(dstDevice)
+
+	arena := plugin.getDefaultArena()
+	defer plugin.returnArena(arena)
+
+	args := arenaAlloc[C.PJRT_Buffer_CopyToDevice_Args](arena)
+	args.struct_size = C.PJRT_Buffer_CopyToDevice_Args_STRUCT_SIZE
+	args.buffer = b.wrapper.c
+	args.dst_device = dstDevice.cDevice
+
+	err = toError(plugin, C.call_PJRT_Buffer_CopyToDevice(plugin.api, args))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to copy buffer to device %v", dstDevice)
+	}
+
+	newBuff := newBuffer(b.wrapper.client, args.dst_buffer)
+	return newBuff, nil
+}

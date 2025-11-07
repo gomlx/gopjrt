@@ -131,6 +131,56 @@ func TestBufferProperties(t *testing.T) {
 	}
 }
 
+func TestBufferCopyToDevice(t *testing.T) {
+	plugin, err := GetPlugin(*flagPluginName)
+	require.NoError(t, err)
+	client, err := plugin.NewClient(nil)
+	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	defer func() {
+		err := client.Destroy()
+		require.NoError(t, err)
+	}()
+
+	devices := client.AddressableDevices()
+	if len(devices) < 2 {
+		t.Skipf("TestBufferCopyToDevice requires at least 2 devices, only %d available", len(devices))
+	}
+
+	// Create a scalar buffer on the first device.
+	device0 := devices[0]
+	from := float32(42.0)
+	bufferDev0, err := ScalarToBufferOnDeviceNum(client, 0, from)
+	require.NoError(t, err)
+	defer func() {
+		err := bufferDev0.Destroy()
+		require.NoError(t, err)
+	}()
+
+	// Verify it's on device 0
+	bufferDevice, err := bufferDev0.Device()
+	require.NoError(t, err)
+	require.Equal(t, device0.LocalHardwareID(), bufferDevice.LocalHardwareID())
+
+	// Copy buffer to the second device.
+	device1 := devices[1]
+	bufferDev1, err := bufferDev0.CopyToDevice(device1)
+	require.NoError(t, err)
+	defer func() {
+		err := bufferDev1.Destroy()
+		require.NoError(t, err)
+	}()
+
+	// Verify the new buffer is on device 1.
+	bufferDevice, err = bufferDev1.Device()
+	require.NoError(t, err)
+	require.Equal(t, device1.LocalHardwareID(), bufferDevice.LocalHardwareID())
+
+	// Verify the data is the same.
+	to, err := BufferToScalar[float32](bufferDev1)
+	require.NoError(t, err)
+	require.Equal(t, from, to)
+}
+
 var flagForceSharedBuffer = flag.Bool(
 	"force_shared_buffer", false, "Force executing TestCreateViewOfDeviceBuffer and TestBufferUnsafePointer even if plugin is not \"cpu\".")
 

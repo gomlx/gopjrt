@@ -5,6 +5,8 @@
 - Package `pjrt`:
   - Added `Buffer.CopyToDevice()`.
 - Updated and rebuilt XLA's CPU PJRT and XlaBuilder for new release.
+  - Static builds of PJRT CPU no longer working (Bazel issues).
+  - XlaBuilder no longer included – making the binary packages smaller.
 
 # v0.9.0 2025/11/06: Multi-device SPMD execution; TPU installation support; Deprecating `xlabuilder`.
 

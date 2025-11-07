@@ -8,16 +8,16 @@ def gomlx_xlabuilder_genrule(target_platform):
     native.genrule(
         name = "gomlx_xlabuilder_" + target_platform,
         srcs = [
-            ":gomlx_xlabuilder_headers_include",
-            ":gomlx_xlabuilder_static_lib",
-            ":pjrt_cpu_static_lib",
+            # ":gomlx_xlabuilder_headers_include",
+            # ":gomlx_xlabuilder_static_lib",
+            # ":pjrt_cpu_static_lib",
             ":pjrt_cpu_dynamic_lib",
         ],
         outs = ["gomlx_xlabuilder_" + target_platform + ".tar.gz"],
         cmd_bash = """
         build_dir="$$(pwd)/$(@D)"
         echo "build_dir=$${build_dir}"
-        files="lib include"
+        files="lib"  # No longer including XlaBuilder "include" in the list of files.
         echo "files=$${files}"
         TAR=tar
         if [[ "$$OSTYPE" == "darwin"* ]]; then

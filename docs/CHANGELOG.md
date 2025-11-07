@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# v0.9.1 2025/11/07: More multi-device support
 
 - Package `pjrt`:
   - Added `Buffer.CopyToDevice()`.

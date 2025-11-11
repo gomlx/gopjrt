@@ -1,5 +1,11 @@
 # Gopjrt Changelog
 
+# Next
+
+- Package `cmd/gopjrt_installer`:
+  - Link `libcublasLt.so.13` and `libcublas.so.13` to the `lib` subdirectory of the install directory given.
+    Nvidia needs it for some models, but doesn't know how to find it within the provided SDK path.
+
 # v0.9.1 2025/11/07: More multi-device support; updated CPU PJRT; dropped static CPU PJRT linking.
 
 - Package `pjrt`:

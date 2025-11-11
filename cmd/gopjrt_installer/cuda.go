@@ -223,6 +223,20 @@ func CudaInstallNvidiaLibraries(plugin, version, installPath string) error {
 	if err := os.Symlink(ptxasPath, ptxasLinkPath); err != nil {
 		return errors.Wrapf(err, "failed to create symbolic link to ptxas in %s", ptxasLinkPath)
 	}
+
+	// Link libraries that Nvidia is not able to find from the SDK path set.
+	switch plugin {
+	case "cuda13":
+		libsPath := filepath.Join(installPath, "lib")
+		libCublasPath := "./gomlx/nvidia/cu13/lib"
+		for _, srcName := range []string{"libcublasLt.so.13", "libcublas.so.13"} {
+			dstPath := filepath.Join(libsPath, filepath.Base(srcName))
+			srcPath := filepath.Join(libCublasPath, srcName)
+			if err := os.Symlink(srcPath, dstPath); err != nil {
+				return errors.Wrapf(err, "failed to create symbolic link to %s in %s", srcPath, dstPath)
+			}
+		}
+	}
 	return nil
 }
 

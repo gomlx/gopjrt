@@ -107,12 +107,13 @@ func cudaNVidiaPath(plugin *Plugin) (nvidiaExpectedPath string, found bool) {
 	return nvidiaExpectedPath, err == nil && fi.IsDir()
 }
 
-// XlaFlagsEnv is the name of the environment variable to set XLA_FLAGS.
-const XlaFlagsEnv = "XLA_FLAGS"
-
 // cudaSetCUDADir as a flag set into the environment variable XLA_FLAGS.
 func cudaSetCUDADir(nvidiaPath string) {
-	existingXLAFlags := os.Getenv(XlaFlagsEnv)
+	const (
+		XLAFlagsEnv = "XLA_FLAGS"
+	)
+
+	existingXLAFlags := os.Getenv(XLAFlagsEnv)
 	var newValue string
 	if existingXLAFlags != "" && !strings.Contains(existingXLAFlags, "--xla_gpu_cuda_data_dir") {
 		newValue = fmt.Sprintf("%s --xla_gpu_cuda_data_dir=%s", existingXLAFlags, nvidiaPath)
@@ -122,9 +123,9 @@ func cudaSetCUDADir(nvidiaPath string) {
 		newValue = fmt.Sprintf("--xla_gpu_cuda_data_dir=%s", nvidiaPath)
 	}
 	if newValue != "" {
-		err := os.Setenv(XlaFlagsEnv, newValue)
+		err := os.Setenv(XLAFlagsEnv, newValue)
 		if err != nil {
-			klog.Warningf("Failed to set %q environment variable to %q: %v", XlaFlagsEnv, newValue, err)
+			klog.Warningf("Failed to set %q environment variable to %q: %v", XLAFlagsEnv, newValue, err)
 		}
 	}
 }

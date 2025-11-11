@@ -51,8 +51,9 @@ jobs:
         go test . -test.v
 
     - name: Test
+      # Notice xlabuilder is not installed in CI -- it requires manual installation of the older version of the library.
       run: |
-        go test ./xlabuilder/... ./pjrt/...
+        go test ./pjrt/...
 
     - name: Go Coverage Badge
       if: github.ref == 'refs/heads/main'

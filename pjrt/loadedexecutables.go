@@ -19,7 +19,7 @@ PJRT_Error* ExecuteAndWait(const PJRT_Api *api, PJRT_LoadedExecutable_Execute_Ar
 			event_args.event = args->device_complete_events[ii];
 			err = api->PJRT_Event_Await(&event_args);
 			PJRT_Event_Destroy_Args efree_args;
-			efree_args.struct_size = PJRT_Event_Await_Args_STRUCT_SIZE;
+			efree_args.struct_size = PJRT_Event_Destroy_Args_STRUCT_SIZE;
 			efree_args.event = args->device_complete_events[ii];
 			api->PJRT_Event_Destroy(&efree_args);
 			if (err) {

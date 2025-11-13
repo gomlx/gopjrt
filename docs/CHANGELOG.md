@@ -8,6 +8,8 @@
 - Package `xlabuilder`: removed from CI: it requires manual installation of the older library version.
 - Package `pjrt`:
   - Fixed wrong struct size set for `PJRT_Event_Destroy_Args`, in #65 (@timkaye11)
+  - Fixed `buffer.Destroy` to release the `client` pointer in the wrapper.
+  - Added a required `runtime.KeepAlive(program)` on a CGO call to compile `program`.
 
 # v0.9.1 2025/11/07: More multi-device support; updated CPU PJRT; dropped static CPU PJRT linking.
 

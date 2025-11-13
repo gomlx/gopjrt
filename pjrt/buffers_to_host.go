@@ -41,7 +41,7 @@ PJRT_Error* BufferToHost(const PJRT_Api *api, PJRT_Buffer *buffer, void *dst, in
 	event_args.event = args.event;
 	err = api->PJRT_Event_Await(&event_args);
 	PJRT_Event_Destroy_Args efree_args;
-	efree_args.struct_size = PJRT_Event_Await_Args_STRUCT_SIZE;
+	efree_args.struct_size = PJRT_Event_Destroy_Args_STRUCT_SIZE;
 	efree_args.event = args.event;
 	api->PJRT_Event_Destroy(&efree_args);
 

@@ -65,6 +65,7 @@ func (wrapper *bufferWrapper) Destroy() error {
 	wrapper.c = nil
 	plugin := wrapper.plugin
 	wrapper.plugin = nil
+	wrapper.client = nil
 	err := toError(plugin, C.call_PJRT_Buffer_Destroy(plugin.api, args))
 	buffersAlive.Add(-1)
 	if wrapper.sharedRawStorage != nil {

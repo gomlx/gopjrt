@@ -106,6 +106,7 @@ func pjrtClientDefaultDeviceAssignment(plugin *Plugin, client *Client, numReplic
 // are pinned until the C function returns.
 func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFormat string,
 	compileOptionsProto []byte) (*LoadedExecutable, error) {
+
 	// Create the program struct.
 	var cProgram *C.PJRT_Program
 	cProgram = C.new_PJRT_Program()
@@ -130,6 +131,7 @@ func pjrtClientCompile(plugin *Plugin, client *Client, program []byte, programFo
 		defer cFree(args.compile_options)
 	}
 	cErr := C.call_PJRT_Client_Compile(plugin.api, args)
+	runtime.KeepAlive(program) // Makes sure it is alive during the C call.
 	err := toError(plugin, cErr)
 	if err != nil {
 		return nil, err

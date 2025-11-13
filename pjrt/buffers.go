@@ -351,7 +351,7 @@ func (b *Buffer) ToFlatDataAndDimensions() (flat any, dimensions []int, err erro
 	return
 }
 
-// CopyToDevice copies the buffer to the given device, and returns a new buffer.
+// CopyToDevice copies the buffer to the given device and returns a new buffer.
 // The original buffer is not affected.
 func (b *Buffer) CopyToDevice(dstDevice *Device) (*Buffer, error) {
 	plugin, err := b.getPlugin()

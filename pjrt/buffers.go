@@ -106,7 +106,6 @@ func (b *Buffer) Destroy() error {
 		return nil
 	}
 	err := b.wrapper.Destroy()
-	b.wrapper.client = nil
 	return err
 }
 

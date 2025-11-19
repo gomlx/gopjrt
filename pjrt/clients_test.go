@@ -35,7 +35,7 @@ var (
 )
 
 func TestPlugin_NewClient(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
@@ -51,7 +51,7 @@ func TestPlugin_NewClient(t *testing.T) {
 }
 
 func TestCompileAndExecute(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 

@@ -13,7 +13,7 @@ import (
 )
 
 func TestZeroDim(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
@@ -74,7 +74,7 @@ func TestZeroDim(t *testing.T) {
 			})
 
 			// Test 2: Create zero-dimension buffer using NewSharedBuffer (CPU only)
-			if *flagPluginName == "cpu" || *flagForceSharedBuffer {
+			if *FlagPluginName == "cpu" || *flagForceSharedBuffer {
 				t.Run("NewSharedBuffer", func(t *testing.T) {
 					fmt.Println("testing NewSharedBuffer")
 					testZeroDimNewSharedBuffer(t, client, tc.dtype, tc.dimensions, tc.expectSize)

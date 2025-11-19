@@ -35,7 +35,7 @@ func TestBenchCGO(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	const repeats = 1000
 	repeatedCGO := func() {
 		for _ = range repeats {
@@ -52,7 +52,7 @@ func TestBenchArena(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -129,7 +129,7 @@ func TestBenchBufferFromHost(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -171,7 +171,7 @@ func TestBenchBufferToHost(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -212,7 +212,7 @@ func TestBenchAdd1Execution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -278,7 +278,7 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -347,7 +347,7 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 

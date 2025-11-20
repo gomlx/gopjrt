@@ -351,6 +351,10 @@ func (cc *CompileConfig) WithShardy(numDevices int) *CompileConfig {
 // WithDeviceAssignment configures the device assignment for the program.
 // The device assignment is used to determine the device on which each computation will be executed.
 //
+// Very important: this defines the device order of the sharded inputs: if you use `WithDeviceAssignment([]int{3, 2})`
+// for a computation f(x) with x sharded, you need to feed the shard on device 3 first, followed by the x shard
+// on device 2.
+//
 // The device assignment is a list of device IDs, one for each computation in the program,
 // so there should be numReplicas*numPartitions entries -- organized in "numReplicas" rows and
 // "numPartitions" columns (row-major).
@@ -358,11 +362,14 @@ func (cc *CompileConfig) WithShardy(numDevices int) *CompileConfig {
 // For example, if numReplicas=2 and numPartitions=3, a device assignment would specify the (replica, partition) pairs
 // [(replica=0,partition=0), (0,1), (1,0), (1,1), (2,0), (2,1)].
 //
+// For XLA Shardy program (WithShardy), the "replica/partition" split is ignored, all devices are assigned as
+// "partition" devices, and the assignment is a simple list, with the order of devices to use.
+//
 // If not set, the device assignment is done automatically (see Client.DefaultDeviceAssignment), and it can be queried
 // using LoadedExecutable.GetDeviceAssignment method after compilation.
 //
-// If not set directly or indirectly with WithSPMD the program defaults to being portable, and the device assignment
-// is ignored.
+// If it is not set directly or indirectly with WithShardy or WithSPMD,
+// the program defaults to being "portable", and the device assignment is ignored.
 //
 // It returns itself (CompileConfig) to allow cascading configuration calls.
 func (cc *CompileConfig) WithDeviceAssignment(assignment []int) *CompileConfig {

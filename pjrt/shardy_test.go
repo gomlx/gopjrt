@@ -7,7 +7,6 @@ import (
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/gomlx/gopjrt/pjrt"
 	"github.com/gomlx/stablehlo/types/shapes"
-	"github.com/gomlx/stablehlo/types/shardy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,9 +28,9 @@ func TestShardy(t *testing.T) {
 	}
 
 	t.Run("input-data-sharding", func(t *testing.T) {
-		mesh := must1(shardy.NewDeviceMesh("data_mesh", []int{2}, []string{"data"}))
-		program := []byte(`module @TestShardy_input_data_sharding attributes {mhlo.num_replicas = 2:i32,  mhlo.num_partitions = 1:i32} {
-		 sdy.mesh @data_mesh = <["data"=2]>
+		program := []byte(`module @TestShardy_input_data_sharding attributes {} {
+		 sdy.mesh @mesh_unused = <["x"=1, "y"=2], device_ids=[0, 1]>
+		 sdy.mesh @data_mesh = <["data"=2], device_ids=[1, 0]>
 		 func.func @main(%arg0: tensor<2x3xf32> { sdy.sharding = #sdy.sharding<@data_mesh, [{"data"}, {}]> }) -> tensor<f32> {
 		   %1 = "stablehlo.constant"() { value = dense<0.0> : tensor<f32> } : () -> tensor<f32>
 		   %2 = "stablehlo.reduce"(%arg0, %1) ({
@@ -42,36 +41,38 @@ func TestShardy(t *testing.T) {
 		   "stablehlo.return"(%2) : (tensor<f32>) -> ()
 		 }
 		}`)
-		x0 := must1(client.BufferFromHost().ToDeviceNum(0).FromFlatDataWithDimensions(
-			[]float32{0, 1, 2}, []int{1, 3}).Done())
-		x1 := must1(client.BufferFromHost().ToDeviceNum(1).FromFlatDataWithDimensions(
-			[]float32{0, 0.1, 0.2}, []int{1, 3}).Done())
-		outputs := shardyCompileAndExecute(t, client, program, mesh, x0, x1)
+		deviceAssignment := []int{3, 2} // More than we actually use, but it doesn't matter.
+		loadedExec, err := client.Compile().
+			WithStableHLO(program).
+			WithShardy(2).
+			WithDeviceAssignment(deviceAssignment).
+			Done()
+		require.NoErrorf(t, err, "failed to compile program: \n%s", program)
+		defer func() {
+			err := loadedExec.Destroy()
+			if err != nil {
+				t.Errorf("failed to destroy loaded exec: %+v", err)
+			}
+		}()
+
+		// Notice we provided device nums
+		x0 := must1(client.BufferFromHost().
+			ToDeviceNum(deviceAssignment[0]).
+			FromFlatDataWithDimensions([]float32{0, 1, 2}, []int{1, 3}).
+			Done())
+		x1 := must1(client.BufferFromHost().
+			ToDeviceNum(deviceAssignment[1]).
+			FromFlatDataWithDimensions([]float32{0, 0.1, 0.2}, []int{1, 3}).
+			Done())
+		outputs, err := loadedExec.Execute(x0, x1).DonateAll().Done()
+		require.NoErrorf(t, err, "failed to execute program: \n%s", program)
+
+		// Check results.
 		requireBuffersEqual(t, []FlatAndDims{
 			{[]float32{3.3}, nil},
 			{[]float32{3.3}, nil},
 		}, outputs)
 	})
-}
-
-// compileAndExecute program with PJRT. All inputs are donated.
-func shardyCompileAndExecute(t *testing.T, client *pjrt.Client, program []byte,
-	mesh *shardy.DeviceMesh, inputs ...*pjrt.Buffer) []*pjrt.Buffer {
-	loadedExec, err := client.Compile().
-		WithStableHLO(program).
-		WithShardy(mesh.NumDevices()).
-		WithDeviceAssignment(mesh.DeviceAssignment()).
-		Done()
-	require.NoErrorf(t, err, "failed to compile program: \n%s", program)
-	defer func() {
-		err := loadedExec.Destroy()
-		if err != nil {
-			t.Errorf("failed to destroy loaded exec: %+v", err)
-		}
-	}()
-	outputBuffers, err := loadedExec.Execute(inputs...).DonateAll().Done()
-	require.NoErrorf(t, err, "failed to execute program: \n%s", program)
-	return outputBuffers
 }
 
 type FlatAndDims struct {

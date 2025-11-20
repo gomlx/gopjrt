@@ -217,7 +217,7 @@ func testZeroDimAsInput(t *testing.T, client *Client, dtype dtypes.DType, dimens
 	builder := stablehlo.New("ZeroDimIdentity")
 	shape := shapes.Make(dtype, dimensions...)
 	mainFn := builder.Main()
-	param := mainFn.NamedInput("input", shape)
+	param := must1(mainFn.NamedInput("input", shape))
 
 	err := mainFn.Return(param)
 	require.NoError(t, err, "Failed to set return value")

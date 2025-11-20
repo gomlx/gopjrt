@@ -297,6 +297,8 @@ func (cc *CompileConfig) WithComputation(computation XlaComputation) *CompileCon
 
 // WithSPMD configures the program to be compiled for "Single Program Multiple Data" (SPMD) mode.
 //
+// This is the old way, consider using WithShardy instead.
+//
 // This means the same program will be executed on multiple devices, with different inputs per device.
 //
 // Later the inputs to the LoadedExecutable.Execute method will be divided in numReplicas slices, each fed
@@ -322,6 +324,25 @@ func (cc *CompileConfig) WithSPMD(numReplicas int) *CompileConfig {
 	cc.options.ExecutableBuildOptions.UseSpmdPartitioning = true
 	cc.options.ExecutableBuildOptions.NumReplicas = int64(numReplicas)
 	cc.options.ExecutableBuildOptions.NumPartitions = 1
+	cc.options.CompilePortableExecutable = false
+	cc.setDefaultDeviceAssignment()
+	return cc
+}
+
+// WithShardy uses XLA Shardy [1] to automatically distribute the execution across a mesh of devices.
+//
+// After setting this, consider doing also the device assignment (WithDeviceAssignment) that should be provided
+// by your shardy.DeviceMesh.
+//
+// Shardy uses as input the sharding specification of the inputs and outputs (and optionally hints inside the program
+// to automatically shard the computation).
+//
+// [1] https://openxla.org/shardy/
+func (cc *CompileConfig) WithShardy(numDevices int) *CompileConfig {
+	cc.options.ExecutableBuildOptions.UseShardyPartitioner = true
+	cc.options.ExecutableBuildOptions.UseSpmdPartitioning = true
+	cc.options.ExecutableBuildOptions.NumReplicas = 1
+	cc.options.ExecutableBuildOptions.NumPartitions = int64(numDevices)
 	cc.options.CompilePortableExecutable = false
 	cc.setDefaultDeviceAssignment()
 	return cc

@@ -28,8 +28,8 @@ func TestShardy(t *testing.T) {
 	}
 
 	t.Run("input-data-sharding", func(t *testing.T) {
-		program := []byte(`module @TestShardy_input_data_sharding attributes {} {
-		 sdy.mesh @mesh_unused = <["x"=1, "y"=2], device_ids=[0, 1]>
+		program := []byte(`module @TestShardy_input_data_sharding attributes {stablehlo.num_replicas = 1,  stablehlo.num_partitions = 2} {
+		 sdy.mesh @unused_mesh = <["x"=1, "y"=2], device_ids=[0, 1]>
 		 sdy.mesh @data_mesh = <["data"=2], device_ids=[1, 0]>
 		 func.func @main(%arg0: tensor<2x3xf32> { sdy.sharding = #sdy.sharding<@data_mesh, [{"data"}, {}]> }) -> tensor<f32> {
 		   %1 = "stablehlo.constant"() { value = dense<0.0> : tensor<f32> } : () -> tensor<f32>
@@ -41,7 +41,7 @@ func TestShardy(t *testing.T) {
 		   "stablehlo.return"(%2) : (tensor<f32>) -> ()
 		 }
 		}`)
-		deviceAssignment := []int{3, 2} // More than we actually use, but it doesn't matter.
+		deviceAssignment := []int{3, 2}
 		loadedExec, err := client.Compile().
 			WithStableHLO(program).
 			WithShardy(2).

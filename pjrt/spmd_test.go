@@ -28,31 +28,6 @@ func must1[T any](t T, err error) T {
 }
 
 var (
-	allReduceProgramFail = []byte(
-		`
-module @TestDistributedAllReduce_multiple_values__different_dtype attributes {stablehlo.num_replicas = 2 } {
-  func.func @main(%x: tensor<f32>, %y: tensor<2xf32>, %z: tensor<3xf64>) -> (tensor<f32>, tensor<2xf32>, tensor<3xf64>) {
-    %1 = "stablehlo.all_reduce"(%z) ({
-      ^computation(%lhs: tensor<f64>, %rhs: tensor<f64>) :
-          %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f64>, tensor<f64>) -> tensor<f64>
-          "stablehlo.return"(%0) : (tensor<f64>) -> ()
-    }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_handle = #stablehlo.channel_handle<handle = 0, type = 0>
-    } : (tensor<3xf64>) -> tensor<3xf64>
-    %3, %4 = "stablehlo.all_reduce"(%x, %y) ({
-      ^computation(%lhs: tensor<f32>, %rhs: tensor<f32>) :
-          %2 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
-          "stablehlo.return"(%2) : (tensor<f32>) -> ()
-    }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_handle = #stablehlo.channel_handle<handle = 1, type = 0>
-    } : (tensor<f32>, tensor<2xf32>) -> (tensor<f32>, tensor<2xf32>)
-    "stablehlo.return"(%3, %4, %1) : (tensor<f32>, tensor<2xf32>, tensor<3xf64>) -> ()
-  }
-}
-`)
-
 	allReduceProgram = []byte(
 		`
 module @TestDistributedAllReduce_multiple_values__different_dtype attributes {stablehlo.num_replicas = 2 } {
@@ -62,24 +37,19 @@ module @TestDistributedAllReduce_multiple_values__different_dtype attributes {st
           %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f64>, tensor<f64>) -> tensor<f64>
           "stablehlo.return"(%0) : (tensor<f64>) -> ()
     }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_id = 0
+      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>
     } : (tensor<3xf64>) -> tensor<3xf64>
     %3, %4 = "stablehlo.all_reduce"(%x, %y) ({
       ^computation(%lhs: tensor<f32>, %rhs: tensor<f32>) :
           %2 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
           "stablehlo.return"(%2) : (tensor<f32>) -> ()
     }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_id = 1
+      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>
     } : (tensor<f32>, tensor<2xf32>) -> (tensor<f32>, tensor<2xf32>)
     "stablehlo.return"(%3, %4, %1) : (tensor<f32>, tensor<2xf32>, tensor<3xf64>) -> ()
   }
 }
 `)
-
-	_ = allReduceProgram
-	_ = allReduceProgramFail
 )
 
 func TestCollectiveAllReduce(t *testing.T) {

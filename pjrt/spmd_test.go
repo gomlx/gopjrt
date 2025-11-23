@@ -63,7 +63,7 @@ module @TestDistributedAllReduce_multiple_values__different_dtype attributes {st
           "stablehlo.return"(%0) : (tensor<f64>) -> ()
     }) {
       replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_id = 1
+      channel_id = 0
     } : (tensor<3xf64>) -> tensor<3xf64>
     %3, %4 = "stablehlo.all_reduce"(%x, %y) ({
       ^computation(%lhs: tensor<f32>, %rhs: tensor<f32>) :
@@ -71,7 +71,7 @@ module @TestDistributedAllReduce_multiple_values__different_dtype attributes {st
           "stablehlo.return"(%2) : (tensor<f32>) -> ()
     }) {
       replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_id = 2
+      channel_id = 1
     } : (tensor<f32>, tensor<2xf32>) -> (tensor<f32>, tensor<2xf32>)
     "stablehlo.return"(%3, %4, %1) : (tensor<f32>, tensor<2xf32>, tensor<3xf64>) -> ()
   }

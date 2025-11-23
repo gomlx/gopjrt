@@ -28,7 +28,7 @@ func must1[T any](t T, err error) T {
 }
 
 var (
-	allReduceProgram = []byte(
+	allReduceProgramFail = []byte(
 		`
 module @TestDistributedAllReduce_multiple_values__different_dtype attributes {stablehlo.num_replicas = 2 } {
   func.func @main(%x: tensor<f32>, %y: tensor<2xf32>, %z: tensor<3xf64>) -> (tensor<f32>, tensor<2xf32>, tensor<3xf64>) {
@@ -53,31 +53,7 @@ module @TestDistributedAllReduce_multiple_values__different_dtype attributes {st
 }
 `)
 
-	allReduceProgram2 = []byte(
-		`
-module @TestDistributedAllReduce_multiple_values__different_dtype attributes {stablehlo.num_replicas = 2 } {
-  func.func @main(%x: tensor<f32>, %y: tensor<2xf32>, %z: tensor<3xf64>) -> (tensor<f32>, tensor<2xf32>, tensor<3xf64>) {
-    %1, %2 = "stablehlo.all_reduce"(%x, %y) ({
-      ^computation(%lhs: tensor<f32>, %rhs: tensor<f32>) :
-          %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
-          "stablehlo.return"(%0) : (tensor<f32>) -> ()
-    }) {
-      channel_handle = #stablehlo.channel_handle<handle = 0, type = 0>,
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>
-    } : (tensor<f32>, tensor<2xf32>) -> (tensor<f32>, tensor<2xf32>)
-    %4 = "stablehlo.all_reduce"(%z) ({
-      ^computation(%lhs: tensor<f64>, %rhs: tensor<f64>) :
-          %3 = "stablehlo.add"(%lhs, %rhs) : (tensor<f64>, tensor<f64>) -> tensor<f64>
-          "stablehlo.return"(%3) : (tensor<f64>) -> ()
-    }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
-      channel_handle = #stablehlo.channel_handle<handle = 1, type = 0>
-    } : (tensor<3xf64>) -> tensor<3xf64>
-    "stablehlo.return"(%1, %2, %4) : (tensor<f32>, tensor<2xf32>, tensor<3xf64>) -> ()
-  }
-}`)
-
-	allReduceProgram3 = []byte(
+	allReduceProgram = []byte(
 		`
 module @TestDistributedAllReduce_multiple_values__different_dtype attributes {stablehlo.num_replicas = 2 } {
   func.func @main(%x: tensor<f32>, %y: tensor<2xf32>, %z: tensor<3xf64>) -> (tensor<f32>, tensor<2xf32>, tensor<3xf64>) {
@@ -86,23 +62,51 @@ module @TestDistributedAllReduce_multiple_values__different_dtype attributes {st
           %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f64>, tensor<f64>) -> tensor<f64>
           "stablehlo.return"(%0) : (tensor<f64>) -> ()
     }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>
+      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
+      channel_id = 1
     } : (tensor<3xf64>) -> tensor<3xf64>
     %3, %4 = "stablehlo.all_reduce"(%x, %y) ({
       ^computation(%lhs: tensor<f32>, %rhs: tensor<f32>) :
-          %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
-          "stablehlo.return"(%0) : (tensor<f32>) -> ()
+          %2 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
+          "stablehlo.return"(%2) : (tensor<f32>) -> ()
     }) {
-      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>
+      replica_groups = dense<[[0, 1]]> : tensor<1x2xi64>,
+      channel_id = 2
     } : (tensor<f32>, tensor<2xf32>) -> (tensor<f32>, tensor<2xf32>)
     "stablehlo.return"(%3, %4, %1) : (tensor<f32>, tensor<2xf32>, tensor<3xf64>) -> ()
   }
 }
 `)
+
 	_ = allReduceProgram
-	_ = allReduceProgram2
-	_ = allReduceProgram3
+	_ = allReduceProgramFail
 )
+
+func TestCollectiveAllReduce(t *testing.T) {
+	// PJRT plugin and create a client.
+	plugin, err := pjrt.GetPlugin(*pjrt.FlagPluginName)
+	require.NoError(t, err, "Failed to get plugin %q", *pjrt.FlagPluginName)
+	fmt.Printf("Loaded %s\n", plugin)
+	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
+	client, err := plugin.NewClient(nil)
+	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	fmt.Printf("	client: %s\n", client)
+
+	// Verify that we have enough devices.
+	devices := client.AddressableDevices()
+	if len(devices) < 2 {
+		t.Skipf("TestCollectiveAllReduce requires at least 2 devices, only %d available", len(devices))
+	}
+
+	// Compile program: the default compilation is "portable", meaning it can be executed by any device.
+	var loadedExec *pjrt.LoadedExecutable
+	loadedExec, err = client.Compile().
+		WithStableHLO(allReduceProgram).
+		WithSPMD(2).
+		Done()
+	require.NoErrorf(t, err, "Failed to compile program")
+	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
+}
 
 // TestSPMD builds, compiles, and executes a minimal distributed (SPMD = Single Program Multiple Data) computation,
 // and uses PJRT to compile and execute it.
@@ -126,7 +130,8 @@ func TestSPMD(t *testing.T) {
 		require.NoError(t, err)
 		desc, err := device.GetDescription()
 		require.NoError(t, err)
-		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n", deviceNum, hardwareId, addressable, desc.DebugString())
+		fmt.Printf("\tDevice #%d: hardwareId=%d, addressable=%v, description=%s\n",
+			deviceNum, hardwareId, addressable, desc.DebugString())
 	}
 
 	// Create replicaGroups [numPartitions=1][numReplicas=numDevices] according to the device assignment.
@@ -211,30 +216,4 @@ func TestSPMD(t *testing.T) {
 	// Destroy the client and leave.
 	err = client.Destroy()
 	require.NoErrorf(t, err, "Failed to destroy client on %s", plugin)
-}
-
-func TestCollectiveAllReduce(t *testing.T) {
-	// PJRT plugin and create a client.
-	plugin, err := pjrt.GetPlugin(*pjrt.FlagPluginName)
-	require.NoError(t, err, "Failed to get plugin %q", *pjrt.FlagPluginName)
-	fmt.Printf("Loaded %s\n", plugin)
-	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
-	client, err := plugin.NewClient(nil)
-	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
-	fmt.Printf("	client: %s\n", client)
-
-	// Verify that we have enough devices.
-	devices := client.AddressableDevices()
-	if len(devices) < 2 {
-		t.Skipf("TestCollectiveAllReduce requires at least 2 devices, only %d available", len(devices))
-	}
-
-	// Compile program: the default compilation is "portable", meaning it can be executed by any device.
-	var loadedExec *pjrt.LoadedExecutable
-	loadedExec, err = client.Compile().
-		WithStableHLO(allReduceProgram3).
-		WithSPMD(2).
-		Done()
-	require.NoErrorf(t, err, "Failed to compile program")
-	fmt.Printf("Compiled program: name=%s, #outputs=%d\n", loadedExec.Name, loadedExec.NumOutputs)
 }

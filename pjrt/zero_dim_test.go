@@ -13,7 +13,7 @@ import (
 )
 
 func TestZeroDim(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
@@ -74,7 +74,7 @@ func TestZeroDim(t *testing.T) {
 			})
 
 			// Test 2: Create zero-dimension buffer using NewSharedBuffer (CPU only)
-			if *flagPluginName == "cpu" || *flagForceSharedBuffer {
+			if *FlagPluginName == "cpu" || *flagForceSharedBuffer {
 				t.Run("NewSharedBuffer", func(t *testing.T) {
 					fmt.Println("testing NewSharedBuffer")
 					testZeroDimNewSharedBuffer(t, client, tc.dtype, tc.dimensions, tc.expectSize)
@@ -217,7 +217,7 @@ func testZeroDimAsInput(t *testing.T, client *Client, dtype dtypes.DType, dimens
 	builder := stablehlo.New("ZeroDimIdentity")
 	shape := shapes.Make(dtype, dimensions...)
 	mainFn := builder.Main()
-	param := mainFn.NamedInput("input", shape)
+	param := must1(mainFn.NamedInput("input", shape))
 
 	err := mainFn.Return(param)
 	require.NoError(t, err, "Failed to set return value")

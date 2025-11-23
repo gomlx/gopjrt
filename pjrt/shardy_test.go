@@ -1,0 +1,111 @@
+package pjrt_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/gomlx/gopjrt/dtypes"
+	"github.com/gomlx/gopjrt/pjrt"
+	"github.com/gomlx/stablehlo/types/shapes"
+	"github.com/stretchr/testify/require"
+)
+
+func TestShardy(t *testing.T) {
+	plugin, err := pjrt.GetPlugin(*pjrt.FlagPluginName)
+	require.NoError(t, err, "Failed to get plugin %q", *pjrt.FlagPluginName)
+	fmt.Printf("Loaded %s\n", plugin)
+	fmt.Printf("\t- Attributes=%+v\n", plugin.Attributes())
+	client, err := plugin.NewClient(nil)
+	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
+	fmt.Printf("	client: %s\n", client)
+
+	// We will test it with 2 devices.
+	const numReplicas = 2
+	numDevices := client.NumDevices()
+	if numDevices < numReplicas {
+		t.Skipf("Skipping test: not enough devices: %d < %d", numDevices, numReplicas)
+		return
+	}
+
+	t.Run("input-data-sharding", func(t *testing.T) {
+		program := []byte(`module @TestShardy_input_data_sharding attributes {stablehlo.num_replicas = 1,  stablehlo.num_partitions = 2} {
+		 sdy.mesh @unused_mesh = <["x"=1, "y"=2], device_ids=[0, 1]>
+		 sdy.mesh @data_mesh = <["data"=2], device_ids=[1, 0]>
+		 func.func @main(%arg0: tensor<2x3xf32> { sdy.sharding = #sdy.sharding<@data_mesh, [{"data"}, {}]> }) -> tensor<f32> {
+		   %1 = "stablehlo.constant"() { value = dense<0.0> : tensor<f32> } : () -> tensor<f32>
+		   %2 = "stablehlo.reduce"(%arg0, %1) ({
+		     ^reductionFn(%lhs: tensor<f32>, %rhs: tensor<f32>) :
+		         %0 = "stablehlo.add"(%lhs, %rhs) : (tensor<f32>, tensor<f32>) -> tensor<f32>
+		         "stablehlo.return"(%0) : (tensor<f32>) -> ()
+		   }) { dimensions = array<i64: 0, 1> } : (tensor<2x3xf32>, tensor<f32>) -> tensor<f32>
+		   "stablehlo.return"(%2) : (tensor<f32>) -> ()
+		 }
+		}`)
+		deviceAssignment := []int{3, 2}
+		loadedExec, err := client.Compile().
+			WithStableHLO(program).
+			WithShardy(2).
+			WithDeviceAssignment(deviceAssignment).
+			Done()
+		require.NoErrorf(t, err, "failed to compile program: \n%s", program)
+		defer func() {
+			err := loadedExec.Destroy()
+			if err != nil {
+				t.Errorf("failed to destroy loaded exec: %+v", err)
+			}
+		}()
+
+		// Notice we provided device nums
+		x0 := must1(client.BufferFromHost().
+			ToDeviceNum(deviceAssignment[0]).
+			FromFlatDataWithDimensions([]float32{0, 1, 2}, []int{1, 3}).
+			Done())
+		x1 := must1(client.BufferFromHost().
+			ToDeviceNum(deviceAssignment[1]).
+			FromFlatDataWithDimensions([]float32{0, 0.1, 0.2}, []int{1, 3}).
+			Done())
+		outputs, err := loadedExec.Execute(x0, x1).DonateAll().Done()
+		require.NoErrorf(t, err, "failed to execute program: \n%s", program)
+
+		// Check results.
+		requireBuffersEqual(t, []FlatAndDims{
+			{[]float32{3.3}, nil},
+			{[]float32{3.3}, nil},
+		}, outputs)
+	})
+}
+
+type FlatAndDims struct {
+	Flat any
+	Dims []int
+}
+
+// requireBuffersEqual checks that the actual buffers contents match the expected flat values.
+// It destroys the buffers.
+func requireBuffersEqual(t *testing.T, expected []FlatAndDims, got []*pjrt.Buffer) {
+	defer func() {
+		for _, b := range got {
+			err := b.Destroy()
+			if err != nil {
+				t.Errorf("failed to destroy buffer: %+v", err)
+			}
+		}
+	}()
+	require.Len(t, got, len(expected))
+	for i, b := range got {
+		gotFlat, gotDims, err := b.ToFlatDataAndDimensions()
+		expectedShape, err := shapes.FromAnyValue(expected[i].Flat)
+		require.NoErrorf(t, err, "failed to get shape for output #%d: %v", i, expected[i].Flat)
+		dtype := expectedShape.DType
+		fmt.Printf("\t - output #%d:\n\t   - Got: dims=%v, flat_values=%v\n", i, gotDims, gotFlat)
+		fmt.Printf("\t   - Want(%s): dims=%v, flat_values=%v\n", dtype, expected[i].Dims, expected[i].Flat)
+		require.NoErrorf(t, err, "failed to get buffer contents for output #%d, expected flat value %v", i, expected[i].Flat)
+		require.Equalf(t, expected[i].Dims, gotDims, "output #%d dims don't match", i)
+		switch dtype {
+		case dtypes.Float64, dtypes.Float32:
+			require.InDeltaSlicef(t, expected[i].Flat, gotFlat, 1e-4, "output #%d flat values don't match", i)
+		default:
+			require.Equalf(t, expected[i].Flat, gotFlat, "output #%d flat values don't match", i)
+		}
+	}
+}

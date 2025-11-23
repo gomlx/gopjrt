@@ -27,15 +27,15 @@ import (
 	"testing"
 )
 
-// TestLoadNamedPlugin loads the *flagPluginName plugin, which defaults to "cpu", that should be made available.
+// TestLoadNamedPlugin loads the *FlagPluginName plugin, which defaults to "cpu", that should be made available.
 func TestLoadNamedPlugin(t *testing.T) {
-	plugin, err := loadNamedPlugin(*flagPluginName)
+	plugin, err := loadNamedPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 	fmt.Printf("\tattributes: %v\n", plugin.attributes)
 
 	// Checks cache works.
-	plugin2, err := loadNamedPlugin(*flagPluginName)
+	plugin2, err := loadNamedPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	require.Equal(t, plugin, plugin2)
 	plugin3, err := loadNamedPlugin(plugin2.Path()) // Try by using the absolute path, should return the same plugin.
@@ -52,7 +52,7 @@ func TestLoadNamedPlugin(t *testing.T) {
 func TestAvailablePlugins(t *testing.T) {
 	plugins := AvailablePlugins()
 	fmt.Printf("Available plugins: %v\n", plugins)
-	require.NotEqualf(t, "", plugins[*flagPluginName], "Can not find %q plugin", *flagPluginName)
+	require.NotEqualf(t, "", plugins[*FlagPluginName], "Can not find %q plugin", *FlagPluginName)
 }
 
 // TestSuppressAbseilLoggingHack never fails, since errors are simply logged.

@@ -76,7 +76,7 @@ func testTransfersImpl[T interface {
 }
 
 func TestTransfers(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
@@ -97,7 +97,7 @@ func TestTransfers(t *testing.T) {
 }
 
 func TestBufferProperties(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 
@@ -132,7 +132,7 @@ func TestBufferProperties(t *testing.T) {
 }
 
 func TestBufferCopyToDevice(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	client, err := plugin.NewClient(nil)
 	require.NoErrorf(t, err, "Failed to create a client on %s", plugin)
@@ -185,13 +185,13 @@ var flagForceSharedBuffer = flag.Bool(
 	"force_shared_buffer", false, "Force executing TestCreateViewOfDeviceBuffer and TestBufferUnsafePointer even if plugin is not \"cpu\".")
 
 func TestCreateViewOfDeviceBuffer(t *testing.T) {
-	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
+	if *FlagPluginName != "cpu" && !*flagForceSharedBuffer {
 		t.Skip("Skipping TestCreateViewOfDeviceBuffer because -plugin != \"cpu\". " +
 			"Set --force_create_view to force executing the test anyway")
 	}
 
 	// Create plugin.
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -200,7 +200,7 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 	shape := shapes.Make(dtype, 2, 3)
 	builder := stablehlo.New("Add1")
 	mainFn := builder.Main()
-	x := mainFn.NamedInput("x", shape)
+	x := must1(mainFn.NamedInput("x", shape))
 	one := must1(mainFn.ConstantFromScalar(float32(1)))
 	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 	add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -248,13 +248,13 @@ func TestCreateViewOfDeviceBuffer(t *testing.T) {
 }
 
 func TestNewSharedBuffer(t *testing.T) {
-	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
+	if *FlagPluginName != "cpu" && !*flagForceSharedBuffer {
 		t.Skip("Skipping TestNewSharedBuffer because -plugin != \"cpu\". " +
 			"Set --force_create_view to force executing the test anyway")
 	}
 
 	// Create plugin.
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -263,7 +263,7 @@ func TestNewSharedBuffer(t *testing.T) {
 	shape := shapes.Make(dtype, 2, 3)
 	builder := stablehlo.New("Add1")
 	mainFn := builder.Main()
-	x := mainFn.NamedInput("x", shape)
+	x := must1(mainFn.NamedInput("x", shape))
 	one := must1(mainFn.ConstantFromScalar(float32(1)))
 	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 	add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -310,13 +310,13 @@ func TestNewSharedBuffer(t *testing.T) {
 }
 
 func TestBufferData(t *testing.T) {
-	if *flagPluginName != "cpu" && !*flagForceSharedBuffer {
+	if *FlagPluginName != "cpu" && !*flagForceSharedBuffer {
 		t.Skip("Skipping TestNewSharedBuffer because -plugin != \"cpu\". " +
 			"Set --force_create_view to force executing the test anyway")
 	}
 
 	// Create plugin.
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -325,7 +325,7 @@ func TestBufferData(t *testing.T) {
 	shape := shapes.Make(dtype, 2, 3)
 	builder := stablehlo.New("Add1")
 	mainFn := builder.Main()
-	x := mainFn.NamedInput("x", shape)
+	x := must1(mainFn.NamedInput("x", shape))
 	one := must1(mainFn.ConstantFromScalar(float32(1)))
 	broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 	add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -360,7 +360,7 @@ func TestBufferData(t *testing.T) {
 
 func TestBufferDestroyAfterClient(t *testing.T) {
 	// Create the plugin and the client.
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 

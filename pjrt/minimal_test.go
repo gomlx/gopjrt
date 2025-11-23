@@ -61,7 +61,7 @@ func TestMinimal(t *testing.T) {
 	fmt.Printf("HLO Program:\n%s\n\n", hloModule.String())
 
 	// `dlopen` PJRT plugin.
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	defer runtime.KeepAlive(plugin)
 	fmt.Printf("PJRT: %s\n", plugin.String())
 

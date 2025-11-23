@@ -7,7 +7,7 @@ import (
 )
 
 func TestClient_Devices(t *testing.T) {
-	plugin, err := GetPlugin(*flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
 	require.NoError(t, err)
 	fmt.Printf("Loaded %s\n", plugin)
 	client, err := plugin.NewClient(nil)

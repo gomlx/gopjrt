@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# 0.10.0 Added Shardy support.
+# 0.10.0 - (Release Candidate) Added Shardy support.
 
 - Package `cmd/gopjrt_installer`:
   - Link `libcublasLt.so.13` and `libcublas.so.13` to the `lib` subdirectory of the installation directory given.

@@ -5,15 +5,16 @@ package pjrt
 import (
 	"flag"
 	"fmt"
-	
+
+	"testing"
+
 	"github.com/gomlx/gopjrt/dtypes"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog/v2"
-	"testing"
 )
 
-var flagPluginName = flag.String("plugin", "cpu", "plugin name")
+var FlagPluginName = flag.String("plugin", "cpu", "plugin name")
 
 func init() {
 	klog.InitFlags(nil)
@@ -49,8 +50,8 @@ func must1[T any](t T, err error) T {
 // It exits the test if anything goes wrong.
 func getPJRTClient(t *testing.T) *Client {
 	// PJRT plugin and create a client.
-	plugin, err := GetPlugin(*flagPluginName)
-	require.NoError(t, err, "Failed to get plugin %q", *flagPluginName)
+	plugin, err := GetPlugin(*FlagPluginName)
+	require.NoError(t, err, "Failed to get plugin %q", *FlagPluginName)
 	attributes := plugin.Attributes()
 	fmt.Printf("Loaded PJRT plugin %s with %d atributes:\n", plugin, len(attributes))
 	for key, value := range attributes {

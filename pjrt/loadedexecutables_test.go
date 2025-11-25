@@ -17,9 +17,9 @@ func TestDonatableConfig(t *testing.T) {
 
 	// f(x, y, z) = x*y + z
 	scalarF32 := shapes.Make(dtypes.F32)
-	x := mainFn.NamedInput("x", scalarF32) // Scalar float32.
-	y := mainFn.NamedInput("y", scalarF32) // Scalar float32.
-	z := mainFn.NamedInput("z", scalarF32) // Scalar float32.
+	x := must1(mainFn.NamedInput("x", scalarF32)) // Scalar float32.
+	y := must1(mainFn.NamedInput("y", scalarF32)) // Scalar float32.
+	z := must1(mainFn.NamedInput("z", scalarF32)) // Scalar float32.
 	fX := capture(stablehlo.Multiply(x, y)).Test(t)
 	fX = capture(stablehlo.Add(fX, z)).Test(t)
 

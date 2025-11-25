@@ -35,7 +35,7 @@ func TestBenchCGO(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	const repeats = 1000
 	repeatedCGO := func() {
 		for _ = range repeats {
@@ -52,7 +52,7 @@ func TestBenchArena(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -129,7 +129,7 @@ func TestBenchBufferFromHost(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -171,7 +171,7 @@ func TestBenchBufferToHost(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -212,7 +212,7 @@ func TestBenchAdd1Execution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -233,7 +233,7 @@ func TestBenchAdd1Execution(t *testing.T) {
 		builder := stablehlo.New(fmt.Sprintf("Add1/%s", s))
 		mainFn := builder.Main()
 		// f(x) = x + 1
-		x := mainFn.NamedInput("x", s)
+		x := must1(mainFn.NamedInput("x", s))
 		one := must1(mainFn.ConstantFromScalar(float32(1)))
 		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 		add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -278,7 +278,7 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -299,7 +299,7 @@ func TestBenchAdd1Div2Execution(t *testing.T) {
 		builder := stablehlo.New(fmt.Sprintf("Add1/%s", s))
 		mainFn := builder.Main()
 		// f(x) = (x + 1) * 0.5
-		x := mainFn.NamedInput("x", s)
+		x := must1(mainFn.NamedInput("x", s))
 		one := must1(mainFn.ConstantFromScalar(float32(1)))
 		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 		add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -347,7 +347,7 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	plugin := must1(GetPlugin(*flagPluginName))
+	plugin := must1(GetPlugin(*FlagPluginName))
 	client := must1(plugin.NewClient(nil))
 	defer runtime.KeepAlive(client)
 
@@ -368,7 +368,7 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 		builder := stablehlo.New(fmt.Sprintf("MeanNormalized/%s", s))
 		mainFn := builder.Main()
 		// f(x) = (x + 1) * 0.5 - mean((x + 1) * 0.5)
-		x := mainFn.NamedInput("x", s)
+		x := must1(mainFn.NamedInput("x", s))
 		one := must1(mainFn.ConstantFromScalar(float32(1)))
 		broadcastedOne := must1(stablehlo.BroadcastInDim(one, x.Shape(), nil))
 		add1 := must1(stablehlo.Add(x, broadcastedOne))
@@ -377,8 +377,8 @@ func TestBenchMeanNormalizedExecution(t *testing.T) {
 		div2 := must1(stablehlo.Multiply(add1, broadcastedHalf))
 
 		reductionFn := mainFn.Closure()
-		lhs := reductionFn.NamedInput("lhs", shapes.Make(dtypes.F32))
-		rhs := reductionFn.NamedInput("rhs", shapes.Make(dtypes.F32))
+		lhs := must1(reductionFn.NamedInput("lhs", shapes.Make(dtypes.F32)))
+		rhs := must1(reductionFn.NamedInput("rhs", shapes.Make(dtypes.F32)))
 		must(reductionFn.Return(must1(stablehlo.Add(lhs, rhs))))
 		initialValue := must1(mainFn.ConstantFromScalar(float32(0)))
 

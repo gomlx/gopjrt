@@ -17,8 +17,8 @@ func TestError(t *testing.T) {
 
 	// f(x, y) = x+y
 	scalarF32 := shapes.Make(dtypes.F32)
-	x := mainFn.NamedInput("x", scalarF32) // Scalar float32.
-	y := mainFn.NamedInput("y", scalarF32) // Scalar float32.
+	x := must1(mainFn.NamedInput("x", scalarF32)) // Scalar float32.
+	y := must1(mainFn.NamedInput("y", scalarF32)) // Scalar float32.
 	fXY := capture(stablehlo.Add(x, y)).Test(t)
 
 	// Take program and compile.

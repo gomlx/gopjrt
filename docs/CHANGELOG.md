@@ -1,6 +1,6 @@
 # Gopjrt Changelog
 
-# Next
+# 0.10.0 - (Release Candidate) Added Shardy support.
 
 - Package `cmd/gopjrt_installer`:
   - Link `libcublasLt.so.13` and `libcublas.so.13` to the `lib` subdirectory of the installation directory given.
@@ -10,6 +10,8 @@
   - Fixed wrong struct size set for `PJRT_Event_Destroy_Args`, in #65 (@timkaye11)
   - Fixed `buffer.Destroy` to release the `client` pointer in the wrapper.
   - Added a required `runtime.KeepAlive(program)` on a CGO call to compile `program`.
+  - Added new Shardy support for distributed (across multiple devices) execution.
+  - Added old SPMD support (see `pjrt.Compile().WithSPMD`)
 
 # v0.9.1 2025/11/07: More multi-device support; updated CPU PJRT; dropped static CPU PJRT linking.
 

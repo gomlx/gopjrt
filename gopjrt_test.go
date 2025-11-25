@@ -63,7 +63,8 @@ func TestEndToEnd(t *testing.T) {
 
 	// Create a main function and define its inputs.
 	mainFn := builder.Main()
-	x := mainFn.NamedInput("x", scalarF32)
+	x, err := mainFn.NamedInput("x", scalarF32)
+	require.NoError(t, err, "Failed to create a named input for x")
 
 	// Build computation graph
 	fX, err := stablehlo.Multiply(x, x)

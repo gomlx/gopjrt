@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/gomlx/stablehlo v0.2.0-rc0
+	github.com/gomlx/stablehlo v0.2.0
 	github.com/janpfeifer/go-benchmarks v0.1.1
 	github.com/janpfeifer/gonb v0.11.1
 	github.com/janpfeifer/must v0.2.0

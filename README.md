@@ -1,6 +1,6 @@
 # GoPJRT ([Installing](#installing))
 
-# 🛑 DEPRECATED. This library has been merged and improved into github.com/gomlx/go-xla. Please update your imports.
+# 🛑 DEPRECATED. This library has been merged and improved into [github.com/gomlx/go-xla](https://github.com/gomlx/go-xla). Please update your imports.
 
 [![GoDev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/gomlx/gopjrt?tab=doc)
 [![GitHub](https://img.shields.io/github/license/gomlx/gopjrt)](https://github.com/Kwynto/gosession/blob/master/LICENSE)
